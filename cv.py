@@ -88,9 +88,9 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     scorer = instantiate(cfg.scorer)
     scores: list[float] = []
 
-    # Split indices into train and test
+    # Split indices into train and notebooks
     # splitter_data = setup_splitter_data()
-    logger.info("Using splitter to split data into train and test sets.")
+    logger.info("Using splitter to split data into train and notebooks sets.")
 
     if not isinstance(y, np.ndarray):
         raise TypeError("y should be a numpy array")
@@ -135,7 +135,7 @@ def run_fold(
     :param X: The input data.
     :param y: The labels.
     :param train_indices: The indices of the training data.
-    :param test_indices: The indices of the test data.
+    :param test_indices: The indices of the notebooks data.
     :param cfg: The config file.
     :param scorer: The scorer to use.
     :param output_dir: The output directory for the prediction plots.
@@ -159,7 +159,7 @@ def run_fold(
     )
     predictions, _ = model_pipeline.train(X, y, **train_args)
 
-    # If predictions are on 'all' data, only keep the test data
+    # If predictions are on 'all' data, only keep the notebooks data
     if y.shape[0] == predictions.shape[0]:
         predictions = predictions[test_indices]
     score = scorer(y[test_indices], predictions)

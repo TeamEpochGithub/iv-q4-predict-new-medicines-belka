@@ -30,7 +30,7 @@ cs.store(name="base_train", node=TrainConfig)
 
 @hydra.main(version_base=None, config_path="conf", config_name="train")
 def run_train(cfg: DictConfig) -> None:
-    """Train a model pipeline with a train-test split. Entry point for Hydra which loads the config file."""
+    """Train a model pipeline with a train-notebooks split. Entry point for Hydra which loads the config file."""
     # Run the train config with an optional lock
     optional_lock = Lock if not cfg.allow_multiple_instances else nullcontext
     with optional_lock():
@@ -38,7 +38,7 @@ def run_train(cfg: DictConfig) -> None:
 
 
 def run_train_cfg(cfg: DictConfig) -> None:
-    """Train a model pipeline with a train-test split."""
+    """Train a model pipeline with a train-notebooks split."""
     print_section_separator("Q? - 'competition' - Training")
 
     import coloredlogs
@@ -86,7 +86,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         train_indices, test_indices = list(range(len(X))), []  # type: ignore[arg-type]
         fold = -1
     else:
-        logger.info("Using splitter to split data into train and test sets.")
+        logger.info("Using splitter to split data into train and notebooks sets.")
         train_indices, test_indices = next(instantiate(cfg.splitter).split(y))
         fold = 0
 

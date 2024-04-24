@@ -17,7 +17,7 @@ class TrainConfig:
     :param scorer: Scorer object to be instantiated.
     :param wandb: Whether to log to Weights & Biases and other settings.
     :param splitter: Cross validation splitter.
-    :param test_size: Size of the test set.
+    :param test_size: Size of the notebooks set.
     :param allow_multiple_instances: Whether to allow multiple instances of training at the same time.
     """
 

@@ -68,10 +68,10 @@ def update_model_cfg_test_size(
     cfg: dict[str | bytes | int | Enum | float | bool, Any] | list[Any] | str | None,
     test_size: float = -1.0,
 ) -> dict[str | bytes | int | Enum | float | bool, Any] | list[Any] | str | None:
-    """Update the test size in the model config.
+    """Update the notebooks size in the model config.
 
     :param cfg: The model config.
-    :param test_size: The test size.
+    :param test_size: The notebooks size.
 
     :return: The updated model config.
     """

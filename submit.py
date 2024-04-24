@@ -1,4 +1,4 @@
-"""Submit.py is the main script for running inference on the test set and creating a submission."""
+"""Submit.py is the main script for running inference on the notebooks set and creating a submission."""
 import os
 import warnings
 from pathlib import Path
@@ -40,10 +40,10 @@ def run_submit(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg, is_train=False)
 
-    # Load the test data
+    # Load the notebooks data
     X = setup_inference_data()
 
-    # Predict on the test data
+    # Predict on the notebooks data
     logger.info("Making predictions...")
     pred_args = setup_pred_args(pipeline=model_pipeline)
     predictions = model_pipeline.predict(X, **pred_args)
