@@ -1,6 +1,6 @@
-from transformers import AutoModelForTokenClassification, AutoTokenizer
-from peft import PeftModel
 import torch
+from peft import PeftModel
+from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 # Path to the saved LoRA model
 model_path = "AmelieSchreiber/esm2_t33_650M_qlora_binding_16M"
@@ -26,9 +26,9 @@ sequence_BRD4 = "NPPPPETSNPNKPKRQTNQLQYLLRVVLKTLWKHQFAWPFQQPVDAVKLNLPDYYKIIKTPMD
 sequence_HSA = "DAHKSEVAHRFKDLGEENFKALVLIAFAQYLQQCPFEDHVKLVNEVTEFAKTCVADESAENCDKSLHTLFGDKLCTVATLRETYGEMADCCAKQEPERNECFLQHKDDNPNLPRLVRPEVDVMCTAFHDNEETFLKKYLYEIARRHPYFYAPELLFFAKRYKAAFTECCQAADKAACLLPKLDELRDEGKASSAKQRLKCASLQKFGERAFKAWAVARLSQRFPKAEFAEVSKLVTDLTKVHTECCHGDLLECADDRADLAKYICENQDSISSKLKECCEKPLLEKSHCIAEVENDEMPADLPSLAADFVESKDVCKNYAEAKDVFLGMFLYEYARRHPDYSVVLLLRLAKTYETTLEKCCAAADPHECYAKVFDEFKPLVEEPQNLIKQNCELFEQLGEYKFQNALLVRYTKKVPQVSTPTLVEVSRNLGKVGSKCCKHPEAKRMPCAEDYLSVVLNQLCVLHEKTPVSDRVTKCCTESLVNRRPCFSALEVDETYVPKEFNAETFTFHADICTLSEKERQIKKQTALVELVKHKPKATKEQLKAVMDDFAAFVEKCCKADDKETCFAEEGKKLVAASQAALGL"
 
 # Tokenize the sequence
-inputs_sEH = loaded_tokenizer(sequence_sEH, return_tensors="pt", truncation=True, max_length=1024, padding='max_length')
-inputs_HSA = loaded_tokenizer(sequence_HSA, return_tensors="pt", truncation=True, max_length=1024, padding='max_length')
-inputs_BRD4 = loaded_tokenizer(sequence_BRD4, return_tensors="pt", truncation=True, max_length=1024, padding='max_length')
+inputs_sEH = loaded_tokenizer(sequence_sEH, return_tensors="pt", truncation=True, max_length=1024, padding="max_length")
+inputs_HSA = loaded_tokenizer(sequence_HSA, return_tensors="pt", truncation=True, max_length=1024, padding="max_length")
+inputs_BRD4 = loaded_tokenizer(sequence_BRD4, return_tensors="pt", truncation=True, max_length=1024, padding="max_length")
 
 # Run the model
 with torch.no_grad():
@@ -51,16 +51,17 @@ predictions_BRD4 = torch.argmax(logits_BRD4, dim=2)
 # Define labels
 id2label = {
     0: "No binding site",
-    1: "Binding site"
+    1: "Binding site",
 }
+
 
 # %%
 def group_adjacent_binding_sites(tokens, predictions, id2label):
     binding_sites = set()
     current_site = []
 
-    for token, prediction in zip(tokens, predictions):
-        if token not in ['<pad>', '<cls>', '<eos>'] and prediction == 1:
+    for token, prediction in zip(tokens, predictions, strict=False):
+        if token not in ["<pad>", "<cls>", "<eos>"] and prediction == 1:
             if current_site:
                 # Check if the current token is adjacent to the last token in the current_site
                 if ord(token) == ord(current_site[-1][0]) + 1:
@@ -79,6 +80,7 @@ def group_adjacent_binding_sites(tokens, predictions, id2label):
         binding_sites.add(tuple(current_site))
 
     return binding_sites
+
 
 # Example usage with the protein sequences
 preds_sEH = group_adjacent_binding_sites(tokens_sEH, predictions_sEH[0].numpy(), id2label)

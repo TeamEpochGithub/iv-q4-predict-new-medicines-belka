@@ -6,22 +6,22 @@
 from typing import Any
 
 
-def setup_train_x_data() -> Any:  # noqa: ANN401
+def setup_train_x_data(raw_path: str) -> Any:  # noqa: ANN401
     """Create train x data for pipeline.
 
     :param path: Usually raw path is a parameter
     :return: x data
     """
-    raise NotImplementedError("Setup train data x is competition specific, implement within competition repository")
+    raise NotImplementedError(f"Setup train data x is competition specific, raw_path:{raw_path}, implement within competition repository")
 
 
-def setup_train_y_data() -> Any:  # noqa: ANN401
+def setup_train_y_data(raw_path: str) -> Any:  # noqa: ANN401
     """Create train y data for pipeline.
 
     :param path: Usually raw path is a parameter
     :return: y data
     """
-    raise NotImplementedError("Setup train data y is competition specific, implement within competition repository")
+    raise NotImplementedError(f"Setup train data y is competition specific, raw_path:{raw_path}, implement within competition repository")
 
 
 def setup_inference_data() -> Any:  # noqa: ANN401
