@@ -9,6 +9,8 @@ defaults:
 #    PATHS    #
 #             #
 ###############
+raw_path: data/shrunken
+ 
 processed_path: data/processed
 
 scorer:
