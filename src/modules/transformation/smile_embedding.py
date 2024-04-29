@@ -11,6 +11,7 @@ class SmileEmbedding(VerboseTransformationBlock):
 
 #%%
 
+
 from mol2vec.features import mol2alt_sentence, MolSentence, DfVec, sentences2vec
 from mol2vec.helpers import load_model
 from rdkit import Chem
