@@ -98,7 +98,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         fold = -1
     else:
         logger.info("Using splitter to split data into train and test sets.")
-        train_indices, test_indices = next(instantiate(cfg.splitter).split(y))
+        train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y)[0]
         fold = 0
 
     logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}")
