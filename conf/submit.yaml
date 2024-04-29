@@ -14,3 +14,4 @@ defaults:
 result_path: /kaggle/working/
 
 # Local paths
+raw_path: data/raw
