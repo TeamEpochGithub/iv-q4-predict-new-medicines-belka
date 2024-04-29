@@ -1,10 +1,13 @@
 """Train.py is the main script for training the model and will take in the raw data and output a trained model."""
+import gc
 import os
+import time
 import warnings
 from contextlib import nullcontext
 from pathlib import Path
 
 import hydra
+import polars as pl
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
@@ -71,11 +74,20 @@ def run_train_cfg(cfg: DictConfig) -> None:
     x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
     # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
 
+    directory = Path(cfg.data_path)
+
+    first_time = time.time()
+    train_data = pl.read_parquet(directory / "train.parquet")
+    train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
+
     X, y = None, None
     if not x_cache_exists:
-        X = setup_train_x_data(cfg.data_path)
+        X = setup_train_x_data(directory, train_data)
 
-    y = setup_train_y_data(cfg.data_path)
+    y = setup_train_y_data(train_data)
+    del train_data
+    gc.collect()
+    logger.info(f"Total time:{time.time() - first_time}")
 
     # For this simple splitter, we only need y.
     if cfg.test_size == 0:

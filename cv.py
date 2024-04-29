@@ -1,5 +1,7 @@
 """The main script for Cross Validation. Takes in the raw data, does CV and logs the results."""
+import gc
 import os
+import time
 import warnings
 from contextlib import nullcontext
 from pathlib import Path
@@ -7,6 +9,7 @@ from typing import Any
 
 import hydra
 import numpy as np
+import polars as pl
 import randomname
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
@@ -75,14 +78,22 @@ def run_cv_cfg(cfg: DictConfig) -> None:
 
     # Read the data if required and split in X, y
     x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
-    y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
+    # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
+
+    directory = Path(cfg.data_path)
+
+    first_time = time.time()
+    train_data = pl.read_parquet(directory / "train.parquet")
+    train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
 
     X, y = None, None
     if not x_cache_exists:
-        X = setup_train_x_data(cfg.data_path)
+        X = setup_train_x_data(directory, train_data)
 
-    if not y_cache_exists:
-        y = setup_train_y_data(cfg.data_path)
+    y = setup_train_y_data(train_data)
+    del train_data
+    gc.collect()
+    logger.info(f"Total time:{time.time() - first_time}")
 
     # Instantiate scorer
     scorer = instantiate(cfg.scorer)
