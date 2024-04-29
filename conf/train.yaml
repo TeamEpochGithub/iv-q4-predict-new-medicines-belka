@@ -4,13 +4,7 @@ defaults:
   - model: test # Add models or ensembles
   - wandb: train
 
-###############
-#             #
-#    PATHS    #
-#             #
-###############
 raw_path: data/shrunken
- 
 processed_path: data/processed
 
 scorer:

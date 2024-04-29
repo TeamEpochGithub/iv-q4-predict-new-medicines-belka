@@ -4,6 +4,8 @@
 - Usually you'll have one data setup for training and another for making submissions.
 """
 from typing import Any
+from src.typing.xdata import XData
+import polars as pl
 
 
 def setup_train_x_data(raw_path: str) -> Any:  # noqa: ANN401
@@ -12,6 +14,8 @@ def setup_train_x_data(raw_path: str) -> Any:  # noqa: ANN401
     :param path: Usually raw path is a parameter
     :return: x data
     """
+    
+
     raise NotImplementedError(f"Setup train data x is competition specific, raw_path:{raw_path}, implement within competition repository")
 
 
