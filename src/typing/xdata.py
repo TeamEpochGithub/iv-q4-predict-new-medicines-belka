@@ -17,7 +17,7 @@ class XData:
     :param bb3: Buliding block 3 smiles
     """
 
-    building_blocks: npt.NDArray[np.int8]
+    building_blocks: npt.NDArray[np.int16]
     molecule_smiles: list[Any]
     bb1: list[Any]
     bb2: list[Any]

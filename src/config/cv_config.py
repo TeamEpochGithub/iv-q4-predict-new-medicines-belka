@@ -23,8 +23,6 @@ class CVConfig:
 
     model: Any
     ensemble: Any
-    raw_path: str
-    cache_path: str
     data_path: str
     processed_path: str
     scorer: Any
