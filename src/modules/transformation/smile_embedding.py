@@ -11,33 +11,27 @@ class SmileEmbedding(VerboseTransformationBlock):
 
 #%%
 
-
+from gensim.models import Word2Vec
 from mol2vec.features import mol2alt_sentence, MolSentence, DfVec, sentences2vec
-from mol2vec.helpers import load_model
+from gensim.models import Word2Vec
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from scipy.spatial.distance import cosine
 
-# Load pre-trained model
-model = load_model('model_300dim.pkl')
+# load pre-trained mol2vec model
+mol2vec_url = 'https://github.com/samoturk/mol2vec/raw/master/examples/models/model_300dim.pkl'
+model = Word2Vec.load(mol2vec_url)
 
 # Example SMILES
-smiles1 = 'CCO'
-smiles2 = 'CCOCC'
+smile = 'C#CCCC[C@H](Nc1nc(NCC2CCC(SC)CC2)nc(Nc2ccc(C=C)cc2)n1)C(=O)N[Dy]'
+molecule = Chem.MolFromSmiles(smile)
 
-# Convert SMILES to RDKit molecules
-mol1 = Chem.MolFromSmiles(smiles1)
-mol2 = Chem.MolFromSmiles(smiles2)
+sentence = MolSentence(mol2alt_sentence(molecule, 1))
 
-# Generate molecular sentences
-sentence1 = MolSentence(mol2alt_sentence(mol1, 1))
-sentence2 = MolSentence(mol2alt_sentence(mol2, 1))
+keys = set(model.wv.key_to_index)
 
-# Generate embeddings
-embedding1 = sentences2vec([sentence1], model, unseen='UNK')
-embedding2 = sentences2vec([sentence2], model, unseen='UNK')
+unseen_vec = 'UNK'
 
-# Compute cosine similarity
-similarity = 1 - cosine(embedding1[0], embedding2[0])
+embeddings = [model.wv.get_vector(y) if y in set(sentence) & keys else unseen_vec for y in sentence]
 
-print("Cosine similarity:", similarity)
+aa = [embedding for embedding in embeddings if embedding=='UNK']
+
+print(embeddings)
