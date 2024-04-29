@@ -11,5 +11,6 @@ numpy==1.26.4
 randomname==0.2.1
 tqdm==4.66.2
 wandb>=0.16.4
+polars==0.20.22
 
 -e ./
