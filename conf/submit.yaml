@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: ??? # Add models or ensembles
+  - model: tutorial_notebook
 
 # Use this when uploading to Kaggle
 
@@ -11,7 +11,8 @@ defaults:
 #             #
 ###############
 
-result_path: /kaggle/working/
+# result_path: /kaggle/working/
+result_path: submission/
 
 # Local paths
-raw_path: data/raw
+data_path: data/shrunken

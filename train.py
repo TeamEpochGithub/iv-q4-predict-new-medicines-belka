@@ -79,6 +79,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     first_time = time.time()
     train_data = pl.read_parquet(directory / "train.parquet")
     train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
+    train_data = train_data.sample(1000000)
 
     X, y = None, None
     # if not x_cache_exists:
@@ -112,7 +113,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     if len(test_indices) > 0:
         print_section_separator("Scoring")
         scorer = instantiate(cfg.scorer)
-        score = scorer(y[test_indices], predictions[test_indices])
+        score = scorer(y_new[test_indices], predictions)
         logger.info(f"Score: {score}")
 
         if wandb.run:

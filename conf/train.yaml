@@ -9,7 +9,9 @@ processed_path: data/processed
 
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
+  name: MAP
 splitter:
   _target_: src.splitter.bb_splitter.BBSplitter
   n_splits: 5
+  protein_level: true
 allow_multiple_instances: true

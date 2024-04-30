@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+    - _target_: src.modules.transformation.morgan.Morgan
 
 y_sys:
   steps: []

@@ -1,5 +1,7 @@
 """Module containing RandomForestClassfier class."""
 
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 from sklearn.ensemble import RandomForestClassifier
@@ -11,7 +13,7 @@ from src.typing.xdata import XData
 class RandomForestModel(VerboseTrainingBlock):
     """Class that implements the random forest classifier."""
 
-    def custom_train(self, x: XData, y: npt.NDArray[np.int8], train_indices: list[int], test_indices: list[int]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
+    def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a random forest classifier.
 
         :param x: x data
@@ -19,6 +21,8 @@ class RandomForestModel(VerboseTrainingBlock):
         :param train_indices: Train indices
         :param test_indices: Test indices
         """
+        train_indices = train_args.get("train_indices", [])
+        test_indices = train_args.get("test_indices", [])
         self.rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 
         X_train = x.molecule_smiles[train_indices]
@@ -42,7 +46,7 @@ class RandomForestModel(VerboseTrainingBlock):
         """
         x_pred = x.molecule_smiles
 
-        if self.rf_model is None:
+        if not hasattr(self, "rf_model"):
             self.rf_model = self.load_model(f"tm/{self.get_hash()}")
 
         return self.rf_model.predict_proba(x_pred)[:, 1]
