@@ -1,12 +1,13 @@
 #%%
-
 """Create the embeddings of the molecules using smiles2vec"""
-
+import numpy.typing as npt
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 
 class SmileEmbedding(VerboseTransformationBlock):
     """ Create the embeddings of the building blocks and the molecule."""
+
+    def compute_embedding(self, smile:str)-> npt.NDArray[np.float32]:
 
 
 #%%
@@ -20,8 +21,8 @@ from rdkit import Chem
 mol2vec_url = 'https://github.com/samoturk/mol2vec/raw/master/examples/models/model_300dim.pkl'
 model = Word2Vec.load(mol2vec_url)
 
-# Example SMILES
-smile = 'C#CCCC[C@H](Nc1nc(NCC2CCC(SC)CC2)nc(Nc2ccc(C=C)cc2)n1)C(=O)N[Dy]'
+
+smile = 'C#CCCC[C@H](Nc1nc(NCc2ccc(C)cc2N2CCCC2)nc(Nc2sc(Cl)cc2C(=O)OC)n1)C(=O)N[Dy]'
 molecule = Chem.MolFromSmiles(smile)
 
 sentence = MolSentence(mol2alt_sentence(molecule, 1))
@@ -32,6 +33,10 @@ unseen_vec = 'UNK'
 
 embeddings = [model.wv.get_vector(y) if y in set(sentence) & keys else unseen_vec for y in sentence]
 
-aa = [embedding for embedding in embeddings if embedding=='UNK']
+aa=0
+for embedding in embeddings:
+    if type(embedding) == str:
+        aa+=1
 
-print(embeddings)
+
+print(aa/len(embeddings))
