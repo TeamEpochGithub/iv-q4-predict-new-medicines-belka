@@ -18,7 +18,7 @@ class XData:
     """
 
     building_blocks: npt.NDArray[np.int16]
-    molecule_smiles: list[Any]
+    molecule_smiles: npt.NDArray[Any]
     bb1: list[Any]
     bb2: list[Any]
     bb3: list[Any]

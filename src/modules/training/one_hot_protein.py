@@ -1,7 +1,8 @@
 """Module that adds one hot encoding of protein to XData and flattens y."""
-from src.modules.training.verbose_training_block import VerboseTrainingBlock
-import numpy.typing as npt
 import numpy as np
+import numpy.typing as npt
+
+from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import XData
 
 
@@ -13,7 +14,8 @@ class OneHotProtein(VerboseTrainingBlock):
 
         :param x: XData
         :param y: The labels
-        :return: New XData and flattened labels"""
+        :return: New XData and flattened labels
+        """
         return self.add_protein_to_xdata(x), y.flatten()
 
     def custom_predict(self, x: XData) -> XData:
@@ -37,8 +39,8 @@ class OneHotProtein(VerboseTrainingBlock):
 
         # Check if molecule smiles are np arrays otherwise encoding cannot be appended
         if not isinstance(x.molecule_smiles[0], np.ndarray):
-            raise ValueError("Molecule data is not numpy arrays, cannot add protein encoding")
+            raise TypeError("Molecule data is not numpy arrays, cannot add protein encoding")
 
-        x.molecule_smiles = np.array([np.concatenate((protein, mol)) for mol, protein in zip(x.molecule_smiles, protein_onehot)])
+        x.molecule_smiles = np.array([np.concatenate((protein, mol)) for mol, protein in zip(x.molecule_smiles, protein_onehot, strict=False)])
 
         return x
