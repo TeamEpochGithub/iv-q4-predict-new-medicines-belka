@@ -1,6 +1,6 @@
 """Class to split by BB."""
 from dataclasses import dataclass
-
+import time
 import numpy as np
 import numpy.typing as npt
 
@@ -52,8 +52,10 @@ class BBSplitter:
             # np.isin(X.building_blocks[:, 0], split_bb1_values) & np.isin(X.building_blocks[:, 1], split_bb2_values) & np.isin(X.building_blocks[:, 2], split_bb3_values)]
             # X_train = X.building_blocks[
             # ~np.isin(X.building_blocks[:, 0], split_bb1_values) & ~np.isin(X.building_blocks[:, 1], split_bb2_values) & ~np.isin(X.building_blocks[:, 2], split_bb3_values)]
+            curr_time = time.time()
             X_train = np.where(np.isin(X.building_blocks[:, 0], split_bb1_values))[0]
             X_test = np.where(~np.isin(X.building_blocks[:, 0], split_bb1_values))[0]
             splits.append((X_train, X_test))
+            print(f"Time = {time.time() - curr_time}")
 
         return splits

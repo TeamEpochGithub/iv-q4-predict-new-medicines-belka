@@ -1,0 +1,22 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.one_hot_protein.OneHotProtein
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+
+label_sys:
+  steps:
+    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock

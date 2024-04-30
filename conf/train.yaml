@@ -1,14 +1,14 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: test # Add models or ensembles
+  - model: tutorial_notebook
   - wandb: train
 
 data_path: data/shrunken
 processed_path: data/processed
 
 scorer:
-  _target_: ??? # Add scorer
+  _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
 splitter:
   _target_: src.splitter.bb_splitter.BBSplitter
   n_splits: 5
