@@ -16,4 +16,4 @@ rdkit>=2023.9.0
 dask[dataframe,distributed]>=2024.4.0
 pandas>=2.2.0
 
--e ./
+# -e ./
