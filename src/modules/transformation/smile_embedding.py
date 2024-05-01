@@ -67,7 +67,8 @@ class SmileEmbedding(VerboseTransformationBlock):
 
         # perform the multiprocessing on the chunks
         with ProcessPoolExecutor() as executor:
-            futures = [executor.submit()]
+            futures = [executor.submit(self.embeddings, chunk) for chunk in chunks]
+            for future in tqdm(as_completed(futures), total=len(futures), desc=desc):
 
 
 
