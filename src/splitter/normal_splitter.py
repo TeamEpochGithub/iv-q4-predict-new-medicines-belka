@@ -6,6 +6,7 @@ import numpy.typing as npt
 from sklearn.model_selection import KFold
 
 from src.typing.xdata import XData
+from src.utils.logger import logger
 
 
 @dataclass
@@ -26,7 +27,9 @@ class NormalSplitter:
         :return: List of indices
         """
         splits = []
+        logger.debug(f"Starting splitting with size:{len(y)}")
         kf = KFold(n_splits=self.n_splits, random_state=None, shuffle=False)
+
         kf_splits = kf.split(X.building_blocks)
         for train_index, test_index in kf_splits:
             splits.append((train_index, test_index))
