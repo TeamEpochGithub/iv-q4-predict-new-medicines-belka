@@ -4,7 +4,9 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.morgan.Morgan
+    - _target_: src.modules.transformation.ecfp.ECFP
+      convert_molecules: true
+      bits: 512
 
 y_sys:
   steps: []

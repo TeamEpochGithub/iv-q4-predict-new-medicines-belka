@@ -1,6 +1,7 @@
 """Module that adds one hot encoding of protein to XData and flattens y."""
 import numpy as np
 import numpy.typing as npt
+from tqdm import tqdm
 
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import XData
@@ -43,7 +44,7 @@ class OneHotProtein(VerboseTrainingBlock):
         if x.molecule_ecfp is None:
             raise ValueError("Molecule ECFP representation does not exist.")
 
-        result = [np.concatenate((protein, mol)) for mol in x.molecule_ecfp for protein in protein_onehot]
+        result = [np.concatenate((protein, mol)) for mol in tqdm(x.molecule_ecfp, desc="Concatenating Protein to molecules") for protein in protein_onehot]
         x.molecule_ecfp = result
 
         return x

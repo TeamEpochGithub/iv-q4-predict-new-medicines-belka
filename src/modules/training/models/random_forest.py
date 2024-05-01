@@ -37,7 +37,9 @@ class RandomForestModel(VerboseTrainingBlock):
         X_test = np.array(x.molecule_ecfp)[test_indices]
         y_train = y[train_indices]
 
+        self.log_to_terminal(f"Training Random Forest with {self.n_estimators} estimators.")
         self.rf_model.fit(X_train, y_train)
+        self.log_to_terminal("Training completed.")
 
         y_pred_proba = self.rf_model.predict_proba(X_test)[:, 1]
 
