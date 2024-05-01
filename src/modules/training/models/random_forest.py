@@ -33,8 +33,8 @@ class RandomForestModel(VerboseTrainingBlock):
 
         self.rf_model = RandomForestClassifier(n_estimators=self.n_estimators, random_state=42, verbose=1, n_jobs=-1)
 
-        X_train = x.molecule_smiles[train_indices]
-        X_test = x.molecule_smiles[test_indices]
+        X_train = np.array(x.molecule_ecfp)[train_indices]
+        X_test = np.array(x.molecule_ecfp)[test_indices]
         y_train = y[train_indices]
 
         self.rf_model.fit(X_train, y_train)

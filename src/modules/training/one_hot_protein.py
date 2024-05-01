@@ -37,11 +37,13 @@ class OneHotProtein(VerboseTrainingBlock):
         sEH = np.array([0, 0, 1])
         protein_onehot = [BRD4, HSA, sEH]
 
-        # Check if molecule smiles are np arrays otherwise encoding cannot be appended
-        if not isinstance(x.molecule_smiles[0], np.ndarray):
-            raise TypeError("Molecule data is not numpy arrays, cannot add protein encoding")
+        x.retrieval = "ECFP"
 
-        result = [np.concatenate((protein, mol)) for mol in x.molecule_smiles for protein in protein_onehot]
-        x.molecule_smiles = np.array(result)
+        # Check if molecule_ecfp exists
+        if x.molecule_ecfp is None:
+            raise ValueError("Molecule ECFP representation does not exist.")
+
+        result = [np.concatenate((protein, mol)) for mol in x.molecule_ecfp for protein in protein_onehot]
+        x.molecule_ecfp = result
 
         return x

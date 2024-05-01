@@ -24,7 +24,7 @@ class BBSplitter:
         :param y: Labels
         :return: List of indices
         """
-        bb1_values = range(len(X.bb1))
+        bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles else [0]
 
         if len(X.building_blocks) != len(y):
             raise ValueError("X is not equal to y")
