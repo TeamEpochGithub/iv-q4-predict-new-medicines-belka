@@ -37,7 +37,7 @@ class SmileEmbedding(VerboseTransformationBlock):
         keys = set(self.model.key_to_index)
 
         features = []
-        for smile in tqdm(smiles):
+        for smile in smiles:
             # create the molecule from the smile format
             molecule = Chem.MolFromSmiles(smile)
 
