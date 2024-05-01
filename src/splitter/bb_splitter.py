@@ -24,13 +24,12 @@ class BBSplitter:
         :param y: Labels
         :return: List of indices
         """
-        bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles else [0]
-
         if len(X.building_blocks) != len(y):
             raise ValueError("X is not equal to y")
 
-        # bb2_values = range(len(X.bb2))
-        # bb3_values = range(len(X.bb3))
+        bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles else [0]
+        # bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles else [0]
+        # bb3_values = range(len(X.bb3_smiles)) if X.bb3_smiles else [0]
 
         # Split the data into n_splits
         # Create splits where bb1_values are divided into n_splits, bb2_values are divided into n_splits, and bb3_values are divided into n_splits
