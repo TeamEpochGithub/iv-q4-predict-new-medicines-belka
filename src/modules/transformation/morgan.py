@@ -31,6 +31,6 @@ class Morgan(VerboseTransformationBlock):
 
         tqdm.pandas()
         smile_df["smiles"] = smile_df["smiles"].progress_apply(generate_ecfp)
-        x.molecule_smiles = smile_df["smiles"].to_numpy()
+        x.molecule_ecfp = smile_df["smiles"].to_numpy()
 
         return x

@@ -79,10 +79,10 @@ def run_train_cfg(cfg: DictConfig) -> None:
     train_data = pl.read_parquet(directory / "train.parquet")
     train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
 
-    sample_size = 50000
+    sample_size = cfg.sample_size
     binds_df = train_data[(train_data["binds_BRD4"] == 1) | (train_data["binds_HSA"] == 1) | (train_data["binds_sEH"] == 1)]
     no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
-    train_data = pd.concat([binds_df.sample(sample_size // 2), no_binds_df.sample(sample_size // 2)])
+    train_data = pd.concat([binds_df.sample(sample_size // 2, random_state=42), no_binds_df.sample(sample_size // 2, random_state=42)])  # type: ignore[call-arg]
 
     X, y = None, None
     # if not x_cache_exists:

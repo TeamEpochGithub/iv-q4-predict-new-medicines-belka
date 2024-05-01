@@ -1,4 +1,4 @@
-"""Class to split by BB."""
+"""Class to split into train test."""
 from dataclasses import dataclass
 
 import numpy as np
@@ -11,13 +11,14 @@ from src.utils.logger import logger
 
 @dataclass
 class NormalSplitter:
-    """Class to split dataset by building blocks.
+    """Class to split dataset into train test.
 
     :param n_splits: Number of splits
+    :param indices_for_flattened_data: If data is flattened to per protein, indices should be processed
     """
 
     n_splits: int = 5
-    protein_level: bool = False
+    indices_for_flattened_data: bool = False
 
     def split(self, X: XData, y: npt.NDArray[np.int8]) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
         """Split X and y into train and test indices.
@@ -34,7 +35,7 @@ class NormalSplitter:
         for train_index, test_index in kf_splits:
             splits.append((train_index, test_index))
 
-        if self.protein_level:
+        if self.indices_for_flattened_data:
             new_splits = []
             for split in splits:
                 train_indices, test_indices = split
