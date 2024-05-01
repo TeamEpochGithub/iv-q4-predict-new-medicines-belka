@@ -41,6 +41,7 @@ def setup_train_args(
 
     train_sys = {
         "MainTrainer": main_trainer,
+        "RandomForestModel": main_trainer,
     }
 
     if save_model_preds:
@@ -59,11 +60,10 @@ def setup_train_args(
             "ModelPipeline": train_args,
         }
 
-    # raise NotImplementedError("setup_train_args is competition specific")
     return train_args
 
 
-def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline) -> dict[str, Any]:
+def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict[str, Any]) -> dict[str, Any]:
     """Set train arguments for pipeline.
 
     :param pipeline: Pipeline to receive arguments
@@ -78,6 +78,10 @@ def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline) -> dict[str, Any
     #     },
     # }
     pred_args: dict[str, Any] = {}
+
+    pred_args["x_sys"] = {
+        "cache_args": cache_args,
+    }
 
     if isinstance(pipeline, EnsemblePipeline):
         pred_args = {

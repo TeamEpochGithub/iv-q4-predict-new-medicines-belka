@@ -18,6 +18,7 @@ dependencies = [
     "pandas>=2.1.4",
     "tqdm>=4.66.1",
     "epochalyst==0.3.2",
+    "sckit-learn",
 
     # Visualizations
     "seaborn>=0.13.0",

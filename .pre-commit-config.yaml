@@ -55,4 +55,5 @@ repos:
           - randomname
           - coloredlogs
           - polars
+          - scikit-learn
         args: [ --disallow-any-generics, --disallow-untyped-defs, --disable-error-code=import-untyped]

@@ -28,5 +28,6 @@ class TrainConfig:
     scorer: Any
     wandb: WandBConfig
     splitter: Any
+    sample_size: int = 10000
     test_size: float = 0.2
     allow_multiple_instances: bool = False

@@ -37,10 +37,10 @@ def setup_train_x_data(directory: Path, train_data: pd.DataFrame) -> Any:  # noq
 
     return XData(
         smile_encoding,
-        molecule_smiles,
-        bb1=BBs_dict_reverse_1,
-        bb2=BBs_dict_reverse_2,
-        bb3=BBs_dict_reverse_3,
+        molecule_smiles=molecule_smiles,
+        bb1_smiles=BBs_dict_reverse_1,
+        bb2_smiles=BBs_dict_reverse_2,
+        bb3_smiles=BBs_dict_reverse_3,
     )
 
 
@@ -53,13 +53,35 @@ def setup_train_y_data(train_data: pd.DataFrame) -> Any:  # noqa: ANN401
     return train_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int8)
 
 
-def setup_inference_data() -> Any:  # noqa: ANN401
+def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any:  # noqa: ANN401
     """Create data for inference with pipeline.
 
     :param path: Usually raw path is a parameter
     :return: Inference data
     """
-    raise NotImplementedError("Setup inference data is competition specific, implement within competition repository, it might be the same as setup_train_x")
+    with open(directory / "test_dicts/BBs_dict_reverse_1_test.p", "br") as f1:
+        BBs_dict_reverse_1 = pickle.load(f1)  # noqa: S301 (Security issue)
+    with open(directory / "test_dicts/BBs_dict_reverse_2_test.p", "br") as f2:
+        BBs_dict_reverse_2 = pickle.load(f2)  # noqa: S301 (Security issue)
+    with open(directory / "test_dicts/BBs_dict_reverse_3_test.p", "br") as f3:
+        BBs_dict_reverse_3 = pickle.load(f3)  # noqa: S301 (Security issue)
+
+    # Turn to list
+    BBs_dict_reverse_1 = list(BBs_dict_reverse_1.values())
+    BBs_dict_reverse_2 = list(BBs_dict_reverse_2.values())
+    BBs_dict_reverse_3 = list(BBs_dict_reverse_3.values())
+
+    smile_encoding = inference_data[["buildingblock1_smiles", "buildingblock2_smiles", "buildingblock3_smiles"]].to_numpy(dtype=np.int16)
+
+    molecule_smiles = inference_data["molecule_smiles"].to_numpy()
+
+    return XData(
+        smile_encoding,
+        molecule_smiles,
+        bb1_smiles=BBs_dict_reverse_1,
+        bb2_smiles=BBs_dict_reverse_2,
+        bb3_smiles=BBs_dict_reverse_3,
+    )
 
 
 def setup_splitter_data() -> Any:  # noqa: ANN401

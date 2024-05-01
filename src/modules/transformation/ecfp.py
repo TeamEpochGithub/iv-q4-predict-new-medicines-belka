@@ -53,7 +53,7 @@ class ECFP(VerboseTransformationBlock):
             return ecfp
         return [{"smile": smile, "ecfp": ecfp} for smile, ecfp in zip(smile_array, ecfp, strict=False)]
 
-    def _convert_smile_array_parallel(self, smile_array: list[str], desc: str) -> list[ExplicitBitVect] | list[dict[str, ExplicitBitVect]]:
+    def _convert_smile_array_parallel(self, smile_array: list[str], desc: str) -> list[ExplicitBitVect]:
         """Convert a list of SMILES strings into their ECFP fingerprints using multiprocessing.
 
         :param smile_array: A list of SMILES strings.
@@ -72,11 +72,7 @@ class ECFP(VerboseTransformationBlock):
             for future in tqdm(as_completed(futures), total=len(futures), desc=desc):
                 results.extend(future.result())
 
-        if self.replace_array:
-            return results
-
-        flat_smiles = [smile for chunk in chunks for smile in chunk]
-        return [{"smile": smile, "ecfp": ecfp} for smile, ecfp in zip(flat_smiles, results, strict=False)]
+        return results
 
     def custom_transform(self, data: XData) -> XData:
         """Apply a custom transformation to the data.
@@ -86,12 +82,18 @@ class ECFP(VerboseTransformationBlock):
         :return: The transformed data
         """
         if self.convert_building_blocks:
-            data.bb1 = self._convert_smile_array(data.bb1, desc="Converting bb1")
-            data.bb2 = self._convert_smile_array(data.bb2, desc="Converting bb2")
-            data.bb3 = self._convert_smile_array(data.bb3, desc="Converting bb3")
+            if data.bb1_smiles is None or data.bb2_smiles is None or data.bb3_smiles is None:
+                raise ValueError("There is no SMILE information for at least on building block. Can't convert to ECFP")
+            data.bb1_ecfp = self._convert_smile_array(data.bb1_smiles, desc="Converting bb1")
+            data.bb2_ecfp = self._convert_smile_array(data.bb2_smiles, desc="Converting bb2")
+            data.bb3_ecfp = self._convert_smile_array(data.bb3_smiles, desc="Converting bb3")
 
         if self.convert_molecules:
-            data.molecule_smiles = self._convert_smile_array_parallel(data.molecule_smiles, desc="Converting molecules")
+            if data.molecule_smiles is None:
+                raise ValueError("There is no SMILE information for the molecules, can't convert to ECFP")
+            data.molecule_ecfp = self._convert_smile_array_parallel(data.molecule_smiles, desc="Converting molecules")
+            if self.replace_array:
+                data.molecule_smiles = None
 
         gc.collect()
         return data
