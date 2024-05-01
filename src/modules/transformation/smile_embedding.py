@@ -1,12 +1,10 @@
 
 """Create the embeddings of the molecules using smiles2vec"""
-import numpy.typing as npt
-
 import numpy as np
 from rdkit import Chem
 from src.typing.xdata import XData
 from gensim.models import Word2Vec
-from mol2vec.features import mol2alt_sentence, MolSentence, DfVec, sentences2vec
+from mol2vec.features import mol2alt_sentence, MolSentence
 from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
@@ -24,7 +22,7 @@ class SmileEmbedding(VerboseTransformationBlock):
 
     model_path: str = 'https://github.com/samoturk/mol2vec/raw/master/examples/models/model_300dim.pkl'
     unseen: str = "UNK"
-    molecule: bool = True
+    molecule: bool = False
     building: bool = True
     chunk_size: int = 10000
 
@@ -58,22 +56,24 @@ class SmileEmbedding(VerboseTransformationBlock):
 
             features.append(np.array(embeddings))
 
+
         return features
 
-    def parallel_embeddings(self,smiles:list[str]) -> list:
+    def parallel_embeddings(self,smiles:list[str], desc: str) -> list:
 
         # divide the smiles molecules into chunks
         chunks = [smiles[i : i + self.chunk_size] for i in range(0, len(smiles), self.chunk_size)]
 
-        # perform the multiprocessing on the chunks
+        # initialize the multiprocessing with the chunks
+        results = []
         with ProcessPoolExecutor() as executor:
             futures = [executor.submit(self.embeddings, chunk) for chunk in chunks]
+
+            # perform the multiprocessing on the chunks
             for future in tqdm(as_completed(futures), total=len(futures), desc=desc):
+                results.extend(future.result())
 
-
-
-
-
+        return results
 
 
     def custom_transform(self, data: XData) -> XData:
@@ -86,14 +86,16 @@ class SmileEmbedding(VerboseTransformationBlock):
         self.unseen_vec = self.model.get_vector(self.unseen)
         self.keys = set(self.model.key_to_index)
 
+        desc = "compute the embeddings of the molecule"
+
         # compute the embeddings for each molecule
         if self.molecule:
-            data.molecule_smiles = self.multi_process(data.molecule_smiles)
-
+            data.molecule_smiles = self.parallel_embeddings(data.molecule_smiles,desc)
         # compute the embeddings for each block
         if self.building:
-            data.bb1 = self.multi_process(data.bb1)
-            data.bb2 = self.multi_process(data.bb2)
-            data.bb3 = self.multi_process(data.bb3)
+            data.bb1 = self.parallel_embeddings(data.bb1,desc)
+            data.bb2 = self.parallel_embeddings(data.bb2,desc)
+            data.bb3 = self.parallel_embeddings(data.bb3,desc)
+
 
         return data
