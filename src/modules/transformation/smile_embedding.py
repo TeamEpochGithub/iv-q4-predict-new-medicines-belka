@@ -10,10 +10,8 @@ from mol2vec.features import mol2alt_sentence, MolSentence, DfVec, sentences2vec
 from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
-from dask.distributed import Client
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
-import dask
-import dask.bag as db
 
 
 class SmileEmbedding(VerboseTransformationBlock):
@@ -21,80 +19,59 @@ class SmileEmbedding(VerboseTransformationBlock):
 
     param model_path: the path of the pre-trained mol2vec
     param unseen: the token of the unseen fingerprints
-    param molecule: """
+    param molecule:
+    param building"""
 
     model_path: str = 'https://github.com/samoturk/mol2vec/raw/master/examples/models/model_300dim.pkl'
     unseen: str = "UNK"
     molecule: bool = True
-    building_block: bool = True
+    building: bool = True
+    chunk_size: int = 10000
 
-    # def embeddings(self, smiles:list[str])-> list:
-    #     """Compute the embeddings of the molecules or blocks.
-    #
-    #     param smile: list containing the molecules as strings
-    #     return: list containing the embeddings of the atoms"""
-    #
-    #     # extract the embedding of the unseen token
-    #     unseen_vec = self.model.get_vector(self.unseen)
-    #     keys = set(self.model.key_to_index)
-    #
-    #
-    #     for smile in tqdm(smiles):
-    #         # create the molecule from the smile format
-    #         molecule = Chem.MolFromSmiles(smile)
-    #
-    #         # create a sentence containing the substructures
-    #         sentence = MolSentence(mol2alt_sentence(molecule, 1))
-    #
-    #         # compute the embeddings of each structure
-    #         embeddings = []
-    #         for structure in sentence:
-    #
-    #             # check whether the structure exists
-    #             if structure in set(sentence) & keys:
-    #                 embeddings.append(self.model.get_vector(structure))
-    #             else:
-    #                 embeddings.append(unseen_vec)
-    #
-    #         features.append(np.array(embeddings))
-    #
-    #     return features
+    def embeddings(self, smiles:list[str])-> list:
+        """Compute the embeddings of the molecules or blocks.
 
-    def embeddings(self, smile:str) -> npt.NDArray[np.float32]:
-        """Compute the embeddings of a molecule or block
+        param smile: list containing the molecules as strings
+        return: list containing the embeddings of the atoms"""
 
-        param smile: the molecule as the smile format
-        return: a numpy array containing the embeddings"""
+        # extract the embedding of the unseen token
+        unseen_vec = self.model.get_vector(self.unseen)
+        keys = set(self.model.key_to_index)
 
-        # create the molecule from the smile format
-        molecule = Chem.MolFromSmiles(smile)
+        features = []
+        for smile in tqdm(smiles):
+            # create the molecule from the smile format
+            molecule = Chem.MolFromSmiles(smile)
 
-        # create a sentence containing the substructures
-        sentence = MolSentence(mol2alt_sentence(molecule, 1))
+            # create a sentence containing the substructures
+            sentence = MolSentence(mol2alt_sentence(molecule, 1))
 
-        # compute the embeddings of each structure
-        embeddings = []
-        for structure in sentence:
-            # check whether the structure exists
-            if structure in set(sentence) & self.keys:
-                embeddings.append(self.model.get_vector(structure))
-            else:
-                embeddings.append(self.unseen_vec)
+            # compute the embeddings of each structure
+            embeddings = []
+            for structure in sentence:
 
-        return np.array(embeddings)
+                # check whether the structure exists
+                if structure in set(sentence) & keys:
+                    embeddings.append(self.model.get_vector(structure))
+                else:
+                    embeddings.append(unseen_vec)
 
-    def multi_process(self, smiles:list[str]) -> list:
-        # Initialize a Dask client
-        client = Client()
+            features.append(np.array(embeddings))
 
-        b = db.from_sequence(smiles)
-        embedding = b.map(self.embeddings)
-        embedding = embedding.compute()
+        return features
 
-        # Close the client if not needed anymore
-        client.close()
+    def parallel_embeddings(self,smiles:list[str]) -> list:
 
-        return embedding
+        # divide the smiles molecules into chunks
+        chunks = [smiles[i : i + self.chunk_size] for i in range(0, len(smiles), self.chunk_size)]
+
+        # perform the multiprocessing on the chunks
+        with ProcessPoolExecutor() as executor:
+            futures = [executor.submit()]
+
+
+
+
 
 
 
@@ -113,7 +90,7 @@ class SmileEmbedding(VerboseTransformationBlock):
             data.molecule_smiles = self.multi_process(data.molecule_smiles)
 
         # compute the embeddings for each block
-        if self.building_block:
+        if self.building:
             data.bb1 = self.multi_process(data.bb1)
             data.bb2 = self.multi_process(data.bb2)
             data.bb3 = self.multi_process(data.bb3)
