@@ -1,15 +1,20 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: test_embeddings # Add models or ensembles
+  - model: test # Add models or ensembles
   - wandb: train
 
 data_path: data/shrunken
 processed_path: data/processed
 
 scorer:
-  _target_: ??? # Add scorer
+  _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
+  name: MAP
 splitter:
+  # _target_: src.splitter.normal_splitter.NormalSplitter
   _target_: src.splitter.bb_splitter.BBSplitter
   n_splits: 5
+  indices_for_flattened_data: true
+  bb_to_split_by: [1,0,0]
+sample_size: 50000
 allow_multiple_instances: true

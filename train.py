@@ -1,12 +1,12 @@
 """Train.py is the main script for training the model and will take in the raw data and output a trained model."""
 import gc
 import os
-import time
 import warnings
 from contextlib import nullcontext
 from pathlib import Path
 
 import hydra
+import pandas as pd
 import polars as pl
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
@@ -76,18 +76,21 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
     directory = Path(cfg.data_path)
 
-    first_time = time.time()
     train_data = pl.read_parquet(directory / "train.parquet")
     train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
 
+    sample_size = cfg.sample_size
+    binds_df = train_data[(train_data["binds_BRD4"] == 1) | (train_data["binds_HSA"] == 1) | (train_data["binds_sEH"] == 1)]
+    no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
+    train_data = pd.concat([binds_df.sample(sample_size // 2, random_state=42), no_binds_df.sample(sample_size // 2, random_state=42)])  # type: ignore[call-arg]
+
     X, y = None, None
-    #if not x_cache_exists:
+    # if not x_cache_exists:
     X = setup_train_x_data(directory, train_data)
 
     y = setup_train_y_data(train_data)
     del train_data
     gc.collect()
-    logger.info(f"Total time:{time.time() - first_time}")
 
     # For this simple splitter, we only need y.
     if cfg.test_size == 0:
@@ -112,7 +115,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     if len(test_indices) > 0:
         print_section_separator("Scoring")
         scorer = instantiate(cfg.scorer)
-        score = scorer(y[test_indices], predictions[test_indices])
+        score = scorer(y_new[test_indices], predictions)
         logger.info(f"Score: {score}")
 
         if wandb.run:
