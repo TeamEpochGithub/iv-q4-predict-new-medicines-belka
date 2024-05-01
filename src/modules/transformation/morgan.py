@@ -1,27 +1,36 @@
+"""Inefficient block for morgan fingerprints."""
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+from rdkit import Chem  # type: ignore[import-not-found]
+from rdkit.Chem import AllChem  # type: ignore[import-not-found]
+from tqdm import tqdm
+
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
-import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import AllChem
-import numpy as np
-from tqdm import tqdm
 
 
 class Morgan(VerboseTransformationBlock):
+    """Class for creating Morgan fingerprints."""
 
     def custom_transform(self, x: XData) -> XData:
-        df = pd.DataFrame({'smiles': x.molecule_smiles})
+        """Transform XData into molecules with fingerprints.
 
-        df['smiles'] = df['smiles'].apply(Chem.MolFromSmiles)
+        :param x: XData
+        :return: Transformed XData
+        """
+        smile_df = pd.DataFrame({"smiles": x.molecule_smiles})
+
+        smile_df["smiles"] = smile_df["smiles"].apply(Chem.MolFromSmiles)
 
         # Generate ECFPs
-        def generate_ecfp(molecule, radius=2, bits=1024):
+        def generate_ecfp(molecule: str, radius: int = 2, bits: int = 1024) -> npt.NDArray[np.int8]:
             if molecule is None:
                 return None
             return np.array(AllChem.GetMorganFingerprintAsBitVect(molecule, radius, nBits=bits))
 
         tqdm.pandas()
-        df['smiles'] = df['smiles'].progress_apply(generate_ecfp)
-        x.molecule_smiles = df['smiles'].to_numpy()
+        smile_df["smiles"] = smile_df["smiles"].progress_apply(generate_ecfp)
+        x.molecule_smiles = smile_df["smiles"].to_numpy()
 
         return x

@@ -57,7 +57,6 @@ class BBSplitter:
             X_test = np.where(np.isin(X.building_blocks[:, 0], split_bb1_values))[0]
             splits.append((X_train, X_test))
 
-
         if self.protein_level:
             # If protein level is true then the for each index in the split, the split is divided into 3 splits based on the protein
             # This means if train indices are [1, 3, 5] it should become [1, 2, 3, 10, 11, 12, 20, 21, 22] if the protein level is true
@@ -76,12 +75,8 @@ class BBSplitter:
                     new_train_indices.extend([index * 3 + i for i in range(3)])
                 for index in test_indices:
                     new_test_indices.extend([index * 3 + i for i in range(3)])
-                
+
                 new_splits.append((np.array(new_train_indices), np.array(new_test_indices)))
             splits = new_splits
-
-
-
-
 
         return splits

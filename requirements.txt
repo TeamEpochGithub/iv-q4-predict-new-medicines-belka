@@ -12,5 +12,8 @@ randomname==0.2.1
 tqdm==4.66.2
 wandb>=0.16.4
 polars==0.20.22
+rdkit>=2023.9.0
+dask[dataframe,distributed]>=2024.4.0
+pandas>=2.2.0
 
 -e ./

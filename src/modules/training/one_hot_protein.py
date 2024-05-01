@@ -41,10 +41,7 @@ class OneHotProtein(VerboseTrainingBlock):
         if not isinstance(x.molecule_smiles[0], np.ndarray):
             raise TypeError("Molecule data is not numpy arrays, cannot add protein encoding")
 
-        result = []
-        for mol in x.molecule_smiles:
-            for protein in protein_onehot:
-                result.append(np.concatenate((protein, mol)))
+        result = [np.concatenate((protein, mol)) for mol in x.molecule_smiles for protein in protein_onehot]
         x.molecule_smiles = np.array(result)
 
         return x

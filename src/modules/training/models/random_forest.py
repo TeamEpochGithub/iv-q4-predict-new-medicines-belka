@@ -1,5 +1,6 @@
 """Module containing RandomForestClassfier class."""
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -10,8 +11,11 @@ from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import XData
 
 
+@dataclass
 class RandomForestModel(VerboseTrainingBlock):
     """Class that implements the random forest classifier."""
+
+    n_estimators: int = 100
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a random forest classifier.
@@ -21,9 +25,13 @@ class RandomForestModel(VerboseTrainingBlock):
         :param train_indices: Train indices
         :param test_indices: Test indices
         """
-        train_indices = train_args.get("train_indices", [])
-        test_indices = train_args.get("test_indices", [])
-        self.rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+        train_indices: list[int] | dict[str, Any] = train_args.get("train_indices", [])
+        test_indices: list[int] | dict[str, Any] = train_args.get("test_indices", [])
+
+        if isinstance(train_indices, dict) or isinstance(test_indices, dict):
+            raise TypeError("Wrong input for train/test indices.")
+
+        self.rf_model = RandomForestClassifier(n_estimators=self.n_estimators, random_state=42, verbose=1, n_jobs=-1)
 
         X_train = x.molecule_smiles[train_indices]
         X_test = x.molecule_smiles[test_indices]

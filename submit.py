@@ -1,8 +1,8 @@
 """Submit.py is the main script for running inference on the test set and creating a submission."""
 import os
+import time
 import warnings
 from pathlib import Path
-import time
 
 import hydra
 import pandas as pd
@@ -65,10 +65,10 @@ def run_submit(cfg: DictConfig) -> None:
     pred_args = setup_pred_args(pipeline=model_pipeline, cache_args=cache_args)
     predictions = model_pipeline.predict(X, **pred_args)
 
-    predictions_df = pd.DataFrame(predictions.reshape(3, len(predictions) // 3).T, columns=["binds_BRD4", "binds_HSA", "binds_sEH"])
-    predictions_df['is_BRD4'] = inference_data['is_BRD4']
-    predictions_df['is_HSA'] = inference_data['is_HSA']
-    predictions_df['is_sEH'] = inference_data['is_sEH']
+    predictions_df = pd.DataFrame(predictions.reshape(len(predictions) // 3, 3), columns=["binds_BRD4", "binds_HSA", "binds_sEH"])
+    predictions_df["is_BRD4"] = inference_data["is_BRD4"]
+    predictions_df["is_HSA"] = inference_data["is_HSA"]
+    predictions_df["is_sEH"] = inference_data["is_sEH"]
 
     # Map predictions to ids from test data
     original_test = pd.read_parquet("data/raw/test.parquet")
@@ -91,11 +91,12 @@ def run_submit(cfg: DictConfig) -> None:
             final_predictions.append(predictions_df.iloc[i].binds_HSA)
         if predictions_df.iloc[i].is_sEH:
             final_predictions.append(predictions_df.iloc[i].binds_sEH)
-    
-    final_predictions_df = pd.DataFrame({'id': original_ids, 'binds': final_predictions})
+
+    final_predictions_df = pd.DataFrame({"id": original_ids, "binds": final_predictions})
     final_predictions_df.to_csv(directory / "submission.csv", index=False)
 
     logger.info(f"Submission saved to {directory / 'submission.csv'}")
+
 
 if __name__ == "__main__":
     run_submit()

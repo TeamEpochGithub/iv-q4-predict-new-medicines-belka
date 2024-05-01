@@ -11,7 +11,7 @@ scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
 splitter:
-  _target_: src.splitter.bb_splitter.BBSplitter
+  _target_: src.splitter.normal_splitter.NormalSplitter
   n_splits: 5
   protein_level: true
 allow_multiple_instances: true
