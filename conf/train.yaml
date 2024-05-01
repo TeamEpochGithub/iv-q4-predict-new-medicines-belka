@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: test # Add models or ensembles
+  - model: test_embeddings # Add models or ensembles
   - wandb: train
 
 data_path: data/shrunken

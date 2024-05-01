@@ -71,7 +71,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     }
 
     # Read the data if required and split it in X, y
-    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
+    # x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
     # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
 
     directory = Path(cfg.data_path)
@@ -81,8 +81,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
 
     X, y = None, None
-    if not x_cache_exists:
-        X = setup_train_x_data(directory, train_data)
+    #if not x_cache_exists:
+    X = setup_train_x_data(directory, train_data)
 
     y = setup_train_y_data(train_data)
     del train_data

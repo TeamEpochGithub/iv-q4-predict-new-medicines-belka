@@ -59,7 +59,7 @@ def setup_train_args(
             "ModelPipeline": train_args,
         }
 
-    raise NotImplementedError("setup_train_args is competition specific")
+    return train_args
 
 
 def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline) -> dict[str, Any]:
