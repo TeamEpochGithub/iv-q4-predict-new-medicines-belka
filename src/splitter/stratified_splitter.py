@@ -1,17 +1,17 @@
-"""Class to split into train test."""
+"""Class to split into stratified multi label train test."""
 from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
-from sklearn.model_selection import KFold
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 from src.typing.xdata import XData
 from src.utils.logger import logger
 
 
 @dataclass
-class NormalSplitter:
-    """Class to split dataset into train test.
+class StratifiedSplitter:
+    """Class to split dataset into stratified multi label split.
 
     :param n_splits: Number of splits
     :param indices_for_flattened_data: If data is flattened to per protein, indices should be processed
@@ -29,7 +29,7 @@ class NormalSplitter:
         """
         splits = []
         logger.debug(f"Starting splitting with size:{len(y)}")
-        kf = KFold(n_splits=self.n_splits, random_state=None, shuffle=False)
+        kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 
         kf_splits = kf.split(X.building_blocks, y)
         for train_index, test_index in kf_splits:
