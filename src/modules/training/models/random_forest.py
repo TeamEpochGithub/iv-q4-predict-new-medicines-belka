@@ -13,7 +13,10 @@ from src.typing.xdata import XData
 
 @dataclass
 class RandomForestModel(VerboseTrainingBlock):
-    """Class that implements the random forest classifier."""
+    """Class that implements the random forest classifier.
+
+    :param n_estimators: Number of estimators
+    """
 
     n_estimators: int = 100
 
@@ -54,7 +57,7 @@ class RandomForestModel(VerboseTrainingBlock):
         :param x: XData
         :return: Predictions
         """
-        x_pred = x.molecule_smiles
+        x_pred = x.molecule_ecfp
 
         if not hasattr(self, "rf_model"):
             self.rf_model = self.load_model(f"tm/{self.get_hash()}")

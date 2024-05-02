@@ -77,7 +77,7 @@ def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any: 
 
     return XData(
         smile_encoding,
-        molecule_smiles,
+        molecule_smiles=molecule_smiles,
         bb1_smiles=BBs_dict_reverse_1,
         bb2_smiles=BBs_dict_reverse_2,
         bb3_smiles=BBs_dict_reverse_3,

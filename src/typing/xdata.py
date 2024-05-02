@@ -73,3 +73,7 @@ class XData:
         :return: Length of data
         """
         return len(self.building_blocks)
+
+    def __repr__(self) -> str:
+        """Return the representation of the data."""
+        return ""

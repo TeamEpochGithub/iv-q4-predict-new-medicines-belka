@@ -17,4 +17,7 @@ dask[dataframe,distributed]>=2024.4.0
 pandas>=2.2.0
 gensim==4.3.2
 mol2vec==0.2.2
+catboost>=1.2.0
+lightgbm>=4.3.0
+xgboost>=2.0.0
 # -e ./
