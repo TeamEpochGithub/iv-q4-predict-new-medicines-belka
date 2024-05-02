@@ -33,6 +33,12 @@ class XData:
     bb2_ecfp: list[ExplicitBitVect] | None = None
     bb3_ecfp: list[ExplicitBitVect] | None = None
 
+    # Embedding
+    molecule_embedding: list[npt.NDArray[np.float32]] | None = None
+    bb1_embedding: list[npt.NDArray[np.float32]] | None = None
+    bb2_embedding: list[npt.NDArray[np.float32]] | None = None
+    bb3_embedding: list[npt.NDArray[np.float32]] | None = None
+
     def __getitem__(self, index: int) -> npt.NDArray[Any]:
         """Get item from the data.
 
@@ -46,11 +52,18 @@ class XData:
                 raise ValueError("Missing SMILE representation of building_blocks and molecule")
             mol_smile = self.molecule_smiles[index]
             return np.array([self.bb1_smiles[item[0]], self.bb2_smiles[item[1]], self.bb3_smiles[item[2]], mol_smile])
+
         if self.retrieval == "ECFP":
             if not self.molecule_ecfp or not self.bb1_ecfp or not self.bb2_ecfp or not self.bb3_ecfp:
                 raise ValueError("Missing ECFP representation of building_blocks and molecule")
             mol_smile = self.molecule_ecfp[index]
             return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]], mol_smile])
+
+        if self.retrieval == "Embedding":
+            if not self.molecule_embedding or not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
+                raise ValueError("Missing embedding representation of building_blocks and molecule")
+            mol_embedding = self.molecule_embedding[index]
+            return np.array([self.bb1_embedding[item[0]], self.bb2_embedding[item[1]], self.bb3_embedding[item[2]], mol_embedding])
 
         return np.array([])
 
