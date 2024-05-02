@@ -33,12 +33,11 @@ class XData:
     bb2_ecfp: list[ExplicitBitVect] | None = None
     bb3_ecfp: list[ExplicitBitVect] | None = None
 
-    # embedding
+    # Embedding
     molecule_embedding: list[npt.NDArray[np.float32]] | None = None
     bb1_embedding: list[npt.NDArray[np.float32]] | None = None
     bb2_embedding: list[npt.NDArray[np.float32]] | None = None
     bb3_embedding: list[npt.NDArray[np.float32]] | None = None
-
 
     def __getitem__(self, index: int) -> npt.NDArray[Any]:
         """Get item from the data.
