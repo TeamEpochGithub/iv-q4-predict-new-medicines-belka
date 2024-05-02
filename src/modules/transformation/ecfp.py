@@ -11,6 +11,9 @@ from tqdm import tqdm
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
 
+NUM_FUTURES = 100
+MIN_CHUNK_SIZE = 1000
+
 
 @dataclass
 class ECFP(VerboseTransformationBlock):
@@ -19,7 +22,6 @@ class ECFP(VerboseTransformationBlock):
     :param convert_building_blocks: Whether to convert the building blocks
     :param convert_molecules: Whether to convert the molecules
     :param replace_array: Whether to replace the array with the ECFP fingerprints
-    :param chunk_size: The size of the chunks to process in parallel
 
     :param bits: The number of bits in the ECFP
     :param radius: The radius of the ECFP
@@ -29,7 +31,6 @@ class ECFP(VerboseTransformationBlock):
     convert_building_blocks: bool = False
     convert_molecules: bool = False
     replace_array: bool = False
-    chunk_size: int = 100000
 
     bits: int = 128
     radius: int = 2
@@ -64,10 +65,13 @@ class ECFP(VerboseTransformationBlock):
             self.log_to_warning("Not a SMILE (string) array. Skipping conversion.")
             return []
 
-        chunks = [smile_array[i : i + self.chunk_size] for i in range(0, len(smile_array), self.chunk_size)]
+        chunk_size = len(smile_array) // NUM_FUTURES
+        chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
+        chunks = [smile_array[i : i + chunk_size] for i in range(0, len(smile_array), chunk_size)]
 
         results = []
         with ProcessPoolExecutor() as executor:
+            self.log_to_terminal("Creating futures for ECFP conversion.")
             futures = [executor.submit(self._convert_smile, chunk, radius=self.radius, bits=self.bits, use_features=self.use_features) for chunk in chunks]
             for future in tqdm(as_completed(futures), total=len(futures), desc=desc):
                 results.extend(future.result())

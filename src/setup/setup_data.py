@@ -9,8 +9,31 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from src.typing.xdata import XData
+
+
+def sample_data(train_data: pd.DataFrame, sample_size: int) -> pd.DataFrame:
+    """Sample the data.
+
+    :param train_data: Training data
+    :param sample_size: Size of the sample
+    :return: Sampled data
+    """
+    binds_df = train_data[(train_data["binds_BRD4"] == 1) | (train_data["binds_HSA"] == 1) | (train_data["binds_sEH"] == 1)]
+    no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
+    return pd.concat([binds_df.sample(sample_size // 2, random_state=42), no_binds_df.sample(sample_size // 2, random_state=42)])  # type: ignore[call-arg]
+
+
+def read_train_data(directory: Path) -> pd.DataFrame:
+    """Read the training data.
+
+    :param path: Usually raw path is a parameter
+    :return: Training data
+    """
+    train_data = pl.read_parquet(directory / "train.parquet")
+    return train_data.to_pandas(use_pyarrow_extension_array=True)
 
 
 def setup_train_x_data(directory: Path, train_data: pd.DataFrame) -> Any:  # noqa: ANN401
