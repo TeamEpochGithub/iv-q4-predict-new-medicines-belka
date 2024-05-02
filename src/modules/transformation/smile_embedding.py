@@ -102,7 +102,7 @@ class SmileEmbedding(VerboseTransformationBlock):
             data.molecule_embedding = self.parallel_embeddings(data.molecule_smiles, desc)
 
         # Compute the embeddings for each block
-        if self.building and data.bb1_smiles is not None:
+        if self.building and data.bb1_smiles is not None and data.bb2_smiles is not None and data.bb3_smiles is not None:
             data.bb1_embedding = self.parallel_embeddings(data.bb1_smiles, desc)
             data.bb2_embedding = self.parallel_embeddings(data.bb2_smiles, desc)
             data.bb3_embedding = self.parallel_embeddings(data.bb3_smiles, desc)

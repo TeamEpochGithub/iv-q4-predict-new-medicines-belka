@@ -62,8 +62,8 @@ class XData:
         if self.retrieval == "Embedding":
             if not self.molecule_embedding or not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
                 raise ValueError("Missing embedding representation of building_blocks and molecule")
-            mol_smile = self.molecule_embedding[index]
-            return np.array([self.bb1_embedding[item[0]], self.bb2_embedding[item[1]], self.bb3_embedding[item[2]], mol_smile])
+            mol_embedding = self.molecule_embedding[index]
+            return np.array([self.bb1_embedding[item[0]], self.bb2_embedding[item[1]], self.bb3_embedding[item[2]], mol_embedding])
 
         return np.array([])
 
