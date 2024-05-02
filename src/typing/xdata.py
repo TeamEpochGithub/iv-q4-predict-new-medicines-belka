@@ -46,11 +46,15 @@ class XData:
                 raise ValueError("Missing SMILE representation of building_blocks and molecule")
             mol_smile = self.molecule_smiles[index]
             return np.array([self.bb1_smiles[item[0]], self.bb2_smiles[item[1]], self.bb3_smiles[item[2]], mol_smile])
-        if self.retrieval == "ECFP":
+        elif self.retrieval == "ECFP":
             if not self.molecule_ecfp or not self.bb1_ecfp or not self.bb2_ecfp or not self.bb3_ecfp:
                 raise ValueError("Missing ECFP representation of building_blocks and molecule")
             mol_smile = self.molecule_ecfp[index]
             return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]], mol_smile])
+        elif self.retrieval == "ECFP_BB":
+            if not self.bb1_ecfp or not self.bb2_ecfp or not self.bb3_ecfp:
+                raise ValueError("Missing ECFP representation of building_blocks")
+            return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]]])
 
         return np.array([])
 
