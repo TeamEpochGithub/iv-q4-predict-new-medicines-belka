@@ -40,7 +40,11 @@ class OneHotProteinBB(VerboseTrainingBlock):
 
         x.retrieval = "ECFP_BB"
 
-        result = [np.concatenate((protein, x[i][0], x[i][1], x[i][2])) for i in tqdm(range(len(x.building_blocks)), desc="Concatenating Protein to building_blocks") for protein in protein_onehot]
+        result = [
+            np.concatenate((protein, x[i][0], x[i][1], x[i][2]))
+            for i in tqdm(range(len(x.building_blocks)), desc="Concatenating Protein to building_blocks")
+            for protein in protein_onehot
+        ]
         x.molecule_ecfp = result
 
         return x
