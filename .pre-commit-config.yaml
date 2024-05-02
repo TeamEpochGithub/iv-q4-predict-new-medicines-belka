@@ -59,4 +59,7 @@ repos:
           - xgboost
           - lightgbm
           - catboost
+          - gensim
+          - mol2vec
+          - iterative-stratification
         args: [ --disallow-any-generics, --disallow-untyped-defs, --disable-error-code=import-untyped]

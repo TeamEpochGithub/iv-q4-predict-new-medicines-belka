@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: tutorial_notebook
+  - model: bdtm
 
 # Use this when uploading to Kaggle
 

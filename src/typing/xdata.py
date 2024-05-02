@@ -53,12 +53,18 @@ class XData:
             mol_smile = self.molecule_smiles[index]
             return np.array([self.bb1_smiles[item[0]], self.bb2_smiles[item[1]], self.bb3_smiles[item[2]], mol_smile])
 
+        # ECFP Retrievals
         if self.retrieval == "ECFP":
             if not self.molecule_ecfp or not self.bb1_ecfp or not self.bb2_ecfp or not self.bb3_ecfp:
                 raise ValueError("Missing ECFP representation of building_blocks and molecule")
-            mol_smile = self.molecule_ecfp[index]
-            return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]], mol_smile])
+            mol_ecfp = self.molecule_ecfp[index]
+            return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]], mol_ecfp])
+        if self.retrieval == "ECFP_BB":
+            if not self.bb1_ecfp or not self.bb2_ecfp or not self.bb3_ecfp:
+                raise ValueError("Missing ECFP representation of building_blocks")
+            return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]]])
 
+        # Embedding Retrievals
         if self.retrieval == "Embedding":
             if not self.molecule_embedding or not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
                 raise ValueError("Missing embedding representation of building_blocks and molecule")

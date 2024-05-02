@@ -1,5 +1,5 @@
 """Module that adds one hot encoding of protein to XData and flattens y."""
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from typing import Any
 
 import numpy as np
@@ -72,7 +72,7 @@ class OneHotProtein(VerboseTrainingBlock):
         with ProcessPoolExecutor() as executor:
             self.log_to_terminal("Creating futures for One Hot Protein concatenation.")
             futures = [executor.submit(self._concatenate_protein, chunk) for chunk in chunks]
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Concatenating Protein to molecules"):
+            for future in tqdm(futures, total=len(futures), desc="Concatenating Protein to molecules"):
                 result.extend(future.result())
 
         x.molecule_ecfp = result
