@@ -63,9 +63,11 @@ class StratifiedSplitter:
                 test_percentage_seh = 100 * len(y[:, 2][test_indices][y[:, 2][test_indices] == 1]) / len(y[test_indices])
 
                 logger.info(
-                    f"Split: {train_percentage_brd4}-{test_percentage_brd4}% BRD4 binds, {train_percentage_hsa}-{test_percentage_hsa}% HSA binds, {train_percentage_seh}-{test_percentage_seh}% sEH binds",
+                    (
+                        f"Split: {train_percentage_brd4}-{test_percentage_brd4}% BRD4 binds,{train_percentage_hsa}-{test_percentage_hsa}% HSA binds"
+                        f"{train_percentage_seh}-{test_percentage_seh}% sEH binds"
+                    ),
                 )
-
             splits = new_splits
 
         return splits

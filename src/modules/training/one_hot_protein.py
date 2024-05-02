@@ -1,5 +1,5 @@
 """Module that adds one hot encoding of protein to XData and flattens y."""
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from typing import Any
 
 import numpy as np

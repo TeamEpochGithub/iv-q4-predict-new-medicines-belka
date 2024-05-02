@@ -1,6 +1,6 @@
 """Converts the molcule building blocks into Extended Connectivity Fingerprints (ECFP) using RDKit."""
 import gc
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 
 from rdkit import Chem  # type: ignore[import-not-found]
