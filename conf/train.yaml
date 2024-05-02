@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: tutorial_notebook # Add models or ensembles
+  - model: cnn1d
   - wandb: train
 
 data_path: data/shrunken
@@ -16,5 +16,5 @@ splitter:
   n_splits: 5
   indices_for_flattened_data: true
   # bb_to_split_by: [1,0,0]
-sample_size: 500_000
+sample_size: 10_000
 allow_multiple_instances: true
