@@ -13,7 +13,10 @@ from src.typing.xdata import XData
 
 @dataclass
 class RandomForestModel(VerboseTrainingBlock):
-    """Class that implements the random forest classifier."""
+    """Class that implements the random forest classifier.
+
+    :param n_estimators: Number of estimators
+    """
 
     n_estimators: int = 100
 
