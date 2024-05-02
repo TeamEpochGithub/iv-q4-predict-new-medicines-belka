@@ -18,7 +18,7 @@ class Linear(nn.Module):
         n_classes: number of classes.
     """
 
-    def __init__(self, in_channels: int, out_channels: int) -> None:  # noqa: FBT001, FBT002
+    def __init__(self, in_channels: int, out_channels: int) -> None:
         """Initialize the linear model.
 
         :param in_channels: The number of input channels.

@@ -1,17 +1,17 @@
 """Module for example training block."""
 from dataclasses import dataclass
+from typing import Any
 
-import wandb
-from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
-
-from src.modules.logging.logger import Logger
 import numpy as np
 import numpy.typing as npt
-from typing import Any
-from src.typing.xdata import XData
-from torch import Tensor
-from torch.utils.data import TensorDataset, Dataset
 import torch
+import wandb
+from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
+from torch import Tensor
+from torch.utils.data import Dataset, TensorDataset
+
+from src.modules.logging.logger import Logger
+from src.typing.xdata import XData
 
 
 @dataclass
@@ -35,7 +35,6 @@ class MainTrainer(TorchTrainer, Logger):
         :param test_indices: The indices to test on.
         :return: The training and validation datasets.
         """
-
         if self.representation_to_consider == "ECFP":
             x = np.array(x.molecule_ecfp)
         else:

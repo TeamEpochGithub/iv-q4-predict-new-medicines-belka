@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import XData
+from typing import Any
 
 
 class OneHotProteinBB(VerboseTrainingBlock):
@@ -26,6 +27,10 @@ class OneHotProteinBB(VerboseTrainingBlock):
         :return: XData
         """
         return self.add_protein_to_xdata(x)
+
+    @staticmethod
+    def _concatenate_protein(chunk: list[Any]) -> list[npt.NDArray[Any]]:
+        """Concatenate protein to molecule."""
 
     def add_protein_to_xdata(self, x: XData) -> XData:
         """Add protein to XData.

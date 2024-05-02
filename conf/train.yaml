@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: linear
+  - model: rf_on_bb
   - wandb: train
 
 data_path: data/shrunken
@@ -16,5 +16,5 @@ splitter:
   n_splits: 5
   indices_for_flattened_data: true
   # bb_to_split_by: [1,0,0]
-sample_size: 100_000
+sample_size: 30_000
 allow_multiple_instances: true
