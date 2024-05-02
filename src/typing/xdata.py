@@ -9,6 +9,7 @@ from rdkit.DataStructs.cDataStructs import ExplicitBitVect  # type: ignore[impor
 
 @dataclass
 class XData:
+
     """Class to describe data format of X.
 
     :param building_blocks: Building blocks encoded
@@ -59,11 +60,12 @@ class XData:
             mol_smile = self.molecule_ecfp[index]
             return np.array([self.bb1_ecfp[item[0]], self.bb2_ecfp[item[1]], self.bb3_ecfp[item[2]], mol_smile])
 
+
         if self.retrieval == "Embedding":
-            if not self.molecule_embedding or not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
+            if not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
                 raise ValueError("Missing embedding representation of building_blocks and molecule")
-            mol_embedding = self.molecule_embedding[index]
-            return np.array([self.bb1_embedding[item[0]], self.bb2_embedding[item[1]], self.bb3_embedding[item[2]], mol_embedding])
+
+            return np.array([self.bb1_embedding[item[0]], self.bb2_embedding[item[1]], self.bb3_embedding[item[2]]])
 
         return np.array([])
 
