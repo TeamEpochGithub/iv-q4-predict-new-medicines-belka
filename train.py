@@ -6,8 +6,6 @@ from contextlib import nullcontext
 from pathlib import Path
 
 import hydra
-import pandas as pd
-import polars as pl
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
@@ -15,7 +13,7 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
-from src.setup.setup_data import setup_train_x_data, setup_train_y_data
+from src.setup.setup_data import read_train_data, sample_data, setup_train_x_data, setup_train_y_data
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import setup_train_args
 from src.setup.setup_wandb import setup_wandb
@@ -61,6 +59,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg)
 
+    logger.info("Finished setting up pipeline")
+
     # Cache arguments for x_sys
     processed_data_path = Path(cfg.processed_path)
     processed_data_path.mkdir(parents=True, exist_ok=True)
@@ -71,28 +71,25 @@ def run_train_cfg(cfg: DictConfig) -> None:
     }
 
     # Read the data if required and split it in X, y
+    logger.info("Reading data")
+    train_data = read_train_data(Path(cfg.data_path))
     # x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
     # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
 
-    directory = Path(cfg.data_path)
+    # Sample the data
+    logger.info("Sampling data")
+    train_data = sample_data(train_data, cfg.sample_size)
 
-    train_data = pl.read_parquet(directory / "train.parquet")
-    train_data = train_data.to_pandas(use_pyarrow_extension_array=True)
-
-    sample_size = cfg.sample_size
-    binds_df = train_data[(train_data["binds_BRD4"] == 1) | (train_data["binds_HSA"] == 1) | (train_data["binds_sEH"] == 1)]
-    no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
-    train_data = pd.concat([binds_df.sample(sample_size // 2, random_state=42), no_binds_df.sample(sample_size // 2, random_state=42)])  # type: ignore[call-arg]
-
+    # Reading X and y data
+    logger.info("Reading Building Blocks and setting up X and y data")
     X, y = None, None
     # if not x_cache_exists:
-    X = setup_train_x_data(directory, train_data)
-
+    X = setup_train_x_data(Path(cfg.data_path), train_data)
     y = setup_train_y_data(train_data)
     del train_data
     gc.collect()
 
-    # For this simple splitter, we only need y.
+    # Split the data into train and test if required
     if cfg.test_size == 0:
         if cfg.splitter.n_splits != 0:
             raise ValueError("Test size is 0, but n_splits is not 0. Also please set n_splits to 0 if you want to run train full.")
@@ -100,11 +97,12 @@ def run_train_cfg(cfg: DictConfig) -> None:
         train_indices, test_indices = list(range(len(X))), []  # type: ignore[arg-type]
         fold = -1
     else:
-        logger.info("Using splitter to split data into train and test sets.")
-        train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y)[2]
+        logger.info("Splitting Data into train and test sets.")
+        train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y)[0]
         fold = 0
-
     logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}")
+
+    # Run the model pipeline
     print_section_separator("Train model pipeline")
     train_args = setup_train_args(pipeline=model_pipeline, cache_args=cache_args, train_indices=train_indices, test_indices=test_indices, save_model=True, fold=fold)
     predictions, y_new = model_pipeline.train(X, y, **train_args)
