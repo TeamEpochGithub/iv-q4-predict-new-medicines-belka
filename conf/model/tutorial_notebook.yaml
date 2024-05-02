@@ -8,7 +8,6 @@ x_sys:
       convert_molecules: true
       replace_array: true
       bits: 512
-    - _target_: src.modules.transformation.smile_embedding.SmileEmbedding
 
 y_sys:
   steps: []

@@ -1,11 +1,11 @@
 """Create the embeddings of the molecules using smiles2vec."""
 import logging
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import numpy.typing as npt
-from gensim.models import Word2Vec  # type: ignore[import]
-from mol2vec.features import MolSentence, mol2alt_sentence  # type: ignore[import]
+from gensim.models import Word2Vec
+from mol2vec.features import MolSentence, mol2alt_sentence
 from rdkit import Chem  # type: ignore[import]
 from tqdm import tqdm
 
@@ -77,7 +77,7 @@ class SmileEmbedding(VerboseTransformationBlock):
             futures = [executor.submit(self.embeddings, chunk) for chunk in chunks]
 
             # Perform the multiprocessing on the chunks
-            for future in tqdm(as_completed(futures), total=len(futures), desc=desc):
+            for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
         return results
