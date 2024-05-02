@@ -56,4 +56,7 @@ repos:
           - coloredlogs
           - polars
           - scikit-learn
+          - xgboost
+          - lightgbm
+          - catboost
         args: [ --disallow-any-generics, --disallow-untyped-defs, --disable-error-code=import-untyped]
