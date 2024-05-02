@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: tutorial_notebook # Add models or ensembles
+  - model: bdtm
   - wandb: train
 
 data_path: data/shrunken
@@ -11,10 +11,10 @@ scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
 splitter:
-  _target_: src.splitter.normal_splitter.NormalSplitter
+  _target_: src.splitter.stratified_splitter.StratifiedSplitter
   # _target_: src.splitter.bb_splitter.BBSplitter
   n_splits: 5
   indices_for_flattened_data: true
   # bb_to_split_by: [1,0,0]
-sample_size: 500_000
+sample_size: 30_000
 allow_multiple_instances: true

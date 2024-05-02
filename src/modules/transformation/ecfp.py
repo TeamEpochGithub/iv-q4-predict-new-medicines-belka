@@ -1,6 +1,6 @@
 """Converts the molcule building blocks into Extended Connectivity Fingerprints (ECFP) using RDKit."""
 import gc
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 
 from rdkit import Chem  # type: ignore[import-not-found]
@@ -73,7 +73,7 @@ class ECFP(VerboseTransformationBlock):
         with ProcessPoolExecutor() as executor:
             self.log_to_terminal("Creating futures for ECFP conversion.")
             futures = [executor.submit(self._convert_smile, chunk, radius=self.radius, bits=self.bits, use_features=self.use_features) for chunk in chunks]
-            for future in tqdm(as_completed(futures), total=len(futures), desc=desc):
+            for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
         return results
