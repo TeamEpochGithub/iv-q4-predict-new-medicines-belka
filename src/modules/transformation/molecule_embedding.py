@@ -46,8 +46,6 @@ class MoleculeEmbedding(VerboseTransformationBlock):
             data.retrieval = 'Embedding'
             data.molecule_embedding = [data[i].flatten() for i in range(len(data.building_blocks))]
 
-            aa = 1
-
 
         return data
 
