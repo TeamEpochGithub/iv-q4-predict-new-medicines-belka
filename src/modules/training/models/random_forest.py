@@ -54,7 +54,7 @@ class RandomForestModel(VerboseTrainingBlock):
         :param x: XData
         :return: Predictions
         """
-        x_pred = x.molecule_smiles
+        x_pred = x.molecule_ecfp
 
         if not hasattr(self, "rf_model"):
             self.rf_model = self.load_model(f"tm/{self.get_hash()}")
