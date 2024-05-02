@@ -37,7 +37,7 @@ class StratifiedSplitter:
 
         if self.indices_for_flattened_data:
             new_splits = []
-            for split in splits:
+            for idx, split in enumerate(splits):
                 train_indices, test_indices = split
 
                 train_indices = np.array(train_indices)
@@ -64,10 +64,13 @@ class StratifiedSplitter:
 
                 logger.info(
                     (
-                        f"Split: {train_percentage_brd4}-{test_percentage_brd4}% BRD4 binds,{train_percentage_hsa}-{test_percentage_hsa}% HSA binds"
-                        f"{train_percentage_seh}-{test_percentage_seh}% sEH binds"
+                        f"Split: {idx} -- "
+                        f"{train_percentage_brd4:.2f}-{test_percentage_brd4:.2f}% BRD4 binds -- "
+                        f"{train_percentage_hsa:.2f}-{test_percentage_hsa:.2f}% HSA binds -- "
+                        f"{train_percentage_seh:.2f}-{test_percentage_seh:.2f}% sEH binds"
                     ),
                 )
+
             splits = new_splits
 
         return splits
