@@ -15,5 +15,8 @@ polars==0.20.22
 rdkit>=2023.9.0
 dask[dataframe,distributed]>=2024.4.0
 pandas>=2.2.0
+catboost>=1.2.0
+lightgbm>=4.3.0
+xgboost>=2.0.0
 
 # -e ./
