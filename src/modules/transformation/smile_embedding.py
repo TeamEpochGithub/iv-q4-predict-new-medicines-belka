@@ -6,11 +6,15 @@ from src.typing.xdata import XData
 from gensim.models import Word2Vec
 from mol2vec.features import mol2alt_sentence, MolSentence
 from tqdm import tqdm
+import numpy.typing as npt
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+import logging
 
+gensim_logger = logging.getLogger('gensim')
+gensim_logger.setLevel(logging.WARNING)
 
 class SmileEmbedding(VerboseTransformationBlock):
     """ Create the embeddings of the building blocks and the molecule.
@@ -90,12 +94,12 @@ class SmileEmbedding(VerboseTransformationBlock):
 
         # compute the embeddings for each molecule
         if self.molecule:
-            data.molecule_smiles = self.parallel_embeddings(data.molecule_smiles,desc)
+            data.molecule_embedding= self.parallel_embeddings(data.molecule_smiles,desc)
         # compute the embeddings for each block
         if self.building:
-            data.bb1 = self.parallel_embeddings(data.bb1,desc)
-            data.bb2 = self.parallel_embeddings(data.bb2,desc)
-            data.bb3 = self.parallel_embeddings(data.bb3,desc)
+            data.bb1_embedding = self.parallel_embeddings(data.bb1_smiles,desc)
+            data.bb2_embedding = self.parallel_embeddings(data.bb2_smiles,desc)
+            data.bb3_embedding = self.parallel_embeddings(data.bb3_smiles,desc)
 
 
         return data
