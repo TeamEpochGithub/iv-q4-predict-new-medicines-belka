@@ -20,4 +20,6 @@ mol2vec==0.2.2
 catboost>=1.2.0
 lightgbm>=4.3.0
 xgboost>=2.0.0
+timm
+iterative-stratification
 # -e ./

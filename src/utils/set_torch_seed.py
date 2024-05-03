@@ -18,4 +18,5 @@ def set_torch_seed(seed: int = 42) -> None:
     # When running on the CuDNN backend, two further options must be set
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    # torch.backends.cudnn.enabled = False
     logger.info(f"Random seed set as {seed}")

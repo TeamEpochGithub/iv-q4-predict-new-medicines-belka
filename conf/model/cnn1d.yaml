@@ -4,9 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.ecfp.ECFP
-      convert_molecules: True
-      bits: 128
+    - _target_: src.modules.transformation.notebook_enc.NotebookEncoding
 
 y_sys:
   steps: []
@@ -30,7 +28,7 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 20
+      epochs: 10
       batch_size: 128
       patience: 10
       scheduler:

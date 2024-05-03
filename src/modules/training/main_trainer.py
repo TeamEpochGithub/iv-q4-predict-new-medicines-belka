@@ -1,5 +1,6 @@
 """Module for example training block."""
 from dataclasses import dataclass
+import gc
 from typing import Any
 
 import numpy as np
@@ -8,7 +9,8 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import Dataset, TensorDataset
+from torch.utils.data import Dataset, TensorDataset, DataLoader
+from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
 from src.typing.xdata import XData
@@ -41,12 +43,12 @@ class MainTrainer(TorchTrainer, Logger):
             raise ValueError("Representation does not exist")
 
         train_dataset = TensorDataset(
-            torch.tensor(x[train_indices]),
-            torch.tensor(y[train_indices]),
+            torch.from_numpy(x[train_indices]).int(),
+            torch.from_numpy(y[train_indices]),
         )
         test_dataset = TensorDataset(
-            torch.tensor(x[test_indices]),
-            torch.tensor(y[test_indices]),
+            torch.from_numpy(x[test_indices]).int(),
+            torch.from_numpy(y[test_indices]),
         )
 
         return train_dataset, test_dataset
@@ -70,3 +72,110 @@ class MainTrainer(TorchTrainer, Logger):
             model_artifact = wandb.Artifact(self.model_name, type="model")
             model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
             wandb.log_artifact(model_artifact)
+
+    def _train_one_epoch(
+        self,
+        dataloader: DataLoader[tuple[Tensor, ...]],
+        epoch: int,
+    ) -> float:
+        """Train the model for one epoch.
+
+        :param dataloader: Dataloader for the training data.
+        :param epoch: Epoch number.
+        :return: Average loss for the epoch.
+        """
+        losses = []
+        self.model.train()
+        pbar = tqdm(
+            dataloader,
+            unit="batch",
+            desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})",
+        )
+        for batch in pbar:
+            X_batch, y_batch = batch
+            X_batch = X_batch.to(self.device)
+            y_batch = y_batch.to(self.device).float()
+
+            # Forward pass
+            y_pred = self.model(X_batch).squeeze(1)
+            loss = self.criterion(y_pred, y_batch)
+
+            # Backward pass
+            self.initialized_optimizer.zero_grad()
+            loss.backward()
+            self.initialized_optimizer.step()
+
+            # Print tqdm
+            losses.append(loss.item())
+            pbar.set_postfix(loss=sum(losses) / len(losses))
+
+        # Step the scheduler
+        if self.initialized_scheduler is not None:
+            self.initialized_scheduler.step(epoch=epoch)
+
+        # Remove the cuda cache
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        return sum(losses) / len(losses)
+
+    def _val_one_epoch(
+        self,
+        dataloader: DataLoader[tuple[Tensor, ...]],
+        desc: str,
+    ) -> float:
+        """Compute validation loss of the model for one epoch.
+
+        :param dataloader: Dataloader for the testing data.
+        :param desc: Description for the tqdm progress bar.
+        :return: Average loss for the epoch.
+        """
+        losses = []
+        self.model.eval()
+        pbar = tqdm(dataloader, unit="batch")
+        with torch.no_grad():
+            for batch in pbar:
+                X_batch, y_batch = batch
+                X_batch = X_batch.to(self.device)
+                y_batch = y_batch.to(self.device).float()
+
+                # Forward pass
+                y_pred = self.model(X_batch).squeeze(1)
+                loss = self.criterion(y_pred, y_batch)
+
+                # Print losses
+                losses.append(loss.item())
+                pbar.set_description(desc=desc)
+                pbar.set_postfix(loss=sum(losses) / len(losses))
+        return sum(losses) / len(losses)
+    
+    def predict_on_loader(
+        self,
+        loader: DataLoader[tuple[Tensor, ...]],
+    ) -> npt.NDArray[np.float32]:
+        """Predict on the loader.
+
+        :param loader: The loader to predict on.
+        :return: The predictions.
+        """
+        self.log_to_terminal("Predicting on the test data")
+        self.model.eval()
+        predictions = []
+        # Create a new dataloader from the dataset of the input dataloader with collate_fn
+        loader = DataLoader(
+            loader.dataset,
+            batch_size=loader.batch_size,
+            shuffle=False,
+            collate_fn=(
+                collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+            ),
+        )
+        with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
+            for data in tepoch:
+                X_batch = data[0].to(self.device)
+
+                y_pred = self.model(X_batch).squeeze(1).cpu().numpy()
+                predictions.extend(y_pred)
+
+        self.log_to_terminal("Done predicting")
+        return np.array(predictions)

@@ -29,13 +29,24 @@ class CNN1D(nn.Module):
         :param verbose: Whether to print out the shape of the data at each step.
         """
         super(CNN1D, self).__init__()  # noqa: UP008
+        INP_LEN = 142
+        NUM_FILTERS = 32
+        hidden_dim = 128
+        self.hidden_dim = hidden_dim
 
-        self.conv1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=0)
-        self.conv2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels * 2, kernel_size=3, stride=1, padding=0)
-        self.conv3 = nn.Conv1d(in_channels=out_channels * 2, out_channels=out_channels * 3, kernel_size=3, stride=1, padding=0)
-        self.global_max_pool = nn.AdaptiveMaxPool1d(1)
+        # Embedding layer
+        self.embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_dim, padding_idx=0)
 
-        self.fc1 = nn.Linear(out_channels * 3, 1024)
+        # Convolutional layers
+        self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=NUM_FILTERS, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv1d(in_channels=NUM_FILTERS, out_channels=NUM_FILTERS*2, kernel_size=3, stride=1)
+        self.conv3 = nn.Conv1d(in_channels=NUM_FILTERS*2, out_channels=NUM_FILTERS*3, kernel_size=3, stride=1)
+
+        # Pooling layer
+        self.pool = nn.AdaptiveMaxPool1d(1)
+
+        # Dense and Dropout layers
+        self.fc1 = nn.Linear(NUM_FILTERS*3, 1024)
         self.dropout1 = nn.Dropout(0.1)
         self.fc2 = nn.Linear(1024, 1024)
         self.dropout2 = nn.Dropout(0.1)
@@ -43,18 +54,22 @@ class CNN1D(nn.Module):
         self.dropout3 = nn.Dropout(0.1)
         self.fc4 = nn.Linear(512, n_classes)
 
-    def forward(self, x):
-        x = x.unsqueeze(1)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        x = self.global_max_pool(x).squeeze(2)
+        # Activation function
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
 
-        x = F.relu(self.fc1(x))
+    def forward(self, x):
+        emb = self.embedding(x).transpose(2,1)
+
+        x = self.relu(self.conv1(emb))
+        x = self.relu(self.conv2(x))
+        x = self.relu(self.conv3(x))
+        x = self.pool(x).squeeze(2)
+        x = self.relu(self.fc1(x))
         x = self.dropout1(x)
-        x = F.relu(self.fc2(x))
+        x = self.relu(self.fc2(x))
         x = self.dropout2(x)
-        x = F.relu(self.fc3(x))
+        x = self.relu(self.fc3(x))
         x = self.dropout3(x)
-        x = torch.sigmoid(self.fc4(x))
+        x = self.sigmoid(self.fc4(x))
         return x
