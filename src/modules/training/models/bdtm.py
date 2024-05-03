@@ -40,6 +40,7 @@ class BDTM(VerboseTrainingBlock):
         if isinstance(train_indices, dict) or isinstance(test_indices, dict):
             raise TypeError("Wrong input for train/test indices.")
 
+        self.log_to_terminal("Extracting train and test data.")
         X_train = np.array(x.molecule_ecfp)[train_indices]
         X_test = np.array(x.molecule_ecfp)[test_indices]
         y_train = y[train_indices]
