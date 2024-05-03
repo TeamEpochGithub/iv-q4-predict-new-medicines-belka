@@ -6,17 +6,19 @@ x_sys:
   steps:
     - _target_: src.modules.transformation.ecfp.ECFP
       convert_molecules: True
-      bits: 1024
+      bits: 2048
+      radius: 3
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.one_hot_protein.OneHotProtein
+    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.models.bdtm.BDTM
       bdtm_name: "XGBClassifier"
-      n_estimators: 100
+      n_estimators: 500
+      multi_output: true
 
 pred_sys:
   steps: []
