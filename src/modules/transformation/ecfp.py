@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
+from skfp.fingerprints import ECFPFingerprint
 
 NUM_FUTURES = 100
 MIN_CHUNK_SIZE = 1000
@@ -39,10 +40,12 @@ class ECFP(VerboseTransformationBlock):
     @staticmethod
     def _convert_smile(smiles: list[str], radius: int, bits: int, *, use_features: bool = False) -> list[ExplicitBitVect]:
         """Worker function to process a single SMILES string."""
-        result = []
-        for smile in smiles:
-            mol = Chem.MolFromSmiles(smile)
-            result.append(AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features))
+        morgan_fingerprint = ECFPFingerprint(fp_size=bits, radius=radius)
+        result = morgan_fingerprint.fit_transform(X=smiles)
+        # result = []
+        # for smile in smiles:
+        #     mol = Chem.MolFromSmiles(smile)
+        #     result.append(AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features))
         return result
 
     def _convert_smile_array(self, smile_array: list[str], desc: str) -> list[ExplicitBitVect] | list[dict[str, ExplicitBitVect]]:
@@ -67,7 +70,7 @@ class ECFP(VerboseTransformationBlock):
 
         chunk_size = len(smile_array) // NUM_FUTURES
         chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
-        chunks = [smile_array[i : i + chunk_size] for i in range(0, len(smile_array), chunk_size)]
+        chunks = [smile_array[i: i + chunk_size] for i in range(0, len(smile_array), chunk_size)]
 
         results = []
         with ProcessPoolExecutor() as executor:

@@ -61,7 +61,8 @@ class MainTrainer(TorchTrainer, Logger):
         :return The predictions and the labels.
         """
         self._fold = train_args.get("fold", -1)
-        return super().custom_train(x, y, **train_args)
+        y_pred, y = super().custom_train(x, y, **train_args)
+        return y_pred.flatten(), y.flatten()
 
     def save_model_to_external(self) -> None:
         """Save the model to external storage."""

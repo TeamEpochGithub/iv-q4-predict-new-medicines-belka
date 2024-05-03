@@ -6,14 +6,14 @@ x_sys:
   steps:
     - _target_: src.modules.transformation.ecfp.ECFP
       convert_molecules: True
-      bits: 512
+      bits: 128
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.one_hot_protein.OneHotProtein
+    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:
@@ -21,7 +21,7 @@ train_sys:
         in_channels: 1
         out_channels: 64
         n_len_seg: 515
-        n_classes: 1
+        n_classes: 3
       criterion:
         _target_: torch.nn.BCELoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime

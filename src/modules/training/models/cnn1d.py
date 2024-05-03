@@ -1,4 +1,4 @@
-ion"""
+"""ion"""
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -41,7 +41,7 @@ class CNN1D(nn.Module):
         self.dropout2 = nn.Dropout(0.1)
         self.fc3 = nn.Linear(1024, 512)
         self.dropout3 = nn.Dropout(0.1)
-        self.fc4 = nn.Linear(512, 1)
+        self.fc4 = nn.Linear(512, n_classes)
 
     def forward(self, x):
         x = x.unsqueeze(1)
