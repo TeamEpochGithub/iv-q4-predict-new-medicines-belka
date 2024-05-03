@@ -23,6 +23,7 @@ class BDTM(VerboseTrainingBlock):
 
     bdtm_name: str = "XGBClassifier"
     n_estimators: int = 100
+    multi_output: bool = False
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a BDTM classifier.
@@ -57,13 +58,16 @@ class BDTM(VerboseTrainingBlock):
         self.bdtm.fit(X_train, y_train)
         self.log_to_terminal("Training completed.")
 
-        # Get the predictions
-        y_pred_proba = self.bdtm.predict_proba(X_test)[:, 1]
-
         # Save the model
         self.save_model(f"tm/{self.get_hash()}")
 
-        return y_pred_proba, y
+        # Get the predictions
+        if self.multi_output:
+            y_pred_proba = self.bdtm.predict_proba(X_test)
+            return y_pred_proba.flatten(), y[test_indices].flatten()
+        
+        y_pred_proba = self.bdtm.predict_proba(X_test)[:, 1]
+        return y_pred_proba, y[test_indices]
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predict using an XGBoost classifier.
@@ -76,6 +80,9 @@ class BDTM(VerboseTrainingBlock):
         if not hasattr(self, "xgb_model"):
             self.bdtm = self.load_model(f"tm/{self.get_hash()}")
 
+        if self.multi_output:
+            return self.bdtm.predict_proba(x_pred).flatten()
+        
         return self.bdtm.predict_proba(x_pred)[:, 1]
 
     def save_model(self, path: str) -> None:
