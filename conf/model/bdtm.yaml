@@ -6,7 +6,7 @@ x_sys:
   steps:
     - _target_: src.modules.transformation.ecfp.ECFP
       convert_molecules: True
-      bits: 2048 
+      bits: 2048
       radius: 3
 
 y_sys:

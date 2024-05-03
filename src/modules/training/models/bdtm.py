@@ -65,7 +65,7 @@ class BDTM(VerboseTrainingBlock):
         if self.multi_output:
             y_pred_proba = self.bdtm.predict_proba(X_test)
             return y_pred_proba.flatten(), y[test_indices].flatten()
-        
+
         y_pred_proba = self.bdtm.predict_proba(X_test)[:, 1]
         return y_pred_proba, y[test_indices]
 
@@ -82,7 +82,7 @@ class BDTM(VerboseTrainingBlock):
 
         if self.multi_output:
             return self.bdtm.predict_proba(x_pred).flatten()
-        
+
         return self.bdtm.predict_proba(x_pred)[:, 1]
 
     def save_model(self, path: str) -> None:
