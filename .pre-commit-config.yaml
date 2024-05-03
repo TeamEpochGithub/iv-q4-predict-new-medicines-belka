@@ -62,4 +62,5 @@ repos:
           - gensim
           - mol2vec
           - iterative-stratification
+          - dask
         args: [ --disallow-any-generics, --disallow-untyped-defs, --disable-error-code=import-untyped]

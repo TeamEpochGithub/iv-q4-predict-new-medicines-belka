@@ -1,8 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: rf_on_bb
-  # - model: tutorial_notebook
+  - model: tutorial_notebook
   - wandb: train
 
 data_path: data/shrunken

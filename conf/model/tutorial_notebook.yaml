@@ -7,7 +7,7 @@ x_sys:
     - _target_: src.modules.transformation.ecfp.ECFP
       convert_molecules: true
       replace_array: true
-      bits: 512
+      bits: 1024
 
 y_sys:
   steps: []
