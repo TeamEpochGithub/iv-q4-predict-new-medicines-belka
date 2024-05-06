@@ -73,7 +73,7 @@ class XData:
 
         return np.array([])
 
-    def __len(self) -> int:
+    def __len__(self) -> int:
         """Return the length of the data.
 
         :return: Length of data

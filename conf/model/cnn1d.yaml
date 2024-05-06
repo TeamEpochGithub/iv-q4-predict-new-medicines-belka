@@ -42,6 +42,7 @@ train_sys:
         cycle_limit: 1
         warmup_t: 1
         warmup_lr_init: 1e-5
+      n_folds: 5
 
 pred_sys:
   steps:
