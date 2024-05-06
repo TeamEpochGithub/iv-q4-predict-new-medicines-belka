@@ -12,6 +12,7 @@ import pandas as pd
 import polars as pl
 
 from src.typing.xdata import XData
+from src.utils.logger import logger
 
 
 def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float) -> pd.DataFrame:
@@ -22,7 +23,10 @@ def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float)
     :return: Sampled data
     """
     if sample_split < 0:
-        return train_data.sample(min(sample_size, len(train_data)), random_state=42)  # type: ignore[call-arg]
+        if sample_size > len(train_data):
+            logger.info("Sample size is larger than the data, returning the data as is.")
+            return train_data
+        return train_data.sample(sample_size, random_state=42)  # type: ignore[call-arg]
     binds_df = train_data[(train_data["binds_BRD4"] == 1) | (train_data["binds_HSA"] == 1) | (train_data["binds_sEH"] == 1)]
     no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
     return pd.concat(
