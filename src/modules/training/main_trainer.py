@@ -1,6 +1,6 @@
 """Module for example training block."""
-from dataclasses import dataclass
 import gc
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -9,7 +9,7 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import Dataset, TensorDataset, DataLoader
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
@@ -53,6 +53,18 @@ class MainTrainer(TorchTrainer, Logger):
 
         return train_dataset, test_dataset
 
+    def create_prediction_dataset(
+        self,
+        x: npt.NDArray[np.float32],
+    ) -> Dataset[tuple[Tensor, ...]]:
+        """Create the prediction dataset.
+
+        :param x: The input data.
+        :return: The prediction dataset.
+        """
+        x = np.array(x.molecule_ecfp)
+        return TensorDataset(torch.from_numpy(x).int())
+
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.
 
@@ -65,6 +77,9 @@ class MainTrainer(TorchTrainer, Logger):
         self._fold = train_args.get("fold", -1)
         y_pred, y = super().custom_train(x, y, **train_args)
         return y_pred.flatten(), y.flatten()
+
+    def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
+        return super().custom_predict(x).flatten()
 
     def save_model_to_external(self) -> None:
         """Save the model to external storage."""
@@ -148,7 +163,7 @@ class MainTrainer(TorchTrainer, Logger):
                 pbar.set_description(desc=desc)
                 pbar.set_postfix(loss=sum(losses) / len(losses))
         return sum(losses) / len(losses)
-    
+
     def predict_on_loader(
         self,
         loader: DataLoader[tuple[Tensor, ...]],
