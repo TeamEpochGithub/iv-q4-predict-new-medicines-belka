@@ -12,10 +12,26 @@ class XData:
     """Class to describe data format of X.
 
     :param building_blocks: Building blocks encoded
+
     :param molecule_smiles: Molecule smiles
-    :param bb1: Building block 1 smiles
-    :param bb2: Building block 2 smiles
-    :param bb3: Buliding block 3 smiles
+    :param bb1_smiles: Building_block 1 smiles
+    :param bb2_smiles: Building_block 2 smiles
+    :param bb3_smiles: Building_block 3 smiles
+
+    :param molecule_ecfp: ECFP for molecules
+    :param bb1_ecfp: ECFP for building_block 1 smiles
+    :param bb2_ecfp: ECFP for building_block 2 smiles
+    :param bb3_ecfp: ECFP for building_block 3 smiles
+
+    :param molecule_embedding: Embedding for molecules
+    :param bb1_embedding: Embedding for building_block 1 smiles
+    :param bb2_embedding: Embedding for building_block 2 smiles
+    :param bb3_embedding: Embedding for building_block 3 smiles
+
+    :param molecule_desc: Descriptors for molecules
+    :param bb1_desc: Descriptors for building_block 1 smiles
+    :param bb2_desc: Descriptors for building_block 2 smiles
+    :param bb3_desc: Descriptors for building_block 3 smiles
     """
 
     building_blocks: npt.NDArray[np.int16]
@@ -39,6 +55,12 @@ class XData:
     bb2_embedding: list[npt.NDArray[np.float32]] | None = None
     bb3_embedding: list[npt.NDArray[np.float32]] | None = None
 
+    # Descriptors
+    molecule_desc: list[Any] | None = None
+    bb1_desc: list[Any] | None = None
+    bb2_desc: list[Any] | None = None
+    bb3_desc: list[Any] | None = None
+
     def __getitem__(self, index: int) -> npt.NDArray[Any]:
         """Get item from the data.
 
@@ -47,6 +69,7 @@ class XData:
         """
         item = self.building_blocks[index]
 
+        # SMILES Retrievals
         if self.retrieval == "SMILES":
             if not self.molecule_smiles or not self.bb1_smiles or not self.bb2_smiles or not self.bb3_smiles:
                 raise ValueError("Missing SMILE representation of building_blocks and molecule")
@@ -66,12 +89,23 @@ class XData:
 
         # Embedding Retrievals
         if self.retrieval == "Embedding":
-            if not self.molecule_embedding or not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
-                raise ValueError("Missing embedding representation of building_blocks and molecule")
-            mol_embedding = self.molecule_embedding[index]
-            return np.array([self.bb1_embedding[item[0]], self.bb2_embedding[item[1]], self.bb3_embedding[item[2]], mol_embedding])
+            return self._get_embedding(index)
+
+        # Descriptors Retrievals
+        if self.retrieval == "Descriptors":
+            return self._get_descriptors(index)
 
         return np.array([])
+
+    def _get_embedding(self, index: int) -> npt.NDArray[Any]:
+        if not self.molecule_embedding or not self.bb1_embedding or not self.bb2_embedding or not self.bb3_embedding:
+            raise ValueError("Missing embedding of building_blocks and molecule")
+        return np.array([self.bb1_embedding[index], self.bb2_embedding[index], self.bb3_embedding[index], self.molecule_embedding[index]])
+
+    def _get_descriptors(self, index: int) -> npt.NDArray[Any]:
+        if not self.molecule_desc or not self.bb1_desc or not self.bb2_desc or not self.bb3_desc:
+            raise ValueError("Missing descriptors of building_blocks and molecule")
+        return np.array([self.bb1_desc[index], self.bb2_desc[index], self.bb3_desc[index], self.molecule_desc[index]])
 
     def __len__(self) -> int:
         """Return the length of the data.
