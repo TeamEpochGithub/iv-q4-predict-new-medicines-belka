@@ -88,14 +88,14 @@ class ECFP(VerboseTransformationBlock):
         if self.convert_building_blocks:
             if data.bb1_smiles is None or data.bb2_smiles is None or data.bb3_smiles is None:
                 raise ValueError("There is no SMILE information for at least on building block. Can't convert to ECFP")
-            data.bb1_ecfp = self._convert_smile_array(data.bb1_smiles, desc="Converting bb1")
-            data.bb2_ecfp = self._convert_smile_array(data.bb2_smiles, desc="Converting bb2")
-            data.bb3_ecfp = self._convert_smile_array(data.bb3_smiles, desc="Converting bb3")
+            data.bb1_ecfp = self._convert_smile_array(data.bb1_smiles, desc="Creating ECFP for bb1")
+            data.bb2_ecfp = self._convert_smile_array(data.bb2_smiles, desc="Creating ECFP for bb2")
+            data.bb3_ecfp = self._convert_smile_array(data.bb3_smiles, desc="Creating ECFP for bb3")
 
         if self.convert_molecules:
             if data.molecule_smiles is None:
                 raise ValueError("There is no SMILE information for the molecules, can't convert to ECFP")
-            data.molecule_ecfp = self._convert_smile_array_parallel(data.molecule_smiles, desc="Converting molecules")
+            data.molecule_ecfp = self._convert_smile_array_parallel(data.molecule_smiles, desc="Creating ECFP for molecules")
             if self.replace_array:
                 data.molecule_smiles = None
 
