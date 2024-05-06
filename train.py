@@ -78,7 +78,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
     # Sample the data
     logger.info("Sampling data")
-    train_data = sample_data(train_data, cfg.sample_size)
+    train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
 
     # Reading X and y data
     logger.info("Reading Building Blocks and setting up X and y data")
