@@ -38,16 +38,16 @@ class MainTrainer(TorchTrainer, Logger):
         :return: The training and validation datasets.
         """
         if self.representation_to_consider == "ECFP":
-            x = np.array(x.molecule_ecfp)
+            x_array = np.array(x.molecule_ecfp)
         else:
             raise ValueError("Representation does not exist")
 
         train_dataset = TensorDataset(
-            torch.from_numpy(x[train_indices]).int(),
+            torch.from_numpy(x_array[train_indices]).int(),
             torch.from_numpy(y[train_indices]),
         )
         test_dataset = TensorDataset(
-            torch.from_numpy(x[test_indices]).int(),
+            torch.from_numpy(x_array[test_indices]).int(),
             torch.from_numpy(y[test_indices]),
         )
 
@@ -55,15 +55,15 @@ class MainTrainer(TorchTrainer, Logger):
 
     def create_prediction_dataset(
         self,
-        x: npt.NDArray[np.float32],
+        x: XData,
     ) -> Dataset[tuple[Tensor, ...]]:
         """Create the prediction dataset.
 
         :param x: The input data.
         :return: The prediction dataset.
         """
-        x = np.array(x.molecule_ecfp)
-        return TensorDataset(torch.from_numpy(x).int())
+        x_arr = np.array(x.molecule_ecfp)
+        return TensorDataset(torch.from_numpy(x_arr).int())
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.
@@ -79,6 +79,11 @@ class MainTrainer(TorchTrainer, Logger):
         return y_pred.flatten(), y.flatten()
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
+        """Predict using the model.
+
+        :param x: Input data
+        :return: predictions
+        """
         return super().custom_predict(x).flatten()
 
     def save_model_to_external(self) -> None:
@@ -194,3 +199,13 @@ class MainTrainer(TorchTrainer, Logger):
 
         self.log_to_terminal("Done predicting")
         return np.array(predictions)
+
+
+def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
+    """Collate function for the dataloader.
+
+    :param batch: The batch to collate.
+    :return: Collated batch.
+    """
+    X, y = batch
+    return X, y

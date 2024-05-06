@@ -7,7 +7,7 @@ x_sys:
     - _target_: src.modules.transformation.ecfp.ECFP
       convert_building_blocks: true
       replace_array: true
-      bits: 256 
+      bits: 256
 
 y_sys:
   steps: []

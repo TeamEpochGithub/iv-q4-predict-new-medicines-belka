@@ -16,12 +16,9 @@ train_sys:
       model_name: CNN1D
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
-        in_channels: 1
-        out_channels: 64
-        n_len_seg: 515
         n_classes: 3
       criterion:
-        _target_: torch.nn.BCELoss
+        _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
@@ -29,8 +26,8 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 2048 
-      patience: 3 
+      batch_size: 16384
+      patience: 1
       scheduler:
         _target_: functools.partial
         _args_:
@@ -46,8 +43,7 @@ train_sys:
 
 pred_sys:
   steps:
-    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
 
 label_sys:
-  steps:
-    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+  steps: []

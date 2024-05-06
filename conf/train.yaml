@@ -16,6 +16,6 @@ splitter:
   n_splits: 5
   # indices_for_flattened_data: true
   # bb_to_split_by: [1,0,0]
-sample_size: 10_000_000
-sample_split: 0.8 
+sample_size: 50_000_000
+sample_split: 0.8
 allow_multiple_instances: true

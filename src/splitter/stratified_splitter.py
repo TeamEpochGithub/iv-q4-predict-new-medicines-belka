@@ -4,10 +4,10 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
+from tqdm import tqdm
 
 from src.typing.xdata import XData
 from src.utils.logger import logger
-from tqdm import tqdm
 
 
 @dataclass

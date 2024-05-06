@@ -1,11 +1,12 @@
 """Module that adds one hot encoding of protein to XData and flattens y."""
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
 
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import XData
-from typing import Any
 
 
 class OneHotProteinBB(VerboseTrainingBlock):
@@ -30,7 +31,18 @@ class OneHotProteinBB(VerboseTrainingBlock):
 
     @staticmethod
     def _concatenate_protein(chunk: list[Any]) -> list[npt.NDArray[Any]]:
-        """Concatenate protein to molecule."""
+        """Concatenate protein to molecule.
+
+        :param protein: Protein one hot encoding
+        :param mol: Molecule ECFP
+        :return: Concatenated protein and molecule
+        """
+        BRD4 = np.array([1, 0, 0])
+        HSA = np.array([0, 1, 0])
+        sEH = np.array([0, 0, 1])
+        protein_onehot = [BRD4, HSA, sEH]
+
+        return [np.concatenate((protein, mol)) for mol in chunk for protein in protein_onehot]
 
     def add_protein_to_xdata(self, x: XData) -> XData:
         """Add protein to XData.

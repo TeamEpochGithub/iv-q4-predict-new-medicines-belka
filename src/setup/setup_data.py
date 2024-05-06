@@ -25,7 +25,12 @@ def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float)
         return train_data.sample(min(sample_size, len(train_data)), random_state=42)  # type: ignore[call-arg]
     binds_df = train_data[(train_data["binds_BRD4"] == 1) | (train_data["binds_HSA"] == 1) | (train_data["binds_sEH"] == 1)]
     no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
-    return pd.concat([binds_df.sample(min(round(sample_size * (1- sample_split)), len(binds_df)) , random_state=42), no_binds_df.sample(min(round(sample_size * sample_split), len(no_binds_df)), random_state=42)])  # type: ignore[call-arg]
+    return pd.concat(
+        [
+            binds_df.sample(min(round(sample_size * (1 - sample_split)), len(binds_df)), random_state=42),
+            no_binds_df.sample(min(round(sample_size * sample_split), len(no_binds_df)), random_state=42),
+        ],
+    )  # type: ignore[call-arg]
 
 
 def read_train_data(directory: Path) -> pd.DataFrame:

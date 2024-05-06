@@ -1,6 +1,6 @@
-"""Linear model for 1D Regression"""
+"""Linear model for 1D Regression."""
 import torch
-from torch import nn
+from torch import Tensor, nn
 
 
 class Linear(nn.Module):
@@ -29,7 +29,11 @@ class Linear(nn.Module):
         self.lin = nn.Linear(in_channels, in_channels // 2)
         self.lin1 = nn.Linear(in_channels // 2, out_channels)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """Forward function of linear model.
+
+        :param x: Input Tensor
+        :return: Output Tensor
+        """
         x = self.lin(x)
-        x = torch.sigmoid(self.lin1(x))
-        return x
+        return torch.sigmoid(self.lin1(x))
