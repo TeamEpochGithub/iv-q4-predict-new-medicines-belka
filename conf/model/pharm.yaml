@@ -1,0 +1,26 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.pharmacophore.Pharmacophore
+      convert_molecules: True
+      bits: 2048 
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
+    - _target_: src.modules.training.models.bdtm.BDTM
+      bdtm_name: "XGBClassifier"
+      n_estimators: 500
+      multi_output: true
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []

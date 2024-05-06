@@ -11,7 +11,7 @@ from src.typing.xdata import XData
 
 @dataclass
 class Pharmacophore(VerboseTransformationBlock):
-    """Converts the molcule building blocks into Extended Connectivity Fingerprints (ECFP) using RDKit.
+    """Converts SMILES into PharmacophoreFingerprint 
 
     :param convert_building_blocks: Whether to convert the building blocks
     :param convert_molecules: Whether to convert the molecules
@@ -27,8 +27,7 @@ class Pharmacophore(VerboseTransformationBlock):
     replace_array: bool = False
 
     bits: int = 128
-    radius: int = 2
-    use_features: bool = False
+    variant: str = "bit"
 
     def custom_transform(self, data: XData) -> XData:
         """Apply a custom transformation to the data.
@@ -37,7 +36,7 @@ class Pharmacophore(VerboseTransformationBlock):
         :param kwargs: Any additional arguments
         :return: The transformed data
         """
-        pf = PharmacophoreFingerprint(fp_size=bits, n_jobs=-1)
+        pf = PharmacophoreFingerprint(fp_size=self.bits, n_jobs=-1, verbose=1)
         if self.convert_building_blocks:
             if data.bb1_smiles is None or data.bb2_smiles is None or data.bb3_smiles is None:
                 raise ValueError("There is no SMILE information for at least on building block. Can't convert to ECFP")
