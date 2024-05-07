@@ -10,7 +10,7 @@ from src.typing.xdata import XData
 
 @dataclass
 class MoleculeEmbedding(VerboseTransformationBlock):
-    """Transforms the sequence of embeddings into a single embedding.
+    """Transform the sequence of embeddings into a single embedding.
 
     param transform: the type of transformation (concat or mean)
     param n_concat: the number of arrays to be concatenated
@@ -40,6 +40,7 @@ class MoleculeEmbedding(VerboseTransformationBlock):
         return embeddings
 
     def custom_transform(self, data: XData) -> XData:
+        """Transform the sequence of embeddings into a single embedding."""
         if data.bb1_embedding is None or data.bb2_embedding is None or data.bb3_embedding is None:
             raise ValueError("Missing embedding representation of the building block")
 
