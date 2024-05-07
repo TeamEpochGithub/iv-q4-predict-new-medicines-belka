@@ -74,7 +74,6 @@ class OneHotProtein(VerboseTrainingBlock):
             futures = [executor.submit(self._concatenate_protein, chunk) for chunk in chunks]
             for future in tqdm(futures, total=len(futures), desc="Concatenating Protein to molecules"):
                 result.extend(future.result())
-
         x.molecule_ecfp = result
 
         return x
