@@ -1,6 +1,7 @@
 """Create the embeddings of the molecules using smiles2vec."""
 import logging
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
@@ -16,13 +17,12 @@ gensim_logger = logging.getLogger("gensim")
 gensim_logger.setLevel(logging.WARNING)
 
 
+@dataclass
 class SmileEmbedding(VerboseTransformationBlock):
     """Create the embeddings of the building blocks and the molecule.
 
     param model_path: the path of the pre-trained mol2vec
     param unseen: the token of the unseen fingerprints
-    param molecule:
-    param building
     """
 
     model_path: str = "https://github.com/samoturk/mol2vec/raw/master/examples/models/model_300dim.pkl"
@@ -96,7 +96,6 @@ class SmileEmbedding(VerboseTransformationBlock):
 
         desc = "compute the embeddings of the molecule"
 
-        #
         # Compute the embeddings for each molecule
         if self.molecule and data.molecule_smiles is not None:
             data.molecule_embedding = self.parallel_embeddings(data.molecule_smiles, desc)
