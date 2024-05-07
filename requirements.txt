@@ -22,4 +22,5 @@ lightgbm>=4.3.0
 xgboost>=2.0.0
 timm
 iterative-stratification
+scikit-fingerprints >= 1.4.0
 # -e ./
