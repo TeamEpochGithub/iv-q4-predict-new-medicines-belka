@@ -1,15 +1,21 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: test # Add models or ensembles
+  - model: cnn1d
   - wandb: train
 
 data_path: data/shrunken
 processed_path: data/processed
 
 scorer:
-  _target_: ??? # Add scorer
+  _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
+  name: MAP
 splitter:
-  _target_: src.splitter.bb_splitter.BBSplitter
+  _target_: src.splitter.stratified_splitter.StratifiedSplitter
+  # _target_: src.splitter.bb_splitter.BBSplitter
   n_splits: 5
+  # indices_for_flattened_data: true
+  # bb_to_split_by: [1,0,0]
+sample_size: 100_000_000
+sample_split: -1
 allow_multiple_instances: true

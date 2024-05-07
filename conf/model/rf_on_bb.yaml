@@ -1,0 +1,26 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.ecfp.ECFP
+      convert_building_blocks: true
+      replace_array: true
+      bits: 256
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.one_hot_protein_bb.OneHotProteinBB
+    - _target_: src.modules.training.models.bdtm.BDTM
+      bdtm_name: "XGBClassifier"
+      n_estimators: 500
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []
