@@ -8,7 +8,7 @@ x_sys:
       convert_molecules: True
       fingerprint:
         _target_: skfp.fingerprints.TopologicalTorsionFingerprint
-        fp_size: 1024 
+        fp_size: 1024
 
 
 y_sys:

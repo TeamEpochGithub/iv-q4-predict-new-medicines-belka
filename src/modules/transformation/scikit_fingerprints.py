@@ -2,6 +2,7 @@
 import gc
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 from rdkit.DataStructs.cDataStructs import ExplicitBitVect  # type: ignore[import-not-found]
@@ -10,7 +11,6 @@ from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
-from typing import Any
 
 NUM_FUTURES = 100
 MIN_CHUNK_SIZE = 1000
@@ -32,14 +32,13 @@ class ScikitFingerprints(VerboseTransformationBlock):
     convert_building_blocks: bool = False
     convert_molecules: bool = False
     replace_array: bool = False
-    
-    fingerprint: Any = ECFPFingerprint(fp_size=1024, radius=2)
 
+    fingerprint: Any = None
 
     @staticmethod
-    def _convert_smile(smiles: list[str], fingerprint: Any) -> list[ExplicitBitVect]:
+    def _convert_smile(smiles: list[str], fingerprint: Any) -> list[ExplicitBitVect]:  # noqa: ANN401
         """Worker function to process a single SMILES string."""
-        f1 = ECFPFingerprint(fp_size=1024) 
+        f1 = ECFPFingerprint(fp_size=1024)
         return np.concatenate((fingerprint.fit_transform(X=smiles), f1.fit_transform(X=smiles)), axis=1)
         # return fingerprint.fit_transform(X=smiles) + f1.fit_transform(X=smiles)
 
