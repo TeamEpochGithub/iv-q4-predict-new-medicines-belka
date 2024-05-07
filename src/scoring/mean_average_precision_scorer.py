@@ -17,4 +17,4 @@ class MeanAveragePrecisionScorer(Scorer):
         :param y_pred: Predicted values
         :return: Score
         """
-        return average_precision_score(y_true, y_pred)
+        return average_precision_score(y_true, y_pred, average="micro")
