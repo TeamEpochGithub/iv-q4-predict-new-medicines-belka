@@ -1,6 +1,7 @@
 """Create the embeddings of the molecules using smiles2vec."""
 import logging
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
@@ -8,13 +9,13 @@ from gensim.models import Word2Vec
 from mol2vec.features import MolSentence, mol2alt_sentence
 from rdkit import Chem  # type: ignore[import]
 from tqdm import tqdm
-from dataclasses import dataclass
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
 
 gensim_logger = logging.getLogger("gensim")
 gensim_logger.setLevel(logging.WARNING)
+
 
 @dataclass
 class SmileEmbedding(VerboseTransformationBlock):
@@ -104,6 +105,5 @@ class SmileEmbedding(VerboseTransformationBlock):
             data.bb1_embedding = self.parallel_embeddings(data.bb1_smiles, desc)
             data.bb2_embedding = self.parallel_embeddings(data.bb2_smiles, desc)
             data.bb3_embedding = self.parallel_embeddings(data.bb3_smiles, desc)
-
 
         return data
