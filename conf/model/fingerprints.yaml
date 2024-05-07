@@ -4,9 +4,12 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.pharmacophore.Pharmacophore
+    - _target_: src.modules.transformation.scikit_fingerprints.ScikitFingerprints
       convert_molecules: True
-      bits: 2048 
+      fingerprint:
+        _target_: skfp.fingerprints.TopologicalTorsionFingerprint
+        fp_size: 1024 
+
 
 y_sys:
   steps: []
