@@ -3,9 +3,8 @@ import gc
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 
-from rdkit import Chem  # type: ignore[import-not-found]
-from rdkit.Chem import AllChem  # type: ignore[import-not-found]
 from rdkit.DataStructs.cDataStructs import ExplicitBitVect  # type: ignore[import-not-found]
+from skfp.fingerprints import ECFPFingerprint  # type: ignore[import-not-found]
 from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
@@ -34,22 +33,23 @@ class ECFP(VerboseTransformationBlock):
 
     bits: int = 128
     radius: int = 2
-    use_features: bool = False
 
     @staticmethod
-    def _convert_smile(smiles: list[str], radius: int, bits: int, *, use_features: bool = False) -> list[ExplicitBitVect]:
+    def _convert_smile(smiles: list[str], radius: int, bits: int) -> list[ExplicitBitVect]:
         """Worker function to process a single SMILES string."""
-        result = []
-        for smile in smiles:
-            mol = Chem.MolFromSmiles(smile)
-            result.append(AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features))
-        return result
+        morgan_fingerprint = ECFPFingerprint(fp_size=bits, radius=radius)
+        return morgan_fingerprint.fit_transform(X=smiles)
+        # result = []
+        # for smile in smiles:
+        #     mol = Chem.MolFromSmiles(smile)
+        #     result.append(AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features))
+        # return result
 
     def _convert_smile_array(self, smile_array: list[str], desc: str) -> list[ExplicitBitVect] | list[dict[str, ExplicitBitVect]]:
         if not isinstance(smile_array[0], str):
             self.log_to_warning("Not a SMILE (string) array. Skipping conversion.")
 
-        ecfp = [self._convert_smile([smile], radius=self.radius, bits=self.bits, use_features=self.use_features)[0] for smile in tqdm(smile_array, desc=desc)]
+        ecfp = [self._convert_smile([smile], radius=self.radius, bits=self.bits)[0] for smile in tqdm(smile_array, desc=desc)]
         if self.replace_array:
             return ecfp
         return [{"smile": smile, "ecfp": ecfp} for smile, ecfp in zip(smile_array, ecfp, strict=False)]
@@ -72,7 +72,7 @@ class ECFP(VerboseTransformationBlock):
         results = []
         with ProcessPoolExecutor() as executor:
             self.log_to_terminal("Creating futures for ECFP conversion.")
-            futures = [executor.submit(self._convert_smile, chunk, radius=self.radius, bits=self.bits, use_features=self.use_features) for chunk in chunks]
+            futures = [executor.submit(self._convert_smile, chunk, radius=self.radius, bits=self.bits) for chunk in chunks]
             for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
@@ -88,14 +88,14 @@ class ECFP(VerboseTransformationBlock):
         if self.convert_building_blocks:
             if data.bb1_smiles is None or data.bb2_smiles is None or data.bb3_smiles is None:
                 raise ValueError("There is no SMILE information for at least on building block. Can't convert to ECFP")
-            data.bb1_ecfp = self._convert_smile_array(data.bb1_smiles, desc="Converting bb1")
-            data.bb2_ecfp = self._convert_smile_array(data.bb2_smiles, desc="Converting bb2")
-            data.bb3_ecfp = self._convert_smile_array(data.bb3_smiles, desc="Converting bb3")
+            data.bb1_ecfp = self._convert_smile_array(data.bb1_smiles, desc="Creating ECFP for bb1")
+            data.bb2_ecfp = self._convert_smile_array(data.bb2_smiles, desc="Creating ECFP for bb2")
+            data.bb3_ecfp = self._convert_smile_array(data.bb3_smiles, desc="Creating ECFP for bb3")
 
         if self.convert_molecules:
             if data.molecule_smiles is None:
                 raise ValueError("There is no SMILE information for the molecules, can't convert to ECFP")
-            data.molecule_ecfp = self._convert_smile_array_parallel(data.molecule_smiles, desc="Converting molecules")
+            data.molecule_ecfp = self._convert_smile_array_parallel(data.molecule_smiles, desc="Creating ECFP for molecules")
             if self.replace_array:
                 data.molecule_smiles = None
 

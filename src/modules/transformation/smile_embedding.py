@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 from gensim.models import Word2Vec
 from mol2vec.features import MolSentence, mol2alt_sentence
-from rdkit import Chem  # type: ignore[import]
+from rdkit import Chem  # type: ignore[import-not-found]
 from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
