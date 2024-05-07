@@ -60,21 +60,23 @@ def setup_train_x_data(directory: Path, train_data: pd.DataFrame) -> Any:  # noq
     with open(directory / "train_dicts/BBs_dict_reverse_3.p", "br") as f3:
         BBs_dict_reverse_3 = pickle.load(f3)  # noqa: S301 (Security issue)
 
-    # Turn to list
-    BBs_dict_reverse_1 = list(BBs_dict_reverse_1.values())
-    BBs_dict_reverse_2 = list(BBs_dict_reverse_2.values())
-    BBs_dict_reverse_3 = list(BBs_dict_reverse_3.values())
+    # Turn to numpy array
+    bb1 = np.array(list(BBs_dict_reverse_1.values()))
+    del BBs_dict_reverse_1
+    bb2 = np.array(list(BBs_dict_reverse_2.values()))
+    del BBs_dict_reverse_2
+    bb3 = np.array(list(BBs_dict_reverse_3.values()))
+    del BBs_dict_reverse_3
 
     smile_encoding = train_data[["buildingblock1_smiles", "buildingblock2_smiles", "buildingblock3_smiles"]].to_numpy(dtype=np.int16)
-
     molecule_smiles = train_data["molecule_smiles"].to_numpy()
 
     return XData(
         smile_encoding,
         molecule_smiles=molecule_smiles,
-        bb1_smiles=BBs_dict_reverse_1,
-        bb2_smiles=BBs_dict_reverse_2,
-        bb3_smiles=BBs_dict_reverse_3,
+        bb1_smiles=bb1,
+        bb2_smiles=bb2,
+        bb3_smiles=bb3,
     )
 
 

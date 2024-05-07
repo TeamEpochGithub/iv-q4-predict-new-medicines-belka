@@ -1,0 +1,25 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.descriptors.Descriptors
+      convert_molecules: True
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.models.decision_trees.DecisionTrees
+      bdtm_name: "XGBClassifier"
+      n_estimators: 500
+      multi_output: true
+      data: ["DESCRIPTORS_MOL"]
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []

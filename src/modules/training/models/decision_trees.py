@@ -1,29 +1,49 @@
 """Module containing Boosted Decision Tree Models."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
+from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
-from src.typing.xdata import XData
+from src.typing.xdata import DataRetrieval, XData
 
 
 @dataclass
-class BDTM(VerboseTrainingBlock):
-    """Class that implements the Boosted Decision Tree Models.
+class DecisionTrees(VerboseTrainingBlock):
+    """Class that implements (Boosted) Decision Tree Models.
 
-    :param bdtm: Name of the model (XGBClassifier, LGBMClassifier, CatBoostClassifier)
+    :param bdtm: Name of the model (XGBClassifier, LGBMClassifier, CatBoostClassifier, RandomForestClassifier)
+    :param data: Which data to use
     :param n_estimators: Number of estimators
+    :param multi_output: Predict one (false) or multiple outputs (true)
     """
 
     bdtm_name: str = "XGBClassifier"
+    data: list[str] = field(default_factory=lambda: ["ECFP_MOL"])
     n_estimators: int = 100
     multi_output: bool = False
+
+    def __post_init__(self) -> None:
+        """Post init method."""
+        super().__post_init__()
+
+        if len(self.data) > 1:
+            raise ValueError("Only one data type is allowed.")
+
+        if self.data[0] not in ["SMILES_MOL", "ECFP_MOL", "EMBEDDING_MOL", "DESCRIPTORS_MOL"]:
+            raise ValueError(f"Invalid data type {self.data[0]}.")
+
+        if self.bdtm_name not in ["XGBClassifier", "LGBMClassifier", "CatBoostClassifier", "RandomForestClassifier"]:
+            raise ValueError(f"Invalid model name {self.bdtm_name}.")
+
+        if self.bdtm_name in ["LGBMClassifier", "CatBoostClassifier"]:
+            raise ValueError("LGBMClassifier and CatBoostClassifier are broken.")
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a BDTM classifier.
@@ -41,9 +61,15 @@ class BDTM(VerboseTrainingBlock):
             raise TypeError("Wrong input for train/test indices.")
 
         self.log_to_terminal("Extracting train and test data.")
-        X_train = np.array(x.molecule_ecfp)[train_indices]
-        X_test = np.array(x.molecule_ecfp)[test_indices]
+        x.retrieval = getattr(DataRetrieval, self.data[0])
+
+        X_train = x[train_indices]
+        X_test = x[test_indices]
         y_train = y[train_indices]
+
+        if self.data[0] == "ECFP_MOL":
+            X_train = np.unpackbits(X_train, axis=1)
+            X_test = np.unpackbits(X_test, axis=1)
 
         # Initialize the XGBoost model and fit it
         if self.bdtm_name == "XGBClassifier":
@@ -51,7 +77,9 @@ class BDTM(VerboseTrainingBlock):
         elif self.bdtm_name == "LGBMClassifier":
             self.bdtm = LGBMClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
         elif self.bdtm_name == "CatBoostClassifier":
-            self.bdtm = CatBoostClassifier(n_estimators=self.n_estimators, random_state=42, verbose=1)
+            self.bdtm = CatBoostClassifier(n_estimators=self.n_estimators, random_state=42)
+        elif self.bdtm_name == "RandomForestClassifier":
+            self.bdtm = RandomForestClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
         else:
             raise ValueError("Invalid BDTM model.")
 
@@ -63,12 +91,10 @@ class BDTM(VerboseTrainingBlock):
         self.save_model(f"tm/{self.get_hash()}")
 
         # Get the predictions
+        y_pred_proba = self.bdtm.predict_proba(X_test)
         if self.multi_output:
-            y_pred_proba = self.bdtm.predict_proba(X_test)
             return y_pred_proba.flatten(), y[test_indices].flatten()
-
-        y_pred_proba = self.bdtm.predict_proba(X_test)[:, 1]
-        return y_pred_proba, y[test_indices]
+        return y_pred_proba[:, 1], y[test_indices]
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predict using an XGBoost classifier.
@@ -77,6 +103,12 @@ class BDTM(VerboseTrainingBlock):
         :return: Predictions
         """
         x_pred = x.molecule_ecfp
+
+        if x_pred is None:
+            raise ValueError("No ECFP data available.")
+
+        if self.data[0] == "ECFP_MOL":
+            x_pred = np.unpackbits(x_pred, axis=1)
 
         if not hasattr(self, "xgb_model"):
             self.bdtm = self.load_model(f"tm/{self.get_hash()}")
