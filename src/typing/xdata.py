@@ -107,7 +107,7 @@ class XData:
             raise ValueError("Missing descriptors of building_blocks and molecule")
         return np.array([self.bb1_desc[index], self.bb2_desc[index], self.bb3_desc[index], self.molecule_desc[index]])
 
-    def __len(self) -> int:
+    def __len__(self) -> int:
         """Return the length of the data.
 
         :return: Length of data

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
+from tqdm import tqdm
 
 from src.typing.xdata import XData
 from src.utils.logger import logger
@@ -32,12 +33,12 @@ class StratifiedSplitter:
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 
         kf_splits = kf.split(X.building_blocks, y)
-        for train_index, test_index in kf_splits:
+        for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             splits.append((train_index, test_index))
 
         if self.indices_for_flattened_data:
             new_splits = []
-            for idx, split in enumerate(splits):
+            for idx, split in tqdm(enumerate(splits), total=len(splits), desc="Flattening splits"):
                 train_indices, test_indices = split
 
                 train_indices = np.array(train_indices)
