@@ -18,7 +18,7 @@ from src.typing.xdata import DataRetrieval, XData
 class DecisionTrees(VerboseTrainingBlock):
     """Class that implements (Boosted) Decision Tree Models.
 
-    :param bdtm: Name of the model (XGBClassifier, LGBMClassifier, CatBoostClassifier, RandomForestClassifier)
+    :param model_name: Name of the model (XGBClassifier, LGBMClassifier, CatBoostClassifier, RandomForestClassifier)
     :param data: Which data to use
     :param n_estimators: Number of estimators
     :param multi_output: Predict one (false) or multiple outputs (true)
