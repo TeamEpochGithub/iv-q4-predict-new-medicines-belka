@@ -62,7 +62,7 @@ class SmileEmbedding(VerboseTransformationBlock):
 
         return features
 
-    def parallel_embeddings(self, smiles: list[str], desc: str) -> list[npt.NDArray[np.float32]]:
+    def parallel_embeddings(self, smiles: list[str], desc: str) -> npt.NDArray[np.float32]:
         """Compute the embeddings of the molecules using multiprocessing.
 
         param smiles: list containing the smiles of the molecules
@@ -87,7 +87,7 @@ class SmileEmbedding(VerboseTransformationBlock):
         padded = []
         for document in results:
             width = max_length - len(document)
-            padded.append(np.pad(document, ((0, width), (0, 0)), 'constant'))
+            padded.append(np.pad(document, ((0, width), (0, 0)), "constant"))
 
         return np.array(padded)
 
