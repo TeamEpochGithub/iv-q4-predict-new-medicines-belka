@@ -98,7 +98,7 @@ def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
     :param cfg: The configuration to setup
     :return: Tuple of x and y
     """
-   # Read the data if required and split it in X, y
+    # Read the data if required and split it in X, y
     logger.info("Reading data")
     train_data = read_train_data(Path(cfg.data_path))
 
@@ -106,7 +106,7 @@ def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
     if cfg.sample_size is not None and cfg.sample_size > 0:
         logger.info(f"Sampling data: {cfg.sample_size:,} samples")
         train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
- 
+
     # Reading X and y data
     logger.info("Reading Building Blocks and setting up X and y data")
 
