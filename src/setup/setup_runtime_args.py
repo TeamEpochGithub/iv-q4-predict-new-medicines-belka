@@ -41,8 +41,7 @@ def setup_train_args(
 
     train_sys = {
         "MainTrainer": main_trainer,
-        "RandomForestModel": main_trainer,
-        "BDTM": main_trainer,
+        "DecisionTrees": main_trainer,
     }
 
     if save_model_preds:

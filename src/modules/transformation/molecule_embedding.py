@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
-from src.typing.xdata import XData
+from src.typing.xdata import DataRetrieval, XData
 
 
 @dataclass
@@ -19,7 +19,7 @@ class MoleculeEmbedding(VerboseTransformationBlock):
     n_concat: int = 5
     name_transform: str = "concat"
 
-    def concat_embedding(self, blocks: list[npt.NDArray[np.float32]]) -> list[npt.NDArray[np.float32]]:
+    def concat_embedding(self, blocks: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
         """Transform concatenate the embeddings in each building block.
 
         param blocks: list containing the embeddings of each block
@@ -37,7 +37,7 @@ class MoleculeEmbedding(VerboseTransformationBlock):
             # concatenate the embeddings into one single embedding
             embeddings.append(np.concatenate(arrays))
 
-        return embeddings
+        return np.array(embeddings)
 
     def custom_transform(self, data: XData) -> XData:
         """Transform the sequence of embeddings into a single embedding."""
@@ -49,7 +49,7 @@ class MoleculeEmbedding(VerboseTransformationBlock):
             data.bb2_embedding = self.concat_embedding(data.bb2_embedding)
             data.bb3_embedding = self.concat_embedding(data.bb3_embedding)
 
-            data.retrieval = "Embedding"
-            data.molecule_embedding = [data[i].flatten() for i in range(len(data.building_blocks))]
+            data.retrieval = DataRetrieval.EMBEDDING
+            data.molecule_embedding = np.array([data[i].flatten() for i in range(len(data.building_blocks))])  # type: ignore[union-attr]
 
         return data

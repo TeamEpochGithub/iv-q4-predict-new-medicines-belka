@@ -1,13 +1,7 @@
-"""Converts the molcule building blocks into Fingerprints using scikit-fingerprints."""
+"""Converts the molcule building blocks into the specified fingerprint using SKFP."""
 import gc
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from typing import Any
-
-import numpy as np
-from rdkit.DataStructs.cDataStructs import ExplicitBitVect  # type: ignore[import-not-found]
-from skfp.fingerprints import ECFPFingerprint  # type: ignore[import-not-found]
-from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
@@ -22,58 +16,16 @@ class ScikitFingerprints(VerboseTransformationBlock):
 
     :param convert_building_blocks: Whether to convert the building blocks
     :param convert_molecules: Whether to convert the molecules
-    :param replace_array: Whether to replace the array with the ECFP fingerprints
+    :param delete_smiles: Whether to delete the SMILES after conversion
 
-    :param bits: The number of bits in the ECFP
-    :param radius: The radius of the ECFP
-    :param useFeatures: Whether to use features in the ECFP
+    :param fingerprint: The fingerprint to use
     """
 
     convert_building_blocks: bool = False
     convert_molecules: bool = False
-    replace_array: bool = False
+    delete_smiles: bool = False
 
     fingerprint: Any = None
-
-    @staticmethod
-    def _convert_smile(smiles: list[str], fingerprint: Any) -> list[ExplicitBitVect]:  # noqa: ANN401
-        """Worker function to process a single SMILES string."""
-        f1 = ECFPFingerprint(fp_size=1024)
-        return np.concatenate((fingerprint.fit_transform(X=smiles), f1.fit_transform(X=smiles)), axis=1)
-        # return fingerprint.fit_transform(X=smiles) + f1.fit_transform(X=smiles)
-
-    def _convert_smile_array(self, smile_array: list[str], desc: str) -> list[ExplicitBitVect] | list[dict[str, ExplicitBitVect]]:
-        if not isinstance(smile_array[0], str):
-            self.log_to_warning("Not a SMILE (string) array. Skipping conversion.")
-
-        fingerprint = [self._convert_smile([smile], self.fingerprint)[0] for smile in tqdm(smile_array, desc=desc)]
-        if self.replace_array:
-            return fingerprint
-        return [{"smile": smile, "fingerprint": fingerprint} for smile, fingerprint in zip(smile_array, fingerprint, strict=False)]
-
-    def _convert_smile_array_parallel(self, smile_array: list[str], desc: str) -> list[ExplicitBitVect]:
-        """Convert a list of SMILES strings into the fingerprints using multiprocessing.
-
-        :param smile_array: A list of SMILES strings.
-        :param desc: Description for logging purposes.
-        :return: A list of fingerprints or a list of dictionaries containing SMILES and fingerprint pairs.
-        """
-        if not isinstance(smile_array[0], str):
-            self.log_to_warning("Not a SMILE (string) array. Skipping conversion.")
-            return []
-
-        chunk_size = len(smile_array) // NUM_FUTURES
-        chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
-        chunks = [smile_array[i : i + chunk_size] for i in range(0, len(smile_array), chunk_size)]
-
-        results = []
-        with ProcessPoolExecutor() as executor:
-            self.log_to_terminal("Creating futures for fingerprint conversion.")
-            futures = [executor.submit(self._convert_smile, chunk, self.fingerprint) for chunk in chunks]
-            for future in tqdm(futures, total=len(futures), desc=desc):
-                results.extend(future.result())
-
-        return results
 
     def custom_transform(self, data: XData) -> XData:
         """Apply a custom transformation to the data.
@@ -84,17 +36,28 @@ class ScikitFingerprints(VerboseTransformationBlock):
         """
         if self.convert_building_blocks:
             if data.bb1_smiles is None or data.bb2_smiles is None or data.bb3_smiles is None:
-                raise ValueError("There is no SMILE information for at least on building block. Can't convert to fingerprint")
-            data.bb1_ecfp = self._convert_smile_array(data.bb1_smiles, desc="Creating fingerprint for bb1")
-            data.bb2_ecfp = self._convert_smile_array(data.bb2_smiles, desc="Creating fingerprint for bb2")
-            data.bb3_ecfp = self._convert_smile_array(data.bb3_smiles, desc="Creating fingerprint for bb3")
+                raise ValueError("There is no SMILE information for at least on building block. Can't convert to Fingerprint")
+
+            self.log_to_terminal("Creating Fingerprint for building block 1")
+            data.bb1_ecfp = self.fingerprint.fit_transform(X=data.bb1_smiles)
+            self.log_to_terminal("Creating Fingerprint for building block 2")
+            data.bb2_ecfp = self.fingerprint.fit_transform(X=data.bb2_smiles)
+            self.log_to_terminal("Creating Fingerprint for building block 3")
+            data.bb3_ecfp = self.fingerprint.fit_transform(X=data.bb3_smiles)
 
         if self.convert_molecules:
             if data.molecule_smiles is None:
-                raise ValueError("There is no SMILE information for the molecules, can't convert to fingerprint")
-            data.molecule_ecfp = self._convert_smile_array_parallel(data.molecule_smiles, desc="Creating fingerprint for molecules")
-            if self.replace_array:
-                data.molecule_smiles = None
+                raise ValueError("There is no SMILE information for the molecules, can't convert to ECFP")
+            self.log_to_terminal("Creating Fingerprint for molecules")
+            chunk_size = len(data) // NUM_FUTURES
+            chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
+            data.molecule_ecfp = self.fingerprint.fit_transform(X=data.molecule_smiles, batch_size=chunk_size, n_jobs=-1)
+
+        if self.delete_smiles:
+            del data.bb1_smiles
+            del data.bb2_smiles
+            del data.bb3_smiles
+            del data.molecule_smiles
 
         gc.collect()
         return data
