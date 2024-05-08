@@ -72,8 +72,6 @@ class XData:
     bb2_graph: list[Any] | None = None
     bb3_graph: list[Any] | None = None
 
-
-
     def __getitem__(self, index: int) -> npt.NDArray[Any]:
         """Get item from the data.
 
