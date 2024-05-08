@@ -5,7 +5,6 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
@@ -18,7 +17,7 @@ from src.typing.xdata import DataRetrieval, XData
 class DecisionTrees(VerboseTrainingBlock):
     """Class that implements (Boosted) Decision Tree Models.
 
-    :param model_name: Name of the model (XGBClassifier, LGBMClassifier, CatBoostClassifier, RandomForestClassifier)
+    :param model_name: Name of the model (XGBClassifier, LGBMClassifier, RandomForestClassifier)
     :param data: Which data to use
     :param n_estimators: Number of estimators
     :param multi_output: Predict one (false) or multiple outputs (true)
@@ -39,11 +38,11 @@ class DecisionTrees(VerboseTrainingBlock):
         if self.data[0] not in ["SMILES_MOL", "ECFP_MOL", "EMBEDDING_MOL", "DESCRIPTORS_MOL"]:
             raise ValueError(f"Invalid data type {self.data[0]}.")
 
-        if self.model_name not in ["XGBClassifier", "LGBMClassifier", "CatBoostClassifier", "RandomForestClassifier"]:
+        if self.model_name not in ["XGBClassifier", "LGBMClassifier", "RandomForestClassifier"]:
             raise ValueError(f"Invalid model name {self.model_name}.")
 
-        if self.model_name in ["LGBMClassifier", "CatBoostClassifier"]:
-            raise ValueError("LGBMClassifier and CatBoostClassifier are broken.")
+        if self.multi_output and self.model_name == "LGBMClassifier":
+            raise ValueError("LGBMClassifier does not support multi-output.")
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a BDTM classifier.
@@ -76,8 +75,6 @@ class DecisionTrees(VerboseTrainingBlock):
             self.model = XGBClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
         elif self.model_name == "LGBMClassifier":
             self.model = LGBMClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
-        elif self.model_name == "CatBoostClassifier":
-            self.model = CatBoostClassifier(n_estimators=self.n_estimators, random_state=42)
         elif self.model_name == "RandomForestClassifier":
             self.model = RandomForestClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
         else:
@@ -129,7 +126,7 @@ class DecisionTrees(VerboseTrainingBlock):
 
         joblib.dump(self.model, path)
 
-    def load_model(self, path: str) -> XGBClassifier | LGBMClassifier | CatBoostClassifier | RandomForestClassifier:
+    def load_model(self, path: str) -> XGBClassifier | LGBMClassifier | RandomForestClassifier:
         """Load the model.
 
         :param path: Path to load model from
