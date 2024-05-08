@@ -129,7 +129,7 @@ class DecisionTrees(VerboseTrainingBlock):
 
         joblib.dump(self.model, path)
 
-    def load_model(self, path: str) -> XGBClassifier:
+    def load_model(self, path: str) -> XGBClassifier | LGBMClassifier | CatBoostClassifier | RandomForestClassifier:
         """Load the model.
 
         :param path: Path to load model from
