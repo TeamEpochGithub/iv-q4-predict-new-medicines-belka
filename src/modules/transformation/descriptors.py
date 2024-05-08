@@ -1,8 +1,10 @@
 """Transformation block for descriptors."""
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
+import numpy as np
+import numpy.typing as npt
 from dask import compute, delayed
 from rdkit import Chem  # type: ignore[import]
 from rdkit.Chem import Descriptors as rdkitDesc  # type: ignore[import]
@@ -26,7 +28,7 @@ class Descriptors(VerboseTransformationBlock):
 
     descriptor_names: ClassVar[list[str]] = [
         "MaxAbsEStateIndex",
-        "MaxAbsEStateIndex",
+        "MaxEStateIndex",
         "MinAbsEStateIndex",
         "MinEStateIndex",
         "qed",
@@ -79,53 +81,54 @@ class Descriptors(VerboseTransformationBlock):
         Converts each SMILES in data to molecular descriptors and compiles results into a DataFrame.
 
         :param data: The data to transform
-        :return: A DataFrame where each row contains the descriptors of a molecule.
+        :return: XData object containing the descriptors for each molecule.
         """
-        self.descriptor_functions = {desc_name: getattr(rdkitDesc, desc_name) for desc_name in self.descriptor_names}
-        if self.convert_molecules and self.convert_bbs:
-            transformed_X = self.transform_molecule(data)
-            return self.transform_bb(transformed_X)
         if self.convert_molecules:
-            return self.transform_molecule(data)
+            data.molecule_desc = self.transform_molecule(data)
         if self.convert_bbs:
-            return self.transform_bb(data)
+            data.bb1_desc, data.bb2_desc, data.bb3_desc = self.transform_bb(data).values()
         return data
 
-    def transform_molecule(self, data: XData) -> XData:
+    def transform_molecule(self, data: XData) -> npt.NDArray[np.float32]:
         """Compute descriptors for the whole molecule.
 
         :param data: The data to transform
         :return: A XData object containing the descriptors for each molecule.
         """
-        molecule_smiles = data.molecule_smiles if data.molecule_smiles is not None else []
+        if data.molecule_smiles is None:
+            raise ValueError("Molecule smiles are not provided.")
 
-        chunk_size = len(molecule_smiles) // NUM_FUTURES
+        chunk_size = len(data.molecule_smiles) // NUM_FUTURES
         chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
-        chunks = [molecule_smiles[i : i + chunk_size] for i in range(0, len(molecule_smiles), chunk_size)]
+        chunks = [data.molecule_smiles[i : i + chunk_size] for i in range(0, len(data.molecule_smiles), chunk_size)]
 
+        result = np.empty([len(data), len(self.descriptor_names)], dtype=np.float32)
+        last_idx = 0
         with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(self.calculate_descriptors, chunk, names=self.descriptor_names) for chunk in chunks]
+            self.log_to_terminal("Creating futures for molecule descriptor calculation.")
+            futures = [executor.submit(self._calculate_descriptors, chunk, names=self.descriptor_names) for chunk in chunks]
 
-            mol_desc = []
             for future in tqdm(futures, desc="Creating Descriptors for molecules", total=len(futures)):
-                mol_desc.extend(list(future.result()))
+                partial_result = future.result()
+                result[last_idx : last_idx + len(partial_result)] = partial_result
+                last_idx += len(partial_result)
 
-        data.molecule_desc = mol_desc
-        return data
+        np.nan_to_num(result, copy=False)
+        return result
 
-    def transform_bb(self, data: XData) -> XData:
+    def transform_bb(self, data: XData) -> dict[str, npt.NDArray[np.float32]]:
         """Compute descriptors for each building block.
 
         :param data: The data to transform
         :return: A XData object containing the descriptors for each building block.
         """
+        if data.bb1_smiles is None or data.bb2_smiles is None or data.bb3_smiles is None:
+            raise ValueError("Building block smiles are not provided.")
+
         # Delayed tasks
-        bb1_smiles = data.bb1_smiles if data.bb1_smiles is not None else []
-        bb2_smiles = data.bb2_smiles if data.bb2_smiles is not None else []
-        bb3_smiles = data.bb3_smiles if data.bb3_smiles is not None else []
-        futures_bb1 = [self.delayed_descriptors(smiles) for smiles in bb1_smiles]
-        futures_bb2 = [self.delayed_descriptors(smiles) for smiles in bb2_smiles]
-        futures_bb3 = [self.delayed_descriptors(smiles) for smiles in bb3_smiles]
+        futures_bb1 = [self._delayed_descriptors(smiles) for smiles in data.bb1_smiles]
+        futures_bb2 = [self._delayed_descriptors(smiles) for smiles in data.bb2_smiles]
+        futures_bb3 = [self._delayed_descriptors(smiles) for smiles in data.bb3_smiles]
 
         with tqdm(total=len(futures_bb1) + len(futures_bb2) + len(futures_bb3), desc="Creating Descriptors for BBs") as pbar:
             bb1_desc = compute(*futures_bb1)
@@ -135,28 +138,25 @@ class Descriptors(VerboseTransformationBlock):
             bb3_desc = compute(*futures_bb3)
             pbar.update(len(futures_bb3))
 
-        # Updating the XData instance
-        data.bb1_desc = bb1_desc if bb1_desc is not None else []
-        data.bb2_desc = bb2_desc if bb2_desc is not None else []
-        data.bb3_desc = bb3_desc if bb3_desc is not None else []
-
-        return data
+        return {
+            "bb1": bb1_desc,
+            "bb2": bb2_desc,
+            "bb3": bb3_desc,
+        }
 
     @delayed
-    def delayed_descriptors(self, smiles: str) -> list[Any]:
+    def _delayed_descriptors(self, smiles: str) -> npt.NDArray[np.float32]:
         """Delays the computation of descriptors."""
-        return self.calculate_descriptors([smiles], self.descriptor_names)[0]
+        return self._calculate_descriptors(np.array([smiles]), self.descriptor_names)[0]
 
     @staticmethod
-    def calculate_descriptors(smiles: list[str], names: list[str]) -> list[Any]:
+    def _calculate_descriptors(smiles: npt.NDArray[np.str_], names: list[str]) -> npt.NDArray[np.float32]:
         """Calculate the descriptors for the molecule using the predefined descriptor functions."""
-        functions = {desc_name: getattr(rdkitDesc, desc_name) for desc_name in names}
-        results = []
-        if smiles is not None:
-            for smile in smiles:
-                mol = Chem.MolFromSmiles(smile)
-                results.append([functions[desc_name](mol) for desc_name in names])
-        else:
-            return [0 in range(len(names))]
+        functions = [getattr(rdkitDesc, desc_name) for desc_name in names]
+        result = np.empty([len(smiles), len(names)], dtype=np.float32)
+        for idx, smile in enumerate(smiles):
+            mol = Chem.MolFromSmiles(smile)
+            for sub_idx, desc_fn in enumerate(functions):
+                result[idx][sub_idx] = desc_fn(mol)
 
-        return results
+        return result

@@ -1,16 +1,28 @@
 """Module that adds one hot encoding of protein to XData and flattens y."""
-from typing import Any
+
+from dataclasses import dataclass, field
 
 import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
 
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
-from src.typing.xdata import XData
+from src.typing.xdata import DataRetrieval, XData
 
 
+@dataclass
 class OneHotProteinBB(VerboseTrainingBlock):
-    """Add the one hot encoding of protein to XData building block ecfp at the start."""
+    """Add the one hot encoding of protein to XData building block ecfp at the start.
+
+    :param data: The data to use
+    """
+
+    data: list[str] = field(default_factory=lambda: ["ECFP_BB"])
+
+    def __post_init__(self) -> None:
+        """Post init method."""
+        if self.data[0] != "ECFP_BB":
+            raise ValueError("Currently, only 'ECFP_BB' is suported.")
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8]) -> tuple[XData, npt.NDArray[np.int8]]:
         """Add one hot encoding of protein to XData and flatten y.
@@ -29,21 +41,6 @@ class OneHotProteinBB(VerboseTrainingBlock):
         """
         return self.add_protein_to_xdata(x)
 
-    @staticmethod
-    def _concatenate_protein(chunk: list[Any]) -> list[npt.NDArray[Any]]:
-        """Concatenate protein to molecule.
-
-        :param protein: Protein one hot encoding
-        :param mol: Molecule ECFP
-        :return: Concatenated protein and molecule
-        """
-        BRD4 = np.array([1, 0, 0])
-        HSA = np.array([0, 1, 0])
-        sEH = np.array([0, 0, 1])
-        protein_onehot = [BRD4, HSA, sEH]
-
-        return [np.concatenate((protein, mol)) for mol in chunk for protein in protein_onehot]
-
     def add_protein_to_xdata(self, x: XData) -> XData:
         """Add protein to XData.
 
@@ -55,13 +52,15 @@ class OneHotProteinBB(VerboseTrainingBlock):
         sEH = np.array([0, 0, 1])
         protein_onehot = [BRD4, HSA, sEH]
 
-        x.retrieval = "ECFP_BB"
+        x.retrieval = DataRetrieval.ECFP_BB
 
-        result = [
-            np.concatenate((protein, x[i][0], x[i][1], x[i][2]))
-            for i in tqdm(range(len(x.building_blocks)), desc="Concatenating Protein to building_blocks")
-            for protein in protein_onehot
-        ]
+        result = np.array(
+            [
+                np.concatenate((protein, x[i][0], x[i][1], x[i][2]))
+                for i in tqdm(range(len(x.building_blocks)), desc="Concatenating Protein to building_blocks")
+                for protein in protein_onehot
+            ],
+        )
         x.molecule_ecfp = result
 
         return x

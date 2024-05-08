@@ -31,7 +31,7 @@ class SmileEmbedding(VerboseTransformationBlock):
     building: bool = True
     chunk_size: int = 10000
 
-    def embeddings(self, smiles: list[str]) -> list[npt.NDArray[np.float32]]:
+    def embeddings(self, smiles: npt.NDArray[np.str_]) -> list[npt.NDArray[np.float32]]:
         """Compute the embeddings of the molecules or blocks.
 
         param smile: list containing the molecules as strings
@@ -62,7 +62,7 @@ class SmileEmbedding(VerboseTransformationBlock):
 
         return features
 
-    def parallel_embeddings(self, smiles: list[str], desc: str) -> list[npt.NDArray[np.float32]]:
+    def parallel_embeddings(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
         """Compute the embeddings of the molecules using multiprocessing.
 
         param smiles: list containing the smiles of the molecules
@@ -80,7 +80,16 @@ class SmileEmbedding(VerboseTransformationBlock):
             for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
-        return results
+        # compute the maximum sequence length
+        max_length = np.max([doc.shape[0] for doc in results])
+
+        # pad the sequences to the maximum length
+        padded = []
+        for document in results:
+            width = max_length - len(document)
+            padded.append(np.pad(document, ((0, width), (0, 0)), "constant"))
+
+        return np.array(padded)
 
     def custom_transform(self, data: XData) -> XData:
         """Compute the embeddings of the molecules in training.

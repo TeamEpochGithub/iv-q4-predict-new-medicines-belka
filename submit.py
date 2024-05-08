@@ -10,6 +10,7 @@ import polars as pl
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from src.config.submit_config import SubmitConfig
 from src.setup.setup_data import setup_inference_data
@@ -53,18 +54,18 @@ def run_submit(cfg: DictConfig) -> None:
     X = setup_inference_data(directory, inference_data)
     logger.info(f"Total time to setup data: {time.time() - first_time}s")
 
-    # Predict on the test data
-    logger.info("Making predictions...")
-
+    logger.info("Setting up Prediction Pipeline...")
+    # Setup Arguments for prediction
     cache_args = {
         "output_data_type": "numpy_array",
         "storage_type": ".pkl",
         "storage_path": f"{Path(cfg.result_path)}",
     }
-
     pred_args = setup_pred_args(pipeline=model_pipeline, cache_args=cache_args)
     predictions = model_pipeline.predict(X, **pred_args)
 
+    # Save the predictions
+    logger.info("Reshaping predictions...")
     predictions_df = pd.DataFrame(predictions.reshape(len(predictions) // 3, 3), columns=["binds_BRD4", "binds_HSA", "binds_sEH"])
     predictions_df["is_BRD4"] = inference_data["is_BRD4"]
     predictions_df["is_HSA"] = inference_data["is_HSA"]
@@ -84,7 +85,7 @@ def run_submit(cfg: DictConfig) -> None:
     # Create a flattened array of predictions where each row is only given if its corresponding is_ is true
     # For example if is_BRD4 is true, then the prediction is binds_BRD4 else it is skipped and shouldn't be included in the final array
     final_predictions = []
-    for i in range(predictions_df.shape[0]):
+    for i in tqdm(range(predictions_df.shape[0]), desc="Flattening predictions"):
         if predictions_df.iloc[i].is_BRD4:
             final_predictions.append(predictions_df.iloc[i].binds_BRD4)
         if predictions_df.iloc[i].is_HSA:
@@ -92,6 +93,7 @@ def run_submit(cfg: DictConfig) -> None:
         if predictions_df.iloc[i].is_sEH:
             final_predictions.append(predictions_df.iloc[i].binds_sEH)
 
+    logger.info("Saving submission...")
     final_predictions_df = pd.DataFrame({"id": original_ids, "binds": final_predictions})
     final_predictions_df.to_csv(directory / "submission.csv", index=False)
 
