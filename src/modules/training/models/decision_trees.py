@@ -24,7 +24,7 @@ class DecisionTrees(VerboseTrainingBlock):
     :param multi_output: Predict one (false) or multiple outputs (true)
     """
 
-    bdtm_name: str = "XGBClassifier"
+    model_name: str = "XGBClassifier"
     data: list[str] = field(default_factory=lambda: ["ECFP_MOL"])
     n_estimators: int = 100
     multi_output: bool = False
@@ -39,10 +39,10 @@ class DecisionTrees(VerboseTrainingBlock):
         if self.data[0] not in ["SMILES_MOL", "ECFP_MOL", "EMBEDDING_MOL", "DESCRIPTORS_MOL"]:
             raise ValueError(f"Invalid data type {self.data[0]}.")
 
-        if self.bdtm_name not in ["XGBClassifier", "LGBMClassifier", "CatBoostClassifier", "RandomForestClassifier"]:
-            raise ValueError(f"Invalid model name {self.bdtm_name}.")
+        if self.model_name not in ["XGBClassifier", "LGBMClassifier", "CatBoostClassifier", "RandomForestClassifier"]:
+            raise ValueError(f"Invalid model name {self.model_name}.")
 
-        if self.bdtm_name in ["LGBMClassifier", "CatBoostClassifier"]:
+        if self.model_name in ["LGBMClassifier", "CatBoostClassifier"]:
             raise ValueError("LGBMClassifier and CatBoostClassifier are broken.")
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
@@ -72,26 +72,26 @@ class DecisionTrees(VerboseTrainingBlock):
             X_test = np.unpackbits(X_test, axis=1)
 
         # Initialize the XGBoost model and fit it
-        if self.bdtm_name == "XGBClassifier":
-            self.bdtm = XGBClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
-        elif self.bdtm_name == "LGBMClassifier":
-            self.bdtm = LGBMClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
-        elif self.bdtm_name == "CatBoostClassifier":
-            self.bdtm = CatBoostClassifier(n_estimators=self.n_estimators, random_state=42)
-        elif self.bdtm_name == "RandomForestClassifier":
-            self.bdtm = RandomForestClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
+        if self.model_name == "XGBClassifier":
+            self.model = XGBClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
+        elif self.model_name == "LGBMClassifier":
+            self.model = LGBMClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
+        elif self.model_name == "CatBoostClassifier":
+            self.model = CatBoostClassifier(n_estimators=self.n_estimators, random_state=42)
+        elif self.model_name == "RandomForestClassifier":
+            self.model = RandomForestClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
         else:
             raise ValueError("Invalid BDTM model.")
 
-        self.log_to_terminal(f"Training {self.bdtm_name} with {self.n_estimators} estimators.")
-        self.bdtm.fit(X_train, y_train)
+        self.log_to_terminal(f"Training {self.model_name} with {self.n_estimators} estimators.")
+        self.model.fit(X_train, y_train)
         self.log_to_terminal("Training completed.")
 
         # Save the model
         self.save_model(f"tm/{self.get_hash()}")
 
         # Get the predictions
-        y_pred_proba = self.bdtm.predict_proba(X_test)
+        y_pred_proba = self.model.predict_proba(X_test)
         if self.multi_output:
             return y_pred_proba.flatten(), y[test_indices].flatten()
         return y_pred_proba[:, 1], y[test_indices]
@@ -102,21 +102,23 @@ class DecisionTrees(VerboseTrainingBlock):
         :param x: XData
         :return: Predictions
         """
-        x_pred = x.molecule_ecfp
+        x.retrieval = getattr(DataRetrieval, self.data[0])
+        x_pred = x[:]
 
         if x_pred is None:
-            raise ValueError("No ECFP data available.")
+            raise ValueError("No data available.")
 
         if self.data[0] == "ECFP_MOL":
             x_pred = np.unpackbits(x_pred, axis=1)
 
-        if not hasattr(self, "xgb_model"):
-            self.bdtm = self.load_model(f"tm/{self.get_hash()}")
+        if not hasattr(self, "model"):
+            self.model = self.load_model(f"tm/{self.get_hash()}")
 
         if self.multi_output:
-            return self.bdtm.predict_proba(x_pred).flatten()
+            return self.model.predict_proba(x_pred).flatten()
 
-        return self.bdtm.predict_proba(x_pred)[:, 1]
+        self.log_to_terminal("Predicting.")
+        return self.model.predict_proba(x_pred)[:, 1]
 
     def save_model(self, path: str) -> None:
         """Save the model.
@@ -125,7 +127,7 @@ class DecisionTrees(VerboseTrainingBlock):
         """
         import joblib
 
-        joblib.dump(self.bdtm, path)
+        joblib.dump(self.model, path)
 
     def load_model(self, path: str) -> XGBClassifier:
         """Load the model.
@@ -134,6 +136,6 @@ class DecisionTrees(VerboseTrainingBlock):
         """
         import joblib
 
-        self.bdtm = joblib.load(path)
+        self.model = joblib.load(path)
 
-        return self.bdtm
+        return self.model

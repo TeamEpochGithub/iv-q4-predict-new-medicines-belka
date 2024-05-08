@@ -15,7 +15,7 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.models.decision_trees.DecisionTrees
-      bdtm_name: "XGBClassifier"
+      model_name: "XGBClassifier"
       n_estimators: 500
       multi_output: true
       data: ["ECFP_MOL"]
