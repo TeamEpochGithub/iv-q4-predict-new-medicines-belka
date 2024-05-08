@@ -80,7 +80,16 @@ class SmileEmbedding(VerboseTransformationBlock):
             for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
-        return results
+        # compute the maximum sequence length
+        max_length = np.max([doc.shape[0] for doc in results])
+
+        # pad the sequences to the maximum length
+        padded = []
+        for document in results:
+            width = max_length - len(document)
+            padded.append(np.pad(document, ((0, width), (0, 0)), 'constant'))
+
+        return np.array(padded)
 
     def custom_transform(self, data: XData) -> XData:
         """Compute the embeddings of the molecules in training.
