@@ -77,8 +77,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
     # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
 
     # Sample the data
-    logger.info("Sampling data")
-    train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
+    if cfg.sample_size is not None and cfg.sample_size > 0:
+        logger.info(f"Sampling data: {cfg.sample_size:,} samples")
+        train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
 
     # Reading X and y data
     logger.info("Reading Building Blocks and setting up X and y data")
@@ -106,9 +107,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Train model pipeline")
     train_args = setup_train_args(pipeline=model_pipeline, cache_args=cache_args, train_indices=train_indices, test_indices=test_indices, save_model=True, fold=fold)
     predictions, y_new = model_pipeline.train(X, y, **train_args)
-
-    if y is None:
-        y = y_new
 
     if len(test_indices) > 0:
         print_section_separator("Scoring")
