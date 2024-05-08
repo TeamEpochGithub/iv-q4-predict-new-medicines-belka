@@ -32,6 +32,11 @@ class XData:
     :param bb1_desc: Descriptors for building_block 1 smiles
     :param bb2_desc: Descriptors for building_block 2 smiles
     :param bb3_desc: Descriptors for building_block 3 smiles
+
+    :param molecule_graph: graph for molecules
+    :param bb1_desc: graph for building_block 1 smiles
+    :param bb2_desc: graph for building_block 2 smiles
+    :param bb3_desc: graph for building_block 3 smiles
     """
 
     building_blocks: npt.NDArray[np.int16]
@@ -60,6 +65,14 @@ class XData:
     bb1_desc: list[Any] | None = None
     bb2_desc: list[Any] | None = None
     bb3_desc: list[Any] | None = None
+
+    # Descriptors
+    molecule_graph: list[Any] | None = None
+    bb1_graph: list[Any] | None = None
+    bb2_graph: list[Any] | None = None
+    bb3_graph: list[Any] | None = None
+
+
 
     def __getitem__(self, index: int) -> npt.NDArray[Any]:
         """Get item from the data.

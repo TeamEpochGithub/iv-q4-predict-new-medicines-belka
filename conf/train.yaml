@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: fingerprints
+  - model: atom_graph
   - wandb: train
 
 data_path: data/shrunken

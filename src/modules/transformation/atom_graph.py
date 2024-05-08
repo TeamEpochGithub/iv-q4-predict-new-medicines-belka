@@ -11,16 +11,17 @@ from torch_geometric.data import Data
 from concurrent.futures import ProcessPoolExecutor
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 
+NUM_FUTURES = 100
+MIN_CHUNK_SIZE = 1000
+
 class AtomGraph(VerboseTransformationBlock):
     """Create a torch geometric graph from the molecule.
 
     param convert_molecule: whether to convert the molecule
-    param convert_bb: whether to convert the building blocks
-    param chunk_size: the number of samples per process"""
+    param convert_bb: whether to convert the building blocks"""
 
-    convert_molecule: bool = False
+    convert_molecule: bool = True
     convert_bb: bool = True
-    chunk_size: int = 5000
 
     def atom_attribute(self, smile: str) -> torch.Tensor:
         """Extract the atom attribute from the smile
@@ -47,7 +48,7 @@ class AtomGraph(VerboseTransformationBlock):
 
         # Extract the bonds from the smile
         mol = Chem.MolFromSmiles(smile)
-        bonds = mol.GetAtoms()
+        bonds = mol.GetBonds()
 
         # Extract the attributes and the edge index
         edge_features = []
@@ -65,18 +66,26 @@ class AtomGraph(VerboseTransformationBlock):
 
         return edge_index, edge_features
 
-    def torch_graph(self, smile: str) -> Any:
+
+    def torch_graph(self, smiles: list[str]) -> list:
         """Create the torch graph from the smile format.
-        param smile: the molecule string format"""
 
-        # Extract the atom attributes from the smile
-        atom_feature = self.atom_attribute(smile)
+        param smile: list containing the smile format
+        return: list containing the geometric class"""
 
-        #
-        # Extract the edge attributes and indices
-        edge_index, edge_feature = self.bond_attribute(smile)
+        graphs = []
+        for smile in smiles:
+            # Extract the atom attributes from the smile
+            atom_feature = self.atom_attribute(smile)
 
-        return Data(x=atom_feature, edge_index=edge_index, edge_attr=edge_feature)
+            # Extract the edge attributes and indices
+            edge_index, edge_feature = self.bond_attribute(smile)
+
+            # create the geometric torch graph
+            graphs.append(Data(x=atom_feature, edge_index=edge_index, edge_attr=edge_feature))
+
+        return graphs
+
 
     def parallel_graph(self, smiles: list[str], desc: str) -> Any:
         """Compute the torch graph using multiprocessing.
@@ -84,8 +93,12 @@ class AtomGraph(VerboseTransformationBlock):
         param smiles: list containing the smiles of the molecules
         param desc: message to be shown during the process"""
 
+        # define the maximum chunk size
+        chunk_size = len(smiles) // NUM_FUTURES
+        chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
+
         # Divide the smiles molecules into chunks
-        chunks = [smiles[i: i + self.chunk_size] for i in range(0, len(smiles), self.chunk_size)]
+        chunks = [smiles[i: i + chunk_size] for i in range(0, len(smiles), chunk_size)]
 
         # Initialize the multiprocessing with the chunks
         results = []
