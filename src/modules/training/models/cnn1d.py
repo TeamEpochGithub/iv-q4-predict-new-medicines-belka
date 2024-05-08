@@ -17,7 +17,7 @@ class CNN1D(nn.Module):
         n_classes: number of classes.
     """
 
-    embedding: nn.Module
+    _embedding: nn.Module
 
     def __init__(self, n_classes: int, *, embedding: bool = True) -> None:
         """Initialize the CNN1D model.
@@ -35,9 +35,9 @@ class CNN1D(nn.Module):
 
         # Embedding layer
         if embedding:
-            self.embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_dim, padding_idx=0)
+            self._embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_dim, padding_idx=0)
         else:
-            self.embedding = nn.Linear(4, hidden_dim)
+            self._embedding = nn.Linear(4, hidden_dim)
 
         # Convolutional layers
         self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=NUM_FILTERS, kernel_size=3, stride=1)
@@ -66,7 +66,7 @@ class CNN1D(nn.Module):
         :param x: Input data
         :return: Output data
         """
-        emb = self.embedding(x).transpose(2, 1)
+        emb = self._embedding(x).transpose(2, 1)
 
         x = self.relu(self.conv1(emb))
         x = self.relu(self.conv2(x))
