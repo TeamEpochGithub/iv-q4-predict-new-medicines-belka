@@ -32,7 +32,7 @@ class CNN1D(nn.Module):
         self.hidden_dim = hidden_dim
 
         # Embedding layer
-        self.embedding = nn.Embedding(num_embeddings=36, embedding_dim=hidden_dim, padding_idx=0)
+        self.embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_dim, padding_idx=0)
 
         # Convolutional layers
         self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=NUM_FILTERS, kernel_size=3, stride=1)

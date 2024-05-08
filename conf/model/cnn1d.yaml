@@ -11,14 +11,13 @@ y_sys:
 
 train_sys:
   steps:
-    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
       criterion:
-        _target_: torch.nn.BCEWithLogitsLoss
+        _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
@@ -26,7 +25,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 16384
+      batch_size: 131072 
       patience: 1
       scheduler:
         _target_: functools.partial
