@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d
+  - model: fingerprints
   - wandb: train
 
 data_path: data/shrunken
@@ -12,10 +12,7 @@ scorer:
   name: MAP
 splitter:
   _target_: src.splitter.stratified_splitter.StratifiedSplitter
-  # _target_: src.splitter.bb_splitter.BBSplitter
   n_splits: 5
-  # indices_for_flattened_data: true
-  # bb_to_split_by: [1,0,0]
-sample_size: 100_000_000
-sample_split: -1
+sample_size: 1_000_000
+sample_split: 0.5
 allow_multiple_instances: true

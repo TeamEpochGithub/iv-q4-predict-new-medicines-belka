@@ -1,0 +1,29 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.scikit_fingerprints.ScikitFingerprints
+      convert_molecules: True
+      fingerprint:
+        _target_: skfp.fingerprints.TopologicalTorsionFingerprint
+        fp_size: 1024
+
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
+    - _target_: src.modules.training.models.bdtm.BDTM
+      bdtm_name: "XGBClassifier"
+      n_estimators: 500
+      multi_output: true
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []
