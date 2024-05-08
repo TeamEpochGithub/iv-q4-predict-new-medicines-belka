@@ -21,6 +21,7 @@ class MainTrainer(TorchTrainer, Logger):
     """Main training block."""
 
     representation_to_consider: str = "ECFP"
+    int_type: bool = False
 
     def create_datasets(
         self,
@@ -43,11 +44,11 @@ class MainTrainer(TorchTrainer, Logger):
             raise ValueError("Representation does not exist")
 
         train_dataset = TensorDataset(
-            torch.from_numpy(x_array[train_indices]).int(),
+            torch.from_numpy(x_array[train_indices]) if not self.int_type else torch.from_numpy(x_array[train_indices]),
             torch.from_numpy(y[train_indices]),
         )
         test_dataset = TensorDataset(
-            torch.from_numpy(x_array[test_indices]).int(),
+            torch.from_numpy(x_array[test_indices]) if not self.int_type else torch.from_numpy(x_array[test_indices]),
             torch.from_numpy(y[test_indices]),
         )
 
@@ -63,7 +64,7 @@ class MainTrainer(TorchTrainer, Logger):
         :return: The prediction dataset.
         """
         x_arr = np.array(x.molecule_ecfp)
-        return TensorDataset(torch.from_numpy(x_arr).int())
+        return TensorDataset(torch.from_numpy(x_arr).int() if self.int_type else torch.from_numpy(x_arr).float())
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.
@@ -113,7 +114,7 @@ class MainTrainer(TorchTrainer, Logger):
         )
         for batch in pbar:
             X_batch, y_batch = batch
-            X_batch = X_batch.to(self.device)
+            X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
             y_batch = y_batch.to(self.device).float()
 
             # Forward pass
@@ -156,7 +157,7 @@ class MainTrainer(TorchTrainer, Logger):
         with torch.no_grad():
             for batch in pbar:
                 X_batch, y_batch = batch
-                X_batch = X_batch.to(self.device)
+                X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
                 y_batch = y_batch.to(self.device).float()
 
                 # Forward pass
@@ -192,7 +193,7 @@ class MainTrainer(TorchTrainer, Logger):
         )
         with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
             for data in tepoch:
-                X_batch = data[0].to(self.device)
+                X_batch = data[0].to(self.device).int() if self.int_type else data[0].to(self.device).float()
 
                 y_pred = self.model(X_batch).squeeze(1).cpu().numpy()
                 predictions.extend(y_pred)
