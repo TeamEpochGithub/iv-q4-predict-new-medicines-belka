@@ -11,7 +11,6 @@ y_sys:
 
 train_sys:
   steps:
-    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:

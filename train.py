@@ -70,24 +70,31 @@ def run_train_cfg(cfg: DictConfig) -> None:
         "storage_path": f"{processed_data_path}",
     }
 
-    # Read the data if required and split it in X, y
-    logger.info("Reading data")
-    train_data = read_train_data(Path(cfg.data_path))
-    # x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
-    # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
+    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
+    y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
+    splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size}.pkl")
 
-    # Sample the data
-    logger.info("Sampling data")
-    train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
+    # Defaults
+    X = []
+    y = []
 
-    # Reading X and y data
-    logger.info("Reading Building Blocks and setting up X and y data")
-    X, y = None, None
-    # if not x_cache_exists:
-    X = setup_train_x_data(Path(cfg.data_path), train_data)
-    y = setup_train_y_data(train_data)
-    del train_data
-    gc.collect()
+    if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists():
+        # Read the data if required and split it in X, y
+        logger.info("Reading data")
+        train_data = read_train_data(Path(cfg.data_path))
+
+        # Sample the data
+        logger.info("Sampling data")
+        train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
+
+        # Reading X and y data
+        logger.info("Reading Building Blocks and setting up X and y data")
+        X, y = None, None
+        # if not x_cache_exists:
+        X = setup_train_x_data(Path(cfg.data_path), train_data)
+        y = setup_train_y_data(train_data)
+        del train_data
+        gc.collect()
 
     # Split the data into train and test if required
     if cfg.test_size == 0:
@@ -98,7 +105,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         fold = -1
     else:
         logger.info("Splitting Data into train and test sets.")
-        train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y)[0]
+        train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
         fold = 0
     logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}")
 
