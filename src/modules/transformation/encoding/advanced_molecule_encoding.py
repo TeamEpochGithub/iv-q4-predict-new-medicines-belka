@@ -8,7 +8,7 @@ from src.modules.transformation.verbose_transformation_block import VerboseTrans
 from src.typing.xdata import XData
 
 
-class MoleculeEncoding(VerboseTransformationBlock):
+class AdvancedMoleculeEncoding(VerboseTransformationBlock):
     """Class that encodes the molecule smiles."""
 
     def custom_transform(self, x: XData) -> XData:
@@ -69,7 +69,7 @@ class MoleculeEncoding(VerboseTransformationBlock):
             tmp = tmp + [[0, 0, 0, 0]] * (142 - len(tmp))
             return np.array(tmp).astype(np.float32)
 
-        smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smile)(smile) for smile in tqdm(smiles))
+        smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smile)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
         smiles_enc = np.stack(smiles_enc)
 
         x.molecule_ecfp = smiles_enc

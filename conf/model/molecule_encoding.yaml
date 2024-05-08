@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.molecule_encoding.MoleculeEncoding
+    - _target_: src.modules.transformation.encoding.advanced_molecule_encoding.AdvancedMoleculeEncoding
 
 y_sys:
   steps: []

@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.notebook_enc.NotebookEncoding
+    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
 
 y_sys:
   steps: []
