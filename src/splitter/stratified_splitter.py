@@ -1,7 +1,7 @@
 """Class to split into stratified multi label train test."""
+import pickle
 from dataclasses import dataclass
 from pathlib import Path
-import pickle
 
 import numpy as np
 import numpy.typing as npt
@@ -35,9 +35,9 @@ class StratifiedSplitter:
 
         # Load the splits if they exist
         if cache_path.exists():
-            with open(cache_path,"rb") as f:
+            with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
-                return pickle.load(f)
+                return pickle.load(f)  # noqa: S301
 
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 
@@ -86,7 +86,6 @@ class StratifiedSplitter:
         # Pickle the splits
         logger.debug(f"Finished splitting with size:{len(y)}")
         with open(cache_path, "wb") as f:
-            pickle.dump(splits, f, **({"protocol": pickle.HIGHEST_PROTOCOL}))
-
+            pickle.dump(splits, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         return splits

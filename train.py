@@ -1,11 +1,11 @@
 """Train.py is the main script for training the model and will take in the raw data and output a trained model."""
-import gc
 import os
 import warnings
 from contextlib import nullcontext
 from pathlib import Path
 
 import hydra
+import numpy as np
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
@@ -13,10 +13,11 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
-from src.setup.setup_data import read_train_data, sample_data, setup_train_x_data, setup_train_y_data
+from src.setup.setup_data import setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import setup_train_args
 from src.setup.setup_wandb import setup_wandb
+from src.typing.xdata import XData
 from src.utils.lock import Lock
 from src.utils.logger import logger
 from src.utils.set_torch_seed import set_torch_seed
@@ -75,26 +76,11 @@ def run_train_cfg(cfg: DictConfig) -> None:
     splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size}.pkl")
 
     # Defaults
-    X = []
-    y = []
+    X = XData(np.array([1]))
+    y = np.array([1])
 
     if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists():
-        # Read the data if required and split it in X, y
-        logger.info("Reading data")
-        train_data = read_train_data(Path(cfg.data_path))
-
-        # Sample the data
-        logger.info("Sampling data")
-        train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
-
-        # Reading X and y data
-        logger.info("Reading Building Blocks and setting up X and y data")
-        X, y = None, None
-        # if not x_cache_exists:
-        X = setup_train_x_data(Path(cfg.data_path), train_data)
-        y = setup_train_y_data(train_data)
-        del train_data
-        gc.collect()
+        X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
     if cfg.test_size == 0:

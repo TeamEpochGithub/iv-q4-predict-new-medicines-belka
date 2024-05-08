@@ -3,13 +3,16 @@
 - Since these methods are very competition specific none have been implemented here yet.
 - Usually you'll have one data setup for training and another for making submissions.
 """
+import gc
 import pickle
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import polars as pl
+from omegaconf import DictConfig
 
 from src.typing.xdata import XData
 from src.utils.logger import logger
@@ -85,6 +88,31 @@ def setup_train_y_data(train_data: pd.DataFrame) -> Any:  # noqa: ANN401
     :return: y data
     """
     return train_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int8)
+
+
+def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
+    """Set up x and y data with sampling.
+
+    :param cfg: The configuration to setup
+    :return: Tuple of x and y
+    """
+    # Read the data if required and split it in X, y
+    logger.info("Reading data")
+    train_data = read_train_data(Path(cfg.data_path))
+
+    # Sample the data
+    logger.info("Sampling data")
+    train_data = sample_data(train_data, cfg.sample_size, cfg.sample_split)
+
+    # Reading X and y data
+    logger.info("Reading Building Blocks and setting up X and y data")
+
+    # if not x_cache_exists:
+    X = setup_train_x_data(Path(cfg.data_path), train_data)
+    y = setup_train_y_data(train_data)
+    del train_data
+    gc.collect()
+    return X, y
 
 
 def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any:  # noqa: ANN401
