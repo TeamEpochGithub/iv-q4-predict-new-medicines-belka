@@ -5,6 +5,9 @@ defaults:
 x_sys:
   steps:
     - _target_: src.modules.transformation.atom_graph.AtomGraph
+      convert_molecule: True
+      convert_bb:  True
+
 
 y_sys:
   steps: []

@@ -60,7 +60,7 @@ class SmileEmbedding(VerboseTransformationBlock):
 
             features.append(np.array(embeddings))
 
-        return features
+        return np.array(features)
 
     def parallel_embeddings(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
         """Compute the embeddings of the molecules using multiprocessing.

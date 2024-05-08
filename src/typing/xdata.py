@@ -40,6 +40,13 @@ class DataRetrieval(IntFlag):
     DESCRIPTORS = DESCRIPTORS_MOL | DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
     DESCRIPTORS_BB = DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
 
+    GRAPHS_MOL = 2 ** 16
+    GRAPHS_BB1 = 2 ** 17
+    GRAPHS_BB2 = 2 ** 18
+    GRAPHS_BB3 = 2 ** 19
+    GRAPHS = GRAPHS_MOL | GRAPHS_BB1 | GRAPHS_BB2 | GRAPHS_BB3
+    GRAPHS_BB = GRAPHS_BB1 | GRAPHS_BB2 | GRAPHS_BB3
+
 
 @dataclass
 class XData:
@@ -94,6 +101,12 @@ class XData:
     bb1_desc: npt.NDArray[np.float32] | None = None
     bb2_desc: npt.NDArray[np.float32] | None = None
     bb3_desc: npt.NDArray[np.float32] | None = None
+
+    # graph
+    molecule_graph: npt.NDArray[np.float32] | None = None
+    bb1_graph: npt.NDArray[np.float32] | None = None
+    bb2_graph: npt.NDArray[np.float32] | None = None
+    bb3_graph: npt.NDArray[np.float32] | None = None
 
     def __getitem__(self, idx: int | npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any] | list[Any]:  # noqa: C901 PLR0912 PLR0915
         """Get item from the data.
@@ -166,6 +179,7 @@ class XData:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             result.append(self.molecule_desc[idx])
+
         if self.retrieval & DataRetrieval.DESCRIPTORS_BB1:
             if self.bb1_desc is None:
                 raise ValueError("No descriptor data available.")
@@ -178,6 +192,28 @@ class XData:
             if self.bb3_desc is None:
                 raise ValueError("No descriptor data available.")
             result.append(self.bb3_desc[item[2]])
+
+        # Graphs
+        if self.retrieval & DataRetrieval.GRAPHS_MOL:
+            if self.molecule_graph is None:
+                raise ValueError("No graph data available.")
+            result.append(self.molecule_graph[idx])
+
+        if self.retrieval & DataRetrieval.GRAPHS_BB1:
+            if self.bb1_graph is None:
+                raise ValueError("No graph data available.")
+            result.append(self.bb1_graph[item[0]])
+
+        if self.retrieval & DataRetrieval.GRAPHS_BB2:
+            if self.bb2_graph is None:
+                raise ValueError("No graph data available.")
+            result.append(self.bb2_graph[item[1]])
+
+        if self.retrieval & DataRetrieval.GRAPHS_BB3:
+            if self.bb3_graph is None:
+                raise ValueError("No graph data available.")
+            result.append(self.bb3_graph[item[2]])
+
 
         if len(result) == 1:
             return result[0]
@@ -192,18 +228,26 @@ class XData:
             if self.molecule_smiles is None:
                 raise ValueError("No SMILES data available.")
             return self.molecule_smiles[indices]
+
         if self.retrieval == DataRetrieval.ECFP_MOL:
             if self.molecule_ecfp is None:
                 raise ValueError("No ECFP data available.")
             return self.molecule_ecfp[indices]
+
         if self.retrieval == DataRetrieval.EMBEDDING_MOL:
             if self.molecule_embedding is None:
                 raise ValueError("No embedding data available.")
             return self.molecule_embedding[indices]
+
         if self.retrieval == DataRetrieval.DESCRIPTORS_MOL:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             return self.molecule_desc[indices]
+
+        if self.retrieval == DataRetrieval.GRAPHS_MOL:
+            if self.molecule_graph is None:
+                raise ValueError("No graph data available.")
+            return self.molecule_graph[indices]
 
         if isinstance(indices, slice):
             indices_new = range(
