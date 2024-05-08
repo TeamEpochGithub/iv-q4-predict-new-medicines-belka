@@ -67,11 +67,11 @@ class AtomGraph(VerboseTransformationBlock):
         return edge_index, edge_features
 
 
-    def torch_graph(self, smiles: list[str]) -> list:
+    def torch_graph(self, smiles: list[str]) -> list[list]:
         """Create the torch graph from the smile format.
 
         param smile: list containing the smile format
-        return: list containing the geometric class"""
+        return: list containing the atom and bond attributes"""
 
         graphs = []
         for smile in smiles:
@@ -80,10 +80,8 @@ class AtomGraph(VerboseTransformationBlock):
 
             # Extract the edge attributes and indices
             edge_index, edge_feature = self.bond_attribute(smile)
-
-            # create the geometric torch graph
-            graphs.append(Data(x=atom_feature, edge_index=edge_index, edge_attr=edge_feature))
-
+            graphs.append([atom_feature, edge_index, edge_feature])
+        print('it does work')
         return graphs
 
 
