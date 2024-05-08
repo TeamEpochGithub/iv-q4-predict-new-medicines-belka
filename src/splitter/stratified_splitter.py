@@ -1,5 +1,7 @@
 """Class to split into stratified multi label train test."""
 from dataclasses import dataclass
+from pathlib import Path
+import pickle
 
 import numpy as np
 import numpy.typing as npt
@@ -21,7 +23,7 @@ class StratifiedSplitter:
     n_splits: int = 5
     indices_for_flattened_data: bool = False
 
-    def split(self, X: XData, y: npt.NDArray[np.int8]) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
+    def split(self, X: XData, y: npt.NDArray[np.int8], cache_path: Path) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
         """Split X and y into train and test indices.
 
         :param X: The Xdata
@@ -30,6 +32,13 @@ class StratifiedSplitter:
         """
         splits = []
         logger.debug(f"Starting splitting with size:{len(y)}")
+
+        # Load the splits if they exist
+        if cache_path.exists():
+            with open(cache_path,"rb") as f:
+                logger.info(f"Loading splits from {cache_path}")
+                return pickle.load(f)
+
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 
         kf_splits = kf.split(X.building_blocks, y)
@@ -73,5 +82,11 @@ class StratifiedSplitter:
                 )
 
             splits = new_splits
+
+        # Pickle the splits
+        logger.debug(f"Finished splitting with size:{len(y)}")
+        with open(cache_path, "wb") as f:
+            pickle.dump(splits, f, **({"protocol": pickle.HIGHEST_PROTOCOL}))
+
 
         return splits
