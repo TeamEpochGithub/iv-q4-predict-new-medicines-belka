@@ -15,8 +15,8 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.one_hot_protein_bb.OneHotProteinBB
-    - _target_: src.modules.training.models.bdtm.BDTM
-      bdtm_name: "XGBClassifier"
+    - _target_: src.modules.training.models.decision_trees.DecisionTrees
+      model_name: "XGBClassifier"
       n_estimators: 500
 
 pred_sys:
