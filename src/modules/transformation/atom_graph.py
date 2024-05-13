@@ -1,18 +1,19 @@
 """Compute the graph representation of the molecule."""
 
 from concurrent.futures import ProcessPoolExecutor
-from typing import Any
-import torch
+from dataclasses import dataclass
+
 import numpy as np
+import numpy.typing as npt
 from rdkit import Chem
 from tqdm import tqdm
-from dataclasses import dataclass
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
 
 NUM_FUTURES = 100
 MIN_CHUNK_SIZE = 1000
+
 
 @dataclass
 class AtomGraph(VerboseTransformationBlock):
@@ -26,7 +27,7 @@ class AtomGraph(VerboseTransformationBlock):
     convert_bb: bool = True
 
     @staticmethod
-    def _torch_graph(smiles: list[str]) -> list[list]:
+    def _torch_graph(smiles: npt.NDArray[np.str_]) -> list[npt.NDArray[np.float32]]:
         """Create the torch graph from the smile format.
 
         param smile: list containing the smile format
@@ -39,10 +40,11 @@ class AtomGraph(VerboseTransformationBlock):
 
             # Extract the edge attributes and indices
             edge_index, edge_feature = bond_attribute(smile)
-            graphs.append([atom_feature, edge_index, edge_feature])
+            graphs.append(np.array([atom_feature, edge_index, edge_feature]))
+
         return graphs
 
-    def parallel_graph(self, smiles: list[str], desc: str) -> Any:
+    def parallel_graph(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
         """Compute the torch graph using multiprocessing.
 
         param smiles: list containing the smiles of the molecules
@@ -64,11 +66,10 @@ class AtomGraph(VerboseTransformationBlock):
             for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
-        return results
+        return np.array(results)
 
     def custom_transform(self, data: XData) -> XData:
         """Create a torch geometric graph from the molecule."""
-
         desc = "compute the geometric graph of the molecule"
 
         # Compute the embeddings for each molecule
@@ -84,10 +85,8 @@ class AtomGraph(VerboseTransformationBlock):
         return data
 
 
-
-
-def atom_attribute(smile: str) -> Any:
-    """Extract the atom attribute from the smile
+def atom_attribute(smile: str) -> npt.NDArray[np.float32]:
+    """Extract the atom attribute from the smile.
 
     param smile: the molecule string format
     return: tensor containing the atom feature
@@ -97,13 +96,12 @@ def atom_attribute(smile: str) -> Any:
     atoms = mol.GetAtoms()
 
     # Extract the attributes in the atom
-    atom_features = []
-    for atom in atoms:
-        atom_features.append([atom.GetAtomicNum(), atom.GetDegree()])
+    atom_features = [[atom.GetAtomicNum(), atom.GetDegree()] for atom in atoms]
 
     return np.array(atom_features)
 
-def bond_attribute(smile: str) -> Any:
+
+def bond_attribute(smile: str) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     """Extract the bond attribute from the smile.
 
     param smile: the molecule string format
@@ -123,6 +121,5 @@ def bond_attribute(smile: str) -> Any:
         edge_index.append((end, start))
 
         edge_features.append([int(bond.GetIsConjugated()), int(bond.IsInRing())])
-
 
     return np.array(edge_index), np.array(edge_features)

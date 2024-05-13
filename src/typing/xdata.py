@@ -40,10 +40,10 @@ class DataRetrieval(IntFlag):
     DESCRIPTORS = DESCRIPTORS_MOL | DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
     DESCRIPTORS_BB = DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
 
-    GRAPHS_MOL = 2 ** 16
-    GRAPHS_BB1 = 2 ** 17
-    GRAPHS_BB2 = 2 ** 18
-    GRAPHS_BB3 = 2 ** 19
+    GRAPHS_MOL = 2**16
+    GRAPHS_BB1 = 2**17
+    GRAPHS_BB2 = 2**18
+    GRAPHS_BB3 = 2**19
     GRAPHS = GRAPHS_MOL | GRAPHS_BB1 | GRAPHS_BB2 | GRAPHS_BB3
     GRAPHS_BB = GRAPHS_BB1 | GRAPHS_BB2 | GRAPHS_BB3
 
@@ -214,12 +214,11 @@ class XData:
                 raise ValueError("No graph data available.")
             result.append(self.bb3_graph[item[2]])
 
-
         if len(result) == 1:
             return result[0]
         return result
 
-    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:
+    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
         """Retrieve items for all indices based on the specified retrieval flags.
 
         :param indices: List of indices to retrieve
