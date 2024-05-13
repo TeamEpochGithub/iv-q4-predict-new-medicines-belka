@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
-from rdkit import Chem
+from rdkit import Chem  # type: ignore[import-not-found]
 from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
