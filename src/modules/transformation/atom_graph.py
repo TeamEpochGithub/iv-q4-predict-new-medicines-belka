@@ -71,6 +71,7 @@ class AtomGraph(VerboseTransformationBlock):
 
     def custom_transform(self, data: XData) -> XData:
         """Create a torch geometric graph from the molecule."""
+
         desc = "compute the geometric graph of the molecule"
 
         # Compute the embeddings for each molecule
