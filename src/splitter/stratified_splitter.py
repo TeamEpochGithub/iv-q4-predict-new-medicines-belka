@@ -37,7 +37,7 @@ class StratifiedSplitter:
         if cache_path.exists():
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
-                return pickle.load(f)
+                return pickle.load(f)  # noqa: S301
 
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 

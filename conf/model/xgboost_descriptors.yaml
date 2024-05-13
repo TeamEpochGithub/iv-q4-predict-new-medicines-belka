@@ -4,23 +4,19 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.scikit_fingerprints.ScikitFingerprints
+    - _target_: src.modules.transformation.descriptors.Descriptors
       convert_molecules: True
-      fingerprint:
-        _target_: skfp.fingerprints.TopologicalTorsionFingerprint
-        fp_size: 1024
-
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.models.decision_trees.DecisionTrees
       model_name: "XGBClassifier"
       n_estimators: 500
       multi_output: true
+      data: ["DESCRIPTORS_MOL"]
 
 pred_sys:
   steps: []
