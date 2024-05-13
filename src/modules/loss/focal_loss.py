@@ -23,11 +23,10 @@ class FocalLoss(nn.Module):
         :param inputs: Predictions from the model after sigmoid activation (probabilities between 0 and 1)
         :param targets: Ground truth labels
         """
-        l = logits.reshape(-1)
+        lo = logits.reshape(-1)
         t = targets.reshape(-1)
-        p = torch.sigmoid(l)
-        p = torch.where(t >= 0.5, p, 1-p)
-        logp = - torch.log(torch.clamp(p, 1e-4, 1-1e-4))
-        loss = logp*((1-p)**self.gamma)
-        loss = 3*loss.mean()
-        return loss
+        p = torch.sigmoid(lo)
+        p = torch.where(t >= 0.5, p, 1 - p)
+        logp = -torch.log(torch.clamp(p, 1e-4, 1 - 1e-4))
+        loss = logp * ((1 - p) ** self.gamma)
+        return 3 * loss.mean()
