@@ -39,7 +39,6 @@ class DataRetrieval(IntFlag):
     DESCRIPTORS_BB3 = 2**15
     DESCRIPTORS = DESCRIPTORS_MOL | DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
     DESCRIPTORS_BB = DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
-
     GRAPHS_MOL = 2**16
     GRAPHS_BB1 = 2**17
     GRAPHS_BB2 = 2**18
@@ -102,7 +101,7 @@ class XData:
     bb2_desc: npt.NDArray[np.float32] | None = None
     bb3_desc: npt.NDArray[np.float32] | None = None
 
-    # graph
+    # Graph
     molecule_graph: npt.NDArray[np.float32] | None = None
     bb1_graph: npt.NDArray[np.float32] | None = None
     bb2_graph: npt.NDArray[np.float32] | None = None
@@ -179,7 +178,6 @@ class XData:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             result.append(self.molecule_desc[idx])
-
         if self.retrieval & DataRetrieval.DESCRIPTORS_BB1:
             if self.bb1_desc is None:
                 raise ValueError("No descriptor data available.")
@@ -193,22 +191,19 @@ class XData:
                 raise ValueError("No descriptor data available.")
             result.append(self.bb3_desc[item[2]])
 
-        # Graphs
+        # GRAPHS
         if self.retrieval & DataRetrieval.GRAPHS_MOL:
             if self.molecule_graph is None:
                 raise ValueError("No graph data available.")
             result.append(self.molecule_graph[idx])
-
         if self.retrieval & DataRetrieval.GRAPHS_BB1:
             if self.bb1_graph is None:
                 raise ValueError("No graph data available.")
             result.append(self.bb1_graph[item[0]])
-
         if self.retrieval & DataRetrieval.GRAPHS_BB2:
             if self.bb2_graph is None:
                 raise ValueError("No graph data available.")
             result.append(self.bb2_graph[item[1]])
-
         if self.retrieval & DataRetrieval.GRAPHS_BB3:
             if self.bb3_graph is None:
                 raise ValueError("No graph data available.")
