@@ -2,6 +2,7 @@
 
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -27,7 +28,7 @@ class AtomGraph(VerboseTransformationBlock):
     convert_building_blocks: bool = True
 
     @staticmethod
-    def _torch_graph(smiles: npt.NDArray[np.str_]) -> list[npt.NDArray[np.float32]]:
+    def _torch_graph(smiles: npt.NDArray[np.str_]) -> list[list[Any]]:
         """Create the torch graph from the smile format.
 
         param smile: list containing the smile format
@@ -40,11 +41,11 @@ class AtomGraph(VerboseTransformationBlock):
 
             # Extract the edge attributes and indices
             edge_index, edge_feature = _bond_attribute(smile)
-            graphs.append(np.array([atom_feature, edge_index, edge_feature]))
+            graphs.append([atom_feature, edge_index, edge_feature])
 
         return graphs
 
-    def _parallel_graph(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
+    def _parallel_graph(self, smiles: npt.NDArray[np.str_], desc: str) -> list[Any]:
         """Compute the torch graph using multiprocessing.
 
         param smiles: list containing the smiles of the molecules
@@ -66,7 +67,7 @@ class AtomGraph(VerboseTransformationBlock):
             for future in tqdm(futures, total=len(futures), desc=desc):
                 results.extend(future.result())
 
-        return np.array(results)
+        return results
 
     def custom_transform(self, data: XData) -> XData:
         """Create a torch geometric graph from the molecule."""

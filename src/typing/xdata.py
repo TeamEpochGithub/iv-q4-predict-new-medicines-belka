@@ -102,10 +102,10 @@ class XData:
     bb3_desc: npt.NDArray[np.float32] | None = None
 
     # Graph
-    molecule_graph: npt.NDArray[np.float32] | None = None
-    bb1_graph: npt.NDArray[np.float32] | None = None
-    bb2_graph: npt.NDArray[np.float32] | None = None
-    bb3_graph: npt.NDArray[np.float32] | None = None
+    molecule_graph: list[Any] | None = None
+    bb1_graph: list[Any] | None = None
+    bb2_graph: list[Any] | None = None
+    bb3_graph: list[Any] | None = None
 
     def __getitem__(self, idx: int | npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any] | list[Any]:  # noqa: C901 PLR0912 PLR0915
         """Get item from the data.
@@ -213,7 +213,7 @@ class XData:
             return result[0]
         return result
 
-    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
+    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:
         """Retrieve items for all indices based on the specified retrieval flags.
 
         :param indices: List of indices to retrieve
@@ -237,11 +237,6 @@ class XData:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             return self.molecule_desc[indices]
-
-        if self.retrieval == DataRetrieval.GRAPHS_MOL:
-            if self.molecule_graph is None:
-                raise ValueError("No graph data available.")
-            return self.molecule_graph[indices]
 
         if isinstance(indices, slice):
             indices_new = range(
