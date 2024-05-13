@@ -12,10 +12,13 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D
+      model_name: MRBG
       model:
-        _target_: src.modules.training.models.cnn1d.CNN1D
-        n_classes: 3
+        _target_: src.modules.training.models.multi_res_bi_gru.MultiResidualBiGRU
+        out_size: 3
+        n_layers: 2
+        hidden_size: 128
+        input_size: 142
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
