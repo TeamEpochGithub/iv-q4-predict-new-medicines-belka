@@ -102,3 +102,13 @@ def run_submit(cfg: DictConfig) -> None:
 
 if __name__ == "__main__":
     run_submit()
+
+if val_indices is not None and len(val_indices) > 0 and val_x is not None:
+        print_section_separator("Combined Score")
+        scorer = instantiate(cfg.scorer)
+        combined_y = np.concatenate([y_new, val_y])
+        combined_preds = np.concatenate([predictions, pred_val])
+        # Percentage of training score in combined score
+        logger.info(f"Percentage of training score in combined score: {len(y_new) / len(combined_y)}%")
+        combined_score = scorer(combined_y, combined_preds)
+        logger.info(f"Combined Score: {combined_score}")

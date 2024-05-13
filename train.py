@@ -17,7 +17,7 @@ from src.setup.setup_data import setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import setup_train_args
 from src.setup.setup_wandb import setup_wandb
-from src.typing.xdata import XData
+from src.typing.xdata import XData, slice_copy
 from src.utils.lock import Lock
 from src.utils.logger import logger
 from src.utils.set_torch_seed import set_torch_seed
@@ -79,7 +79,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     X = XData(np.array([1]))
     y = np.array([1])
 
-    if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists():
+    if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists() or cfg.val_split:
         X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
@@ -89,6 +89,17 @@ def run_train_cfg(cfg: DictConfig) -> None:
         logger.info("Training full.")
         train_indices, test_indices = list(range(len(X))), []  # type: ignore[arg-type]
         fold = -1
+    elif cfg.val_split:
+        logger.info("Splitting data into train, test, and validation sets.")
+        splits, train_val_indices, val_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)
+        train_indices, test_indices = splits[0]
+        fold = 0
+        val_x = slice_copy(X, val_indices)
+        val_y = y[val_indices].flatten()
+        if len(X.building_blocks) > 1:
+            X.slice_all(train_val_indices)
+        if len(y) > 1:
+            y = y[train_val_indices]
     else:
         logger.info("Splitting Data into train and test sets.")
         train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
@@ -97,7 +108,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
     # Run the model pipeline
     print_section_separator("Train model pipeline")
-    train_args = setup_train_args(pipeline=model_pipeline, cache_args=cache_args, train_indices=train_indices, test_indices=test_indices, save_model=True, fold=fold)
+    train_args = setup_train_args(pipeline=model_pipeline, cache_args=cache_args, train_indices=train_indices,
+                                  test_indices=test_indices, save_model=True, fold=fold)
+
     predictions, y_new = model_pipeline.train(X, y, **train_args)
 
     if len(test_indices) > 0:
@@ -108,6 +121,29 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
         if wandb.run:
             wandb.log({"Score": score})
+
+    if val_indices is not None and len(val_indices) > 0 and val_x is not None:
+        print_section_separator("Scoring on validation")
+        scorer = instantiate(cfg.scorer)
+        pred_val = model_pipeline.predict(val_x)
+        val_score = scorer(val_y, pred_val)
+        logger.info(f"Validation Score: {val_score}")
+        if wandb.run:
+            wandb.log({"Validation Score": val_score})
+
+    # Combine score such that 66% of the score is the training score and 33% is the validation score
+    if val_indices is not None and len(val_indices) > 0 and val_x is not None:
+        print_section_separator("Combined Score")
+        scorer = instantiate(cfg.scorer)
+        combined_y = np.concatenate([y_new, val_y])
+        combined_preds = np.concatenate([predictions, pred_val])
+        # Percentage of training score in combined score
+        logger.info(f"Percentage of training score in combined score: {len(y_new) / len(combined_y)}%")
+        combined_score = scorer(combined_y, combined_preds)
+        # combined_score = 0.75 * score + 0.25 * val_score
+        logger.info(f"Combined Score: {combined_score}")
+        if wandb.run:
+            wandb.log({"Combined Score": combined_score})
 
     wandb.finish()
 

@@ -25,7 +25,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 128
+      batch_size: 4096 
       patience: 1
       scheduler:
         _target_: functools.partial
