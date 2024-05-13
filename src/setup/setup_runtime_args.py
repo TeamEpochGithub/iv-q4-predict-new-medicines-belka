@@ -30,6 +30,10 @@ def setup_train_args(
         "cache_args": cache_args,
     }
 
+    y_sys = {
+        "cache_args": cache_args,
+    }
+
     main_trainer = {
         "train_indices": train_indices,
         "test_indices": test_indices,
@@ -51,6 +55,7 @@ def setup_train_args(
 
     train_args = {
         "x_sys": x_sys,
+        "y_sys": y_sys,
         "train_sys": train_sys,
         "pred_sys": pred_sys,
     }
