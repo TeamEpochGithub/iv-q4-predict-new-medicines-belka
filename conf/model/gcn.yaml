@@ -1,0 +1,53 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+  - _target_: src.modules.transformation.atom_graph.AtomGraph
+    convert_molecule: True
+    convert_bb: True
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      representation_to_consider: GRAPH
+      model_name: GCN
+      model:
+        _target_: src.modules.training.models.gcn.GCNModel
+        n_classes: 3
+        num_node_features: 2
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.Adam
+        lr: 0.001
+      epochs: 10
+      batch_size: 128
+      patience: 1
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 40
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        warmup_t: 1
+        warmup_lr_init: 1e-5
+      n_folds: 5
+      int_type: true
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []

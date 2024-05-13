@@ -9,11 +9,13 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.utils.data import Dataset, TensorDataset
+from torch_geometric.data import DataLoader
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
 from src.typing.xdata import XData
+from src.typing.graph_dataset import GraphDataset
 
 
 @dataclass
@@ -38,19 +40,28 @@ class MainTrainer(TorchTrainer, Logger):
         :param test_indices: The indices to test on.
         :return: The training and validation datasets.
         """
+        train_indices = list(range(0, 80000))
+        test_indices = list(range(80000, 99999))
+
+        print(y)
+
         if self.representation_to_consider == "ECFP":
-            x_array = np.array(x.molecule_ecfp)
+            x_tensor = torch.from_numpy(np.array(x.molecule_ecfp))
+            train_dataset = TensorDataset(x_tensor[train_indices], torch.from_numpy(y[train_indices]))
+            test_dataset = TensorDataset(x_tensor[test_indices], torch.from_numpy(y[test_indices]))
+
+        elif self.representation_to_consider == "GRAPH":
+            train_graphs = [x.molecule_graph[i] for i in train_indices]
+            train_labels = torch.from_numpy(y[train_indices])
+
+            test_graphs = [x.molecule_graph[i] for i in test_indices]
+            test_labels = torch.from_numpy(y[test_indices])
+
+            train_dataset = GraphDataset(train_graphs, train_labels)
+            test_dataset = GraphDataset(test_graphs, test_labels)
         else:
             raise ValueError("Representation does not exist")
 
-        train_dataset = TensorDataset(
-            torch.from_numpy(x_array[train_indices]) if not self.int_type else torch.from_numpy(x_array[train_indices]),
-            torch.from_numpy(y[train_indices]),
-        )
-        test_dataset = TensorDataset(
-            torch.from_numpy(x_array[test_indices]) if not self.int_type else torch.from_numpy(x_array[test_indices]),
-            torch.from_numpy(y[test_indices]),
-        )
 
         return train_dataset, test_dataset
 
@@ -63,7 +74,10 @@ class MainTrainer(TorchTrainer, Logger):
         :param x: The input data.
         :return: The prediction dataset.
         """
-        x_arr = np.array(x.molecule_ecfp)
+        if self.representation_to_consider == "ECFP":
+            x_arr = np.array(x.molecule_ecfp)
+        elif self.representation_to_consider == "GRAPH":
+            x_arr = np.array(x.molecule_graph)
         return TensorDataset(torch.from_numpy(x_arr).int() if self.int_type else torch.from_numpy(x_arr).float())
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
@@ -183,14 +197,24 @@ class MainTrainer(TorchTrainer, Logger):
         self.model.eval()
         predictions = []
         # Create a new dataloader from the dataset of the input dataloader with collate_fn
-        loader = DataLoader(
-            loader.dataset,
-            batch_size=loader.batch_size,
-            shuffle=False,
-            collate_fn=(
-                collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
-            ),
-        )
+        # if self.representation_to_consider == "ECFP":
+        #     loader = TorchDataLoader(
+        #         loader.dataset,
+        #         batch_size=loader.batch_size,
+        #         shuffle=False,
+        #         collate_fn=(
+        #             collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+        #         ),
+        #     )
+        if self.representation_to_consider == "GRAPH":
+            loader = DataLoader(
+                loader.dataset,
+                batch_size=loader.batch_size,
+                shuffle=False,
+                collate_fn=(
+                    collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+                ),
+            )
         with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
             for data in tepoch:
                 X_batch = data[0].to(self.device).int() if self.int_type else data[0].to(self.device).float()
