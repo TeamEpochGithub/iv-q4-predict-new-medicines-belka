@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: xgboost_descriptors
+  - model: atom_graph
   - wandb: train
 
 data_path: data/shrunken
