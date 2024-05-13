@@ -20,11 +20,11 @@ class AtomGraph(VerboseTransformationBlock):
     """Create a torch geometric graph from the molecule.
 
     param convert_molecule: whether to convert the molecule
-    param convert_bb: whether to convert the building blocks
+    param convert_building_blocks: whether to convert the building blocks
     """
 
     convert_molecule: bool = True
-    convert_bb: bool = True
+    convert_building_blocks: bool = True
 
     @staticmethod
     def _torch_graph(smiles: npt.NDArray[np.str_]) -> list[npt.NDArray[np.float32]]:
@@ -36,15 +36,15 @@ class AtomGraph(VerboseTransformationBlock):
         graphs = []
         for smile in smiles:
             # Extract the atom attributes from the smile
-            atom_feature = atom_attribute(smile)
+            atom_feature = _atom_attribute(smile)
 
             # Extract the edge attributes and indices
-            edge_index, edge_feature = bond_attribute(smile)
+            edge_index, edge_feature = _bond_attribute(smile)
             graphs.append(np.array([atom_feature, edge_index, edge_feature]))
 
         return graphs
 
-    def parallel_graph(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
+    def _parallel_graph(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
         """Compute the torch graph using multiprocessing.
 
         param smiles: list containing the smiles of the molecules
@@ -74,18 +74,18 @@ class AtomGraph(VerboseTransformationBlock):
 
         # Compute the embeddings for each molecule
         if self.convert_molecule and data.molecule_smiles is not None:
-            data.molecule_graph = self.parallel_graph(data.molecule_smiles, desc)
+            data.molecule_graph = self._parallel_graph(data.molecule_smiles, desc)
 
         # Compute the embeddings for each block
-        if self.convert_bb and data.bb1_smiles is not None and data.bb2_smiles is not None and data.bb3_smiles is not None:
-            data.bb1_graph = self.parallel_graph(data.bb1_smiles, desc)
-            data.bb2_graph = self.parallel_graph(data.bb2_smiles, desc)
-            data.bb3_graph = self.parallel_graph(data.bb3_smiles, desc)
+        if self.convert_building_blocks and data.bb1_smiles is not None and data.bb2_smiles is not None and data.bb3_smiles is not None:
+            data.bb1_graph = self._parallel_graph(data.bb1_smiles, desc)
+            data.bb2_graph = self._parallel_graph(data.bb2_smiles, desc)
+            data.bb3_graph = self._parallel_graph(data.bb3_smiles, desc)
 
         return data
 
 
-def atom_attribute(smile: str) -> npt.NDArray[np.float32]:
+def _atom_attribute(smile: str) -> npt.NDArray[np.float32]:
     """Extract the atom attribute from the smile.
 
     param smile: the molecule string format
@@ -101,7 +101,7 @@ def atom_attribute(smile: str) -> npt.NDArray[np.float32]:
     return np.array(atom_features)
 
 
-def bond_attribute(smile: str) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+def _bond_attribute(smile: str) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     """Extract the bond attribute from the smile.
 
     param smile: the molecule string format
