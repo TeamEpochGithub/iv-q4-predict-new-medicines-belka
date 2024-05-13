@@ -18,7 +18,7 @@ train_sys:
         out_size: 3
         n_layers: 2
         hidden_size: 128
-        input_size: 142 
+        input_size: 142
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
