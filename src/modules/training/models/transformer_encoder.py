@@ -21,7 +21,6 @@ class TransformerEncoder(nn.Module):
         :param verbose: Whether to print out the shape of the data at each step.
         """
         super(TransformerEncoder, self).__init__()  # noqa: UP008
-        NUM_FILTERS = 32
         hidden_dim = 128
         self.hidden_dim = hidden_dim
 
@@ -32,14 +31,14 @@ class TransformerEncoder(nn.Module):
             self._embedding = nn.Linear(4, hidden_dim)
 
         # Transformer Encoder Layers
-        encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=nhead, dim_feedforward=512, dropout=0.1)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=nhead, dim_feedforward=512, dropout=0.1, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
 
         # Pooling layer
         self.pool = nn.AdaptiveMaxPool1d(1)
 
         # Dense and Dropout layers
-        self.fc1 = nn.Linear(NUM_FILTERS * 3, 1024)
+        self.fc1 = nn.Linear(142, 1024)
         self.dropout1 = nn.Dropout(0.1)
         self.fc2 = nn.Linear(1024, 1024)
         self.dropout2 = nn.Dropout(0.1)
@@ -56,11 +55,11 @@ class TransformerEncoder(nn.Module):
         :param x: Input data
         :return: Output data
         """
-        emb = self._embedding(x).transpose(0, 1)  # Transpose batch and sequence dimensions
+        emb = self._embedding(x)  # Transpose batch and sequence dimensions
 
         # Passing through the transformer encoder
         x = self.transformer_encoder(emb)
-        x = self.pool(x.transpose(0, 1)).squeeze(2)  # Adapt pooling to sequence data and squeeze the sequence dimension
+        x = self.pool(x).squeeze(2)  # Adapt pooling to sequence data and squeeze the sequence dimension
 
         x = self.relu(self.fc1(x))
         x = self.dropout1(x)

@@ -1,13 +1,13 @@
 """Class to split by BB."""
+import pickle
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
-from pathlib import Path
-from src.utils.logger import logger
-import pickle
 
 from src.typing.xdata import XData
+from src.utils.logger import logger
 
 
 @dataclass
@@ -30,12 +30,11 @@ class BBSplitter:
         :param y: Labels
         :return: List of indices
         """
-
         # Load the splits if they exist
-        if cache_path.exists():
+        if cache_path is not None and cache_path.exists():
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
-                return pickle.load(f)
+                return pickle.load(f)  # noqa: S301
 
         bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles is not None else [0]
         bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles is not None else [0]
@@ -84,8 +83,9 @@ class BBSplitter:
 
         # Pickle splits
         logger.debug(f"Finished splitting with size:{len(y)}")
-        with open(cache_path, "wb") as f:
-            pickle.dump(splits, f, protocol=pickle.HIGHEST_PROTOCOL)
+        if cache_path is not None:
+            with open(cache_path, "wb") as f:
+                pickle.dump(splits, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         return splits
 

@@ -14,5 +14,5 @@ splitter:
   _target_: src.splitter.stratified_splitter.StratifiedSplitter
   n_splits: 5
 sample_size: 1_000_000
-sample_split: 0.015 
+sample_split: 0.015
 allow_multiple_instances: true
