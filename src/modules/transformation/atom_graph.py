@@ -71,17 +71,15 @@ class AtomGraph(VerboseTransformationBlock):
 
     def custom_transform(self, data: XData) -> XData:
         """Create a torch geometric graph from the molecule."""
-        desc = "compute the geometric graph of the molecule"
-
         # Compute the embeddings for each molecule
         if self.convert_molecule and data.molecule_smiles is not None:
-            data.molecule_graph = self._parallel_graph(data.molecule_smiles, desc)
+            data.molecule_graph = self._parallel_graph(data.molecule_smiles, desc="Creating atomic graph for molecules")
 
         # Compute the embeddings for each block
         if self.convert_building_blocks and data.bb1_smiles is not None and data.bb2_smiles is not None and data.bb3_smiles is not None:
-            data.bb1_graph = self._parallel_graph(data.bb1_smiles, desc)
-            data.bb2_graph = self._parallel_graph(data.bb2_smiles, desc)
-            data.bb3_graph = self._parallel_graph(data.bb3_smiles, desc)
+            data.bb1_graph = self._parallel_graph(data.bb1_smiles, desc="Creating atomic graph for bb1")
+            data.bb2_graph = self._parallel_graph(data.bb2_smiles, desc="Creating atomic graph for bb2")
+            data.bb3_graph = self._parallel_graph(data.bb3_smiles, desc="Creating atomic graph for bb3")
 
         return data
 
