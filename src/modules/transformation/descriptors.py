@@ -73,7 +73,7 @@ class Descriptors(VerboseTransformationBlock):
         "MolMR",
     ]
     convert_molecules: bool = False
-    convert_bbs: bool = False
+    convert_building_blocks: bool = False
 
     def custom_transform(self, data: XData) -> XData:
         """Apply a custom transformation to the molecule smiles.
@@ -85,7 +85,7 @@ class Descriptors(VerboseTransformationBlock):
         """
         if self.convert_molecules:
             data.molecule_desc = self.transform_molecule(data)
-        if self.convert_bbs:
+        if self.convert_building_blocks:
             data.bb1_desc, data.bb2_desc, data.bb3_desc = self.transform_bb(data).values()
         return data
 
