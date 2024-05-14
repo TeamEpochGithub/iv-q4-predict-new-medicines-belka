@@ -96,13 +96,16 @@ def run_train_cfg(cfg: DictConfig) -> None:
         fold = 0
         val_x = slice_copy(X, val_indices)
         val_y = y[val_indices].flatten()
+        logger.info(f"Bind % in validation: {np.count_nonzero(val_y == 1) * 100 / len(val_y)}")
         if len(X.building_blocks) > 1:
             X.slice_all(train_val_indices)
         if len(y) > 1:
             y = y[train_val_indices]
+        logger.info(f"Bind % in train/test: {np.count_nonzero(y == 1) * 100 / (len(y)* 3)}")
     else:
         logger.info("Splitting Data into train and test sets.")
         train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
+        val_indices = None
         fold = 0
     logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}")
 
@@ -121,6 +124,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
         if wandb.run:
             wandb.log({"Score": score})
+    else:
+        if wandb.run:
+            wandb.log({"Score": -1})
 
     if val_indices is not None and len(val_indices) > 0 and val_x is not None:
         print_section_separator("Scoring on validation")
@@ -130,6 +136,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
         logger.info(f"Validation Score: {val_score}")
         if wandb.run:
             wandb.log({"Validation Score": val_score})
+    else:
+        if wandb.run:
+            wandb.log({"Validation Score": -1})
 
     # Combine score such that 66% of the score is the training score and 33% is the validation score
     if val_indices is not None and len(val_indices) > 0 and val_x is not None:
@@ -144,6 +153,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
         logger.info(f"Combined Score: {combined_score}")
         if wandb.run:
             wandb.log({"Combined Score": combined_score})
+    else:
+        if wandb.run:
+            wandb.log({"Combined Score": -1})
 
     wandb.finish()
 
