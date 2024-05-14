@@ -6,7 +6,6 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-
 # from rdkit.DataStructs.cDataStructs import ExplicitBitVect  # type: ignore[import-not-found]
 
 
