@@ -8,7 +8,7 @@ from src.modules.transformation.verbose_transformation_block import VerboseTrans
 from src.typing.xdata import XData
 
 
-class NotebookEncoding(VerboseTransformationBlock):
+class SimpleMoleculeEncoding(VerboseTransformationBlock):
     """Class that replicates the encoding of the highest public notebook."""
 
     def custom_transform(self, x: XData) -> XData:
@@ -68,7 +68,7 @@ class NotebookEncoding(VerboseTransformationBlock):
             tmp = tmp + [0] * (142 - len(tmp))
             return np.array(tmp).astype(np.uint8)
 
-        smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smile)(smile) for smile in tqdm(smiles))
+        smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smile)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
         smiles_enc = np.stack(smiles_enc)
 
         x.molecule_ecfp = smiles_enc
