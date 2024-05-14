@@ -7,8 +7,8 @@ import numpy as np
 import numpy.typing as npt
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 from tqdm import tqdm
-from src.splitter.bb_splitter import BBSplitter
 
+from src.splitter.bb_splitter import BBSplitter
 from src.typing.xdata import XData
 from src.utils.logger import logger
 
@@ -23,7 +23,12 @@ class BBStratifiedSplitter:
 
     n_splits: int = 5
 
-    def split(self, X: XData, y: npt.NDArray[np.int8], cache_path: Path) -> tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+    def split(
+        self,
+        X: XData,
+        y: npt.NDArray[np.int8],
+        cache_path: Path,
+    ) -> tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
         """Split X and y into train and test indices.
 
         :param X: The Xdata
