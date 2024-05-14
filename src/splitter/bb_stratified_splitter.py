@@ -43,20 +43,25 @@ class BBStratifiedSplitter:
         if cache_path.exists():
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
-                return pickle.load(f)  # noqa: S301
+                splits, train_bb, val = pickle.load(f)  # noqa: S301
+                logger.info(f"Train/Val: {len(train_bb):,} / {len(val):,}")
+                return splits, train_bb, val
 
         bb_splitter = BBSplitter(n_splits=self.n_splits, bb_to_split_by=[1, 1, 1])
         train_bb, val = bb_splitter.split(X, y)[0]
-        logger.info(f"Train/Val: {len(train_bb)}/{len(val)}")
+        logger.info(f"Train/Val: {len(train_bb):,} / {len(val):,}")
 
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 
         kf_splits = kf.split(X.building_blocks[train_bb], y[train_bb])
         for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             splits.append((train_index, test_index))
+        logger.debug(f"Finished splitting with size:{len(y)}")
 
         # Pickle the splits
-        logger.debug(f"Finished splitting with size:{len(y)}")
+        logger.info(f"Saving splits to {cache_path}")
+        if not cache_path.parent.exists():
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_path, "wb") as f:
             pickle.dump((splits, train_bb, val), f, protocol=pickle.HIGHEST_PROTOCOL)
 
