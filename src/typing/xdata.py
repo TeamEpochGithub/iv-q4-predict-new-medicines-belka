@@ -108,7 +108,6 @@ class XData:
     bb2_graph: list[Any] | None = None
     bb3_graph: list[Any] | None = None
 
-
     def slice_all(self, slice_array: npt.NDArray[np.int_]) -> None:
         """Slice all existing arrays in x data by numpy array.
 
