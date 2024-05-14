@@ -24,7 +24,7 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 10
+      epochs: 15
       batch_size: 4096
       patience: 1
       scheduler:
