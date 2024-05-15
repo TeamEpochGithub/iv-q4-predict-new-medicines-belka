@@ -31,7 +31,7 @@ class SmileEmbedding(VerboseTransformationBlock):
     building: bool = True
     chunk_size: int = 10000
 
-    def embeddings(self, smiles: npt.NDArray[np.str_]) -> list[npt.NDArray[np.float32]]:
+    def embeddings(self, smiles: npt.NDArray[np.str_]) -> npt.NDArray[np.float32]:
         """Compute the embeddings of the molecules or blocks.
 
         param smile: list containing the molecules as strings
@@ -60,7 +60,7 @@ class SmileEmbedding(VerboseTransformationBlock):
 
             features.append(np.array(embeddings))
 
-        return features
+        return np.array(features)
 
     def parallel_embeddings(self, smiles: npt.NDArray[np.str_], desc: str) -> npt.NDArray[np.float32]:
         """Compute the embeddings of the molecules using multiprocessing.
