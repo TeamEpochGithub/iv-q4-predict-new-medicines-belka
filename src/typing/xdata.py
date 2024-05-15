@@ -3,7 +3,7 @@ import gc
 from dataclasses import dataclass
 from enum import IntFlag
 from typing import Any
-
+from typing import Callable
 import numpy as np
 import numpy.typing as npt
 
@@ -107,6 +107,9 @@ class XData:
     bb1_graph: list[Any] | None = None
     bb2_graph: list[Any] | None = None
     bb3_graph: list[Any] | None = None
+
+    # tokenizer
+    tokenizer: Callable[[str], npt.NDArray[np.float32]] | None = None
 
     def slice_all(self, slice_array: npt.NDArray[np.int_]) -> None:
         """Slice all existing arrays in x data by numpy array.
