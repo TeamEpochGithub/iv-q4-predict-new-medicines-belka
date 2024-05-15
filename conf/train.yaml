@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d
+  - model: transformer_encoder
   - wandb: train
 
 data_path: data/shrunken
@@ -13,7 +13,6 @@ scorer:
 splitter:
   _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   n_splits: 5
-sample_size: 100_000_000
-sample_split: -1
-val_split: true
+sample_size: 1_000_000
+sample_split: 0.015
 allow_multiple_instances: true
