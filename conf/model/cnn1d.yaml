@@ -3,8 +3,8 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+  steps: []
+    # - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
 
 y_sys:
   steps: []
@@ -25,8 +25,15 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 4096
+      batch_size: 128
       patience: 1
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+            p: 0.5
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
       scheduler:
         _target_: functools.partial
         _args_:
