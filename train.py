@@ -113,10 +113,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
     # Run the model pipeline
     print_section_separator("Train model pipeline")
-<<<<<<< HEAD
-    train_args = setup_train_args(pipeline=model_pipeline, cache_args=cache_args, train_indices=train_indices, test_indices=test_indices, save_model=True, fold=fold)
-
-=======
     train_args = setup_train_args(
         pipeline=model_pipeline,
         cache_args=cache_args,
@@ -125,7 +121,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
         save_model=True,
         fold=fold,
     )
->>>>>>> 50-smiles-augmentation
     predictions, y_new = model_pipeline.train(X, y, **train_args)
 
     scoring(cfg=cfg, test_indices=test_indices, y_new=y_new, predictions=predictions, val_x=val_x, val_y=val_y, model_pipeline=model_pipeline)

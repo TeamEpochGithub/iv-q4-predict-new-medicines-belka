@@ -10,7 +10,7 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
@@ -61,9 +61,12 @@ class MainTrainer(TorchTrainer, Logger):
         :param x: The input data.
         :return: The prediction dataset.
         """
-        dataset = deepcopy(self.dataset)
-        dataset.initialize(x)
-        return dataset
+        x_arr = np.array(x.molecule_ecfp)
+        return TensorDataset(torch.from_numpy(x_arr).int() if self.int_type else torch.from_numpy(x_arr).float())
+
+        # dataset = deepcopy(self.dataset)
+        # dataset.initialize(x)
+        # return dataset
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.

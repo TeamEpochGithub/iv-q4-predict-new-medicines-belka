@@ -25,15 +25,12 @@ class AtomAugmentation(TrainingBlock):
             9: [3],  # Phosphorus -> Nitrogen
         }
 
-        if self.use_aug:
-            # Replace some atoms with similar ones
-            # X is list of encodings apply encoding_replacer to each encoding parallel
-            for i in range(len(X)):
-                X[i] = self.encoding_replacer(X[i], self.p, replace_dict)
+        # Replace some atoms with similar ones
+        # X is list of encodings apply encoding_replacer to each encoding parallel
+        for i in range(len(X)):
+            X[i] = self.encoding_replacer(X[i], self.p, replace_dict)
 
-            return X, y
-        else:
-            return X, y
+        return X, y
 
     @staticmethod
     def encoding_replacer(encoding: npt.NDArray[np.int_], p: float, replace_dict: dict[int, list[int]]) -> npt.NDArray[np.int_]:
@@ -44,3 +41,7 @@ class AtomAugmentation(TrainingBlock):
                 encoding[i] = np.random.choice(replace_dict[encoding[i]])
 
         return encoding
+
+    @property
+    def is_augmentation(self) -> bool:
+        return True

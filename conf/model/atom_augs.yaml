@@ -3,8 +3,8 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
-    # - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+  steps: 
+    - _target_: src.modules.transformation.encoding.simple_full_encoding.SimpleFullEncoding
 
 y_sys:
   steps: []
@@ -29,11 +29,10 @@ train_sys:
       patience: 1
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_ECFP"]
+        retrieval: ["ECFP_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
-            p: 0.5
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.5 
       scheduler:
         _target_: functools.partial
         _args_:
