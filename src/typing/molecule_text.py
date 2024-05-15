@@ -1,17 +1,20 @@
 from torch.utils.data import DataLoader, Dataset
-from src.typing.xdata import  XData
+from dataclasses import dataclass
+import numpy as np
+import numpy.typing as npt
+from src.typing.xdata import XData
 
-
+@dataclass
 class MoleculeText(Dataset):
     """Transforms the molecule into a sequence of strings."""
 
-    def __init__(self, sequences, labels):
-        """Initialize the torch dataset with the sequences
+    def __init__(self, X: XData, labels):
+        """Initialize the torch dataset with smiles and labels
 
-        param sequences: array containing the molecule tokens
-        param labels: array containing the molecule labels"""
+        param X: XData containing the smiles and tokenizer
+        param y: array containing the molecule labels"""
 
-        self.sequences = sequences
+        self.smiles = X
         self.labels = labels
 
     def __len__(self):
