@@ -61,6 +61,9 @@ class MainTrainer(TorchTrainer, Logger):
         :param x: The input data.
         :return: The prediction dataset.
         """
+        if self.dataset is None:
+            raise ValueError("Dataset must be set.")
+
         dataset = deepcopy(self.dataset)
         dataset.initialize(x)
         return dataset

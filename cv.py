@@ -67,24 +67,19 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg)
 
-    # Cache arguments for x_sys
+    # Cache arguments for x_sys and y_sys
     processed_data_path = Path(cfg.processed_path)
-    (processed_data_path / 'x').mkdir(parents=True, exist_ok=True)
-    (processed_data_path / 'y').mkdir(parents=True, exist_ok=True)
-    cache_args_x = {
+    (processed_data_path / "x").mkdir(parents=True, exist_ok=True)
+    (processed_data_path / "y").mkdir(parents=True, exist_ok=True)
+    cache_args = {
         "output_data_type": "numpy_array",
         "storage_type": ".pkl",
-        "storage_path": f"{processed_data_path / 'x'}",
-    }
-    cache_args_y = {
-        "output_data_type": "numpy_array",
-        "storage_type": ".pkl",
-        "storage_path": f"{processed_data_path / 'y'}",
+        "storage_path": f"{processed_data_path}",
     }
 
-    # Read the data if required and split in X, y
-    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args_x)
-    # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args_y)
+    # Check if the data is cached
+    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
+    # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
 
     directory = Path(cfg.data_path)
 
