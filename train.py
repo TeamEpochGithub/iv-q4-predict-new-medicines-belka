@@ -47,7 +47,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Q4 - Detect Medicine - Training")
 
     import coloredlogs
-
     coloredlogs.install()
 
     # Set seed
@@ -108,6 +107,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     else:
         logger.info("Splitting Data into train and test sets.")
         train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
+        val_x = None
+        val_y = None
         fold = 0
     logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}")
 

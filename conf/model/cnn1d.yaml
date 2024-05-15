@@ -24,9 +24,9 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 15
+      epochs: 10
       batch_size: 4096
-      patience: 1
+      patience: 3
       scheduler:
         _target_: functools.partial
         _args_:
@@ -38,7 +38,7 @@ train_sys:
         cycle_limit: 1
         warmup_t: 1
         warmup_lr_init: 1e-5
-      n_folds: 5
+      n_folds: 0
       int_type: true
 
 pred_sys:
