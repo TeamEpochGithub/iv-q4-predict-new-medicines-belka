@@ -78,9 +78,9 @@ class AtomGraph(VerboseTransformationBlock):
 
         # Compute the embeddings for each block
         if self.convert_bb and data.bb1_smiles is not None and data.bb2_smiles is not None and data.bb3_smiles is not None:
-            data.bb1_graph = (self.parallel_graph(data.bb1_smiles, desc))
-            data.bb2_graph = (self.parallel_graph(data.bb2_smiles, desc))
-            data.bb3_graph = (self.parallel_graph(data.bb3_smiles, desc))
+            data.bb1_graph = self.parallel_graph(data.bb1_smiles, desc)
+            data.bb2_graph = self.parallel_graph(data.bb2_smiles, desc)
+            data.bb3_graph = self.parallel_graph(data.bb3_smiles, desc)
 
         return data
 
