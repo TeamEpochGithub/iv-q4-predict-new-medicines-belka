@@ -1,4 +1,6 @@
 """File containing functions related to setting up runtime arguments for pipelines."""
+from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
 from epochalyst.pipeline.ensemble import EnsemblePipeline
@@ -27,12 +29,18 @@ def setup_train_args(
     :return: Dictionary containing arguments
     """
     x_sys = {
-        "cache_args": cache_args,
+        "cache_args": deepcopy(cache_args),
     }
+    x_sys_path = Path(cache_args["storage_path"]) / "x"
+    x_sys_path.mkdir(parents=True, exist_ok=True)
+    x_sys["cache_args"]["storage_path"] = f"{x_sys_path}"
 
     y_sys = {
-        "cache_args": cache_args,
+        "cache_args": deepcopy(cache_args),
     }
+    y_sys_path = Path(cache_args["storage_path"]) / "y"
+    y_sys_path.mkdir(parents=True, exist_ok=True)
+    y_sys["cache_args"]["storage_path"] = f"{y_sys_path}"
 
     main_trainer = {
         "train_indices": train_indices,
@@ -49,7 +57,10 @@ def setup_train_args(
     }
 
     if save_model_preds:
-        train_sys["cache_args"] = cache_args
+        train_sys["cache_args"] = deepcopy(cache_args)
+        train_sys_path = Path(cache_args["storage_path"]) / "x"
+        train_sys_path.mkdir(parents=True, exist_ok=True)
+        train_sys["cache_args"]["storage_path"] = f"{train_sys_path}"
 
     pred_sys: dict[str, Any] = {}
 
