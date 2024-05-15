@@ -69,16 +69,22 @@ def run_cv_cfg(cfg: DictConfig) -> None:
 
     # Cache arguments for x_sys
     processed_data_path = Path(cfg.processed_path)
-    processed_data_path.mkdir(parents=True, exist_ok=True)
-    cache_args = {
+    (processed_data_path / 'x').mkdir(parents=True, exist_ok=True)
+    (processed_data_path / 'y').mkdir(parents=True, exist_ok=True)
+    cache_args_x = {
         "output_data_type": "numpy_array",
         "storage_type": ".pkl",
-        "storage_path": f"{processed_data_path}",
+        "storage_path": f"{processed_data_path / 'x'}",
+    }
+    cache_args_y = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'y'}",
     }
 
     # Read the data if required and split in X, y
-    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
-    # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
+    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args_x)
+    # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args_y)
 
     directory = Path(cfg.data_path)
 
