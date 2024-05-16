@@ -53,9 +53,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     # Set seed
     set_torch_seed()
 
-    # Get output directory
+    # Setup Weights & Biases
     output_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
-
     if cfg.wandb.enabled:
         setup_wandb(cfg, "train", output_dir)
 
@@ -63,26 +62,23 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg)
 
-    logger.info("Finished setting up pipeline")
-
-    # Cache arguments for x_sys
+    # Cache arguments
     processed_data_path = Path(cfg.processed_path)
-    processed_data_path.mkdir(parents=True, exist_ok=True)
     cache_args = {
         "output_data_type": "numpy_array",
         "storage_type": ".pkl",
         "storage_path": f"{processed_data_path}",
     }
 
-    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
-    y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
-    splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size}.pkl")
-
-    # Defaults
+    # Setup the data
     X = XData(np.array([1]))
     y = np.array([1])
+    val_x = None
+    val_y = None
 
-    if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists() or cfg.val_split:
+    # Check if the data is cached
+    splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size}.pkl")
+    if not model_pipeline.get_x_cache_exists(cache_args) or not model_pipeline.get_y_cache_exists(cache_args) or not splitter_cache_path.exists() or cfg.val_split:
         X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
@@ -104,17 +100,26 @@ def run_train_cfg(cfg: DictConfig) -> None:
             X.slice_all(train_val_indices)
         if len(y) > 1:
             y = y[train_val_indices]
-        logger.info(f"Bind % in train/test: {np.count_nonzero(y == 1) * 100 / (len(y) * 3)}")
     else:
         logger.info("Splitting Data into train and test sets.")
         train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
         fold = 0
+    logger.info(f"Bind % in train|test: {np.count_nonzero(y == 1) * 100 / (len(y) * 3)}")
     logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}")
+
+    # Make sure tm directory exists
+    Path("tm").mkdir(parents=True, exist_ok=True)
 
     # Run the model pipeline
     print_section_separator("Train model pipeline")
-    train_args = setup_train_args(pipeline=model_pipeline, cache_args=cache_args, train_indices=train_indices, test_indices=test_indices, save_model=True, fold=fold)
-
+    train_args = setup_train_args(
+        pipeline=model_pipeline,
+        cache_args=cache_args,
+        train_indices=train_indices,
+        test_indices=test_indices,
+        save_model=True,
+        fold=fold,
+    )
     predictions, y_new = model_pipeline.train(X, y, **train_args)
 
     scoring(cfg=cfg, test_indices=test_indices, y_new=y_new, predictions=predictions, val_x=val_x, val_y=val_y, model_pipeline=model_pipeline)

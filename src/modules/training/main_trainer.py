@@ -1,5 +1,6 @@
 """Module for example training block."""
 import gc
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
@@ -8,11 +9,13 @@ import numpy.typing as npt
 import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
+from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_device
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
+from src.modules.training.datasets.main_dataset import MainDataset
 from src.typing.xdata import XData
 
 
@@ -20,12 +23,11 @@ from src.typing.xdata import XData
 class MainTrainer(TorchTrainer, Logger):
     """Main training block."""
 
-    representation_to_consider: str = "ECFP"
-    int_type: bool = False
+    dataset: MainDataset | None = None  # type: ignore[type-arg]
 
     def create_datasets(
         self,
-        x: XData,
+        X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
         test_indices: list[int],
@@ -38,19 +40,24 @@ class MainTrainer(TorchTrainer, Logger):
         :param test_indices: The indices to test on.
         :return: The training and validation datasets.
         """
-        if self.representation_to_consider == "ECFP":
-            x_array = np.array(x.molecule_ecfp)
-        else:
-            raise ValueError("Representation does not exist")
+        if self.dataset is None:
+            x_array = np.array(X.molecule_smiles)
+            train_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[train_indices]),
+                torch.from_numpy(y[train_indices]),
+            )
+            test_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[test_indices]),
+                torch.from_numpy(y[test_indices]),
+            )
+            return train_dataset_old, test_dataset_old
 
-        train_dataset = TensorDataset(
-            torch.from_numpy(x_array[train_indices]) if not self.int_type else torch.from_numpy(x_array[train_indices]),
-            torch.from_numpy(y[train_indices]),
-        )
-        test_dataset = TensorDataset(
-            torch.from_numpy(x_array[test_indices]) if not self.int_type else torch.from_numpy(x_array[test_indices]),
-            torch.from_numpy(y[test_indices]),
-        )
+        train_dataset = deepcopy(self.dataset)
+        train_dataset.initialize(X, y, train_indices)
+        train_dataset.setup_pipeline(use_augmentations=True)
+
+        test_dataset = deepcopy(self.dataset)
+        test_dataset.initialize(X, y, test_indices)
 
         return train_dataset, test_dataset
 
@@ -63,8 +70,13 @@ class MainTrainer(TorchTrainer, Logger):
         :param x: The input data.
         :return: The prediction dataset.
         """
-        x_arr = np.array(x.molecule_ecfp)
-        return TensorDataset(torch.from_numpy(x_arr).int() if self.int_type else torch.from_numpy(x_arr).float())
+        if self.dataset is None:
+            x_arr = np.array(x.molecule_ecfp)
+            return TensorDataset(torch.from_numpy(x_arr))
+
+        dataset = deepcopy(self.dataset)
+        dataset.initialize(x)
+        return dataset
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.
@@ -114,8 +126,9 @@ class MainTrainer(TorchTrainer, Logger):
         )
         for batch in pbar:
             X_batch, y_batch = batch
-            X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
-            y_batch = y_batch.to(self.device).float()
+
+            X_batch = batch_to_device(X_batch, self.x_tensor_type, self.device)
+            y_batch = batch_to_device(y_batch, self.y_tensor_type, self.device)
 
             # Forward pass
             y_pred = self.model(X_batch).squeeze(1)
@@ -132,74 +145,13 @@ class MainTrainer(TorchTrainer, Logger):
 
         # Step the scheduler
         if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch)
+            self.initialized_scheduler.step(epoch=epoch + 1)
 
         # Remove the cuda cache
         torch.cuda.empty_cache()
         gc.collect()
 
         return sum(losses) / len(losses)
-
-    def _val_one_epoch(
-        self,
-        dataloader: DataLoader[tuple[Tensor, ...]],
-        desc: str,
-    ) -> float:
-        """Compute validation loss of the model for one epoch.
-
-        :param dataloader: Dataloader for the testing data.
-        :param desc: Description for the tqdm progress bar.
-        :return: Average loss for the epoch.
-        """
-        losses = []
-        self.model.eval()
-        pbar = tqdm(dataloader, unit="batch")
-        with torch.no_grad():
-            for batch in pbar:
-                X_batch, y_batch = batch
-                X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
-                y_batch = y_batch.to(self.device).float()
-
-                # Forward pass
-                y_pred = self.model(X_batch).squeeze(1)
-                loss = self.criterion(y_pred, y_batch)
-
-                # Print losses
-                losses.append(loss.item())
-                pbar.set_description(desc=desc)
-                pbar.set_postfix(loss=sum(losses) / len(losses))
-        return sum(losses) / len(losses)
-
-    def predict_on_loader(
-        self,
-        loader: DataLoader[tuple[Tensor, ...]],
-    ) -> npt.NDArray[np.float32]:
-        """Predict on the loader.
-
-        :param loader: The loader to predict on.
-        :return: The predictions.
-        """
-        self.log_to_terminal("Predicting on the test data")
-        self.model.eval()
-        predictions = []
-        # Create a new dataloader from the dataset of the input dataloader with collate_fn
-        loader = DataLoader(
-            loader.dataset,
-            batch_size=loader.batch_size,
-            shuffle=False,
-            collate_fn=(
-                collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
-            ),
-        )
-        with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
-            for data in tepoch:
-                X_batch = data[0].to(self.device).int() if self.int_type else data[0].to(self.device).float()
-
-                y_pred = self.model(X_batch).squeeze(1).cpu().numpy()
-                predictions.extend(y_pred)
-
-        self.log_to_terminal("Done predicting")
-        return np.array(predictions)
 
 
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:

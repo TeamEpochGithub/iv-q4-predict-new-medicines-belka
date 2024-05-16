@@ -3,8 +3,8 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+  steps: []
+    # - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
 
 y_sys:
   steps: []
@@ -30,6 +30,13 @@ train_sys:
       epochs: 15
       batch_size: 4096
       patience: 1
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+            p: 0.5
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
       scheduler:
         _target_: functools.partial
         _args_:
@@ -42,7 +49,11 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      int_type: true
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 2
+        persistent_workers: false
 
 pred_sys:
   steps:
