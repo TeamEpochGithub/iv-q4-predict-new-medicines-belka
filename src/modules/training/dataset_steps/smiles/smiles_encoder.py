@@ -69,11 +69,11 @@ class SmilesEncoder(TrainingBlock):
     def _encode_smiles(self, smiles: npt.NDArray[np.str_]) -> npt.NDArray[np.uint8]:
         """Encode the SMILE strings into categorical data."""
         smiles_flattend = smiles.flatten()
-        smiles_new = np.empty((len(smiles_flattend), 142), dtype=np.uint8)
+        smiles_new = np.empty((len(smiles_flattend), 145), dtype=np.uint8)
 
         for smiles_idx in range(len(smiles_flattend)):
             tmp = [ENCODING[i] for i in smiles_flattend[smiles_idx]]
-            tmp = tmp + [0] * (142 - len(tmp))
+            tmp = tmp + [0] * (145 - len(tmp))
             smiles_new[smiles_idx] = np.array(tmp).astype(np.uint8)
 
         return smiles_new.reshape((*smiles.shape, -1))
