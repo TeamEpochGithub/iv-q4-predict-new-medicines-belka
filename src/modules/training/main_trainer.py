@@ -8,6 +8,7 @@ import numpy.typing as npt
 import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
+from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_device
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
@@ -21,7 +22,6 @@ class MainTrainer(TorchTrainer, Logger):
     """Main training block."""
 
     representation_to_consider: str = "ECFP"
-    int_type: bool = False
 
     def create_datasets(
         self,
@@ -44,11 +44,11 @@ class MainTrainer(TorchTrainer, Logger):
             raise ValueError("Representation does not exist")
 
         train_dataset = TensorDataset(
-            torch.from_numpy(x_array[train_indices]) if not self.int_type else torch.from_numpy(x_array[train_indices]),
+            torch.from_numpy(x_array[train_indices]),
             torch.from_numpy(y[train_indices]),
         )
         test_dataset = TensorDataset(
-            torch.from_numpy(x_array[test_indices]) if not self.int_type else torch.from_numpy(x_array[test_indices]),
+            torch.from_numpy(x_array[test_indices]),
             torch.from_numpy(y[test_indices]),
         )
 
@@ -114,8 +114,9 @@ class MainTrainer(TorchTrainer, Logger):
         )
         for batch in pbar:
             X_batch, y_batch = batch
-            X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
-            y_batch = y_batch.to(self.device).float()
+
+            X_batch = batch_to_device(X_batch, self.x_tensor_type, self.device)
+            y_batch = batch_to_device(y_batch, self.y_tensor_type, self.device)
 
             # Forward pass
             y_pred = self.model(X_batch).squeeze(1)
@@ -132,7 +133,7 @@ class MainTrainer(TorchTrainer, Logger):
 
         # Step the scheduler
         if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch)
+            self.initialized_scheduler.step(epoch=epoch + 1)
 
         # Remove the cuda cache
         torch.cuda.empty_cache()
@@ -140,66 +141,113 @@ class MainTrainer(TorchTrainer, Logger):
 
         return sum(losses) / len(losses)
 
-    def _val_one_epoch(
-        self,
-        dataloader: DataLoader[tuple[Tensor, ...]],
-        desc: str,
-    ) -> float:
-        """Compute validation loss of the model for one epoch.
+    # def _train_one_epoch(
+    #     self,
+    #     dataloader: DataLoader[tuple[Tensor, ...]],
+    #     epoch: int,
+    # ) -> float:
+    #     """Train the model for one epoch.
+    #
+    #     :param dataloader: Dataloader for the training data.
+    #     :param epoch: Epoch number.
+    #     :return: Average loss for the epoch.
+    #     """
+    #     losses = []
+    #     self.model.train()
+    #     pbar = tqdm(
+    #         dataloader,
+    #         unit="batch",
+    #         desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})",
+    #     )
+    #     for batch in pbar:
+    #         X_batch, y_batch = batch
+    #         X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
+    #         y_batch = y_batch.to(self.device).float()
+    #
+    #         # Forward pass
+    #         y_pred = self.model(X_batch).squeeze(1)
+    #         loss = self.criterion(y_pred, y_batch)
+    #
+    #         # Backward pass
+    #         self.initialized_optimizer.zero_grad()
+    #         loss.backward()
+    #         self.initialized_optimizer.step()
+    #
+    #         # Print tqdm
+    #         losses.append(loss.item())
+    #         pbar.set_postfix(loss=sum(losses) / len(losses))
+    #
+    #     # Step the scheduler
+    #     if self.initialized_scheduler is not None:
+    #         self.initialized_scheduler.step(epoch=epoch)
+    #
+    #     # Remove the cuda cache
+    #     torch.cuda.empty_cache()
+    #     gc.collect()
+    #
+    #     return sum(losses) / len(losses)
 
-        :param dataloader: Dataloader for the testing data.
-        :param desc: Description for the tqdm progress bar.
-        :return: Average loss for the epoch.
-        """
-        losses = []
-        self.model.eval()
-        pbar = tqdm(dataloader, unit="batch")
-        with torch.no_grad():
-            for batch in pbar:
-                X_batch, y_batch = batch
-                X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
-                y_batch = y_batch.to(self.device).float()
+    # def _val_one_epoch(
+    #     self,
+    #     dataloader: DataLoader[tuple[Tensor, ...]],
+    #     desc: str,
+    # ) -> float:
+    #     """Compute validation loss of the model for one epoch.
+    #
+    #     :param dataloader: Dataloader for the testing data.
+    #     :param desc: Description for the tqdm progress bar.
+    #     :return: Average loss for the epoch.
+    #     """
+    #     losses = []
+    #     self.model.eval()
+    #     pbar = tqdm(dataloader, unit="batch")
+    #     with torch.no_grad():
+    #         for batch in pbar:
+    #             X_batch, y_batch = batch
+    #             X_batch = X_batch.to(self.device).int() if self.int_type else X_batch.to(self.device).float()
+    #             y_batch = y_batch.to(self.device).float()
+    #
+    #             # Forward pass
+    #             y_pred = self.model(X_batch).squeeze(1)
+    #             loss = self.criterion(y_pred, y_batch)
+    #
+    #             # Print losses
+    #             losses.append(loss.item())
+    #             pbar.set_description(desc=desc)
+    #             pbar.set_postfix(loss=sum(losses) / len(losses))
+    #     return sum(losses) / len(losses)
 
-                # Forward pass
-                y_pred = self.model(X_batch).squeeze(1)
-                loss = self.criterion(y_pred, y_batch)
-
-                # Print losses
-                losses.append(loss.item())
-                pbar.set_description(desc=desc)
-                pbar.set_postfix(loss=sum(losses) / len(losses))
-        return sum(losses) / len(losses)
-
-    def predict_on_loader(
-        self,
-        loader: DataLoader[tuple[Tensor, ...]],
-    ) -> npt.NDArray[np.float32]:
-        """Predict on the loader.
-
-        :param loader: The loader to predict on.
-        :return: The predictions.
-        """
-        self.log_to_terminal("Predicting on the test data")
-        self.model.eval()
-        predictions = []
-        # Create a new dataloader from the dataset of the input dataloader with collate_fn
-        loader = DataLoader(
-            loader.dataset,
-            batch_size=loader.batch_size,
-            shuffle=False,
-            collate_fn=(
-                collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
-            ),
-        )
-        with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
-            for data in tepoch:
-                X_batch = data[0].to(self.device).int() if self.int_type else data[0].to(self.device).float()
-
-                y_pred = self.model(X_batch).squeeze(1).cpu().numpy()
-                predictions.extend(y_pred)
-
-        self.log_to_terminal("Done predicting")
-        return np.array(predictions)
+    # def predict_on_loader(
+    #     self,
+    #     loader: DataLoader[tuple[Tensor, ...]],
+    # ) -> npt.NDArray[np.float32]:
+    #     """Predict on the loader.
+    #
+    #     :param loader: The loader to predict on.
+    #     :return: The predictions.
+    #     """
+    #     self.log_to_terminal("Predicting on the test data")
+    #     self.model.eval()
+    #     predictions = []
+    #     # Create a new dataloader from the dataset of the input dataloader with collate_fn
+    #     loader = DataLoader(
+    #         loader.dataset,
+    #         batch_size=loader.batch_size,
+    #         shuffle=False,
+    #         collate_fn=(
+    #             collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+    #         ),
+    #     )
+    #     with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
+    #         for data in tepoch:
+    #             X_batch = data[0].to(self.device).int() if self.int_type else data[0].to(self.device).float()
+    #
+    #             y_pred = self.model(X_batch).squeeze(1).cpu().numpy()
+    #             predictions.extend(y_pred)
+    #
+    #     self.log_to_terminal("Done predicting")
+    #     return np.array(predictions)
+    #
 
 
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
