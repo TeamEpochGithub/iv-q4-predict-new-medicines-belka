@@ -95,7 +95,7 @@ class SimpleFullEncoding(VerboseTransformationBlock):
             tmp = tmp + [0] * (142 - len(tmp))
             return np.array(tmp).astype(np.uint8)
 
-        smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smile)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
+        smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smile)(smile) for smile in tqdm(smiles, desc="Encoding Atomwise"))
         smiles_enc = np.stack(smiles_enc)
 
         x.molecule_ecfp = smiles_enc

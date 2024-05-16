@@ -32,7 +32,7 @@ train_sys:
         retrieval: ["ECFP_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.5 
+            p: 0.25 
       scheduler:
         _target_: functools.partial
         _args_:
@@ -44,7 +44,7 @@ train_sys:
         cycle_limit: 1
         warmup_t: 1
         warmup_lr_init: 1e-5
-      n_folds: 0
+      n_folds: 5
       int_type: true
 
 pred_sys:
