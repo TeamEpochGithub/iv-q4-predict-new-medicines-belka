@@ -23,7 +23,6 @@ from src.typing.xdata import XData
 class MainTrainer(TorchTrainer, Logger):
     """Main training block."""
 
-    int_type: bool = False
     dataset: MainDataset | None = None  # type: ignore[type-arg]
 
     def create_datasets(
