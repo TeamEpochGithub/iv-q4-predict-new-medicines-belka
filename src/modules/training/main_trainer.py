@@ -1,5 +1,6 @@
 """Module for example training block."""
 import gc
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
@@ -14,6 +15,7 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
+from src.modules.training.datasets.main_dataset import MainDataset
 from src.typing.xdata import XData
 
 
@@ -21,11 +23,11 @@ from src.typing.xdata import XData
 class MainTrainer(TorchTrainer, Logger):
     """Main training block."""
 
-    representation_to_consider: str = "ECFP"
+    dataset: MainDataset | None = None  # type: ignore[type-arg]
 
     def create_datasets(
         self,
-        x: XData,
+        X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
         test_indices: list[int],
@@ -38,19 +40,24 @@ class MainTrainer(TorchTrainer, Logger):
         :param test_indices: The indices to test on.
         :return: The training and validation datasets.
         """
-        if self.representation_to_consider == "ECFP":
-            x_array = np.array(x.molecule_ecfp)
-        else:
-            raise ValueError("Representation does not exist")
+        if self.dataset is None:
+            x_array = np.array(X.molecule_smiles)
+            train_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[train_indices]),
+                torch.from_numpy(y[train_indices]),
+            )
+            test_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[test_indices]),
+                torch.from_numpy(y[test_indices]),
+            )
+            return train_dataset_old, test_dataset_old
 
-        train_dataset = TensorDataset(
-            torch.from_numpy(x_array[train_indices]),
-            torch.from_numpy(y[train_indices]),
-        )
-        test_dataset = TensorDataset(
-            torch.from_numpy(x_array[test_indices]),
-            torch.from_numpy(y[test_indices]),
-        )
+        train_dataset = deepcopy(self.dataset)
+        train_dataset.initialize(X, y, train_indices)
+        train_dataset.setup_pipeline(use_augmentations=True)
+
+        test_dataset = deepcopy(self.dataset)
+        test_dataset.initialize(X, y, test_indices)
 
         return train_dataset, test_dataset
 
@@ -63,8 +70,13 @@ class MainTrainer(TorchTrainer, Logger):
         :param x: The input data.
         :return: The prediction dataset.
         """
-        x_arr = np.array(x.molecule_ecfp)
-        return TensorDataset(torch.from_numpy(x_arr).int() if self.int_type else torch.from_numpy(x_arr).float())
+        if self.dataset is None:
+            x_arr = np.array(x.molecule_ecfp)
+            return TensorDataset(torch.from_numpy(x_arr))
+
+        dataset = deepcopy(self.dataset)
+        dataset.initialize(x)
+        return dataset
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.

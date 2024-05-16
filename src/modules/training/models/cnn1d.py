@@ -35,7 +35,7 @@ class CNN1D(nn.Module):
 
         # Embedding layer
         if embedding:
-            self._embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_dim, padding_idx=0)
+            self._embedding = nn.Embedding(num_embeddings=41, embedding_dim=hidden_dim, padding_idx=0)
         else:
             self._embedding = nn.Linear(4, hidden_dim)
 
