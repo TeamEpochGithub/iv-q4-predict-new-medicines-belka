@@ -71,22 +71,20 @@ class MainDataset(Dataset):  # type: ignore[type-arg]
             return len(self.X)
         return len(self.indices)
 
-    def __getitems__(self, indices: list[int]) -> tuple[Any, Any]:
+    def __getitems__(self, indices: list[int] | npt.NDArray[np.int_]) -> tuple[Any, Any]:
         """Get items from the dataset."""
         if self.X is None:
             raise ValueError("Dataset not initialized.")
 
         if self.indices is not None:
-            ind = self.indices[indices]
+            indices = self.indices[indices]
 
         self.X.retrieval = self._retrieval_enum
-        X = self.X[ind]
-
-        y = self.y[ind] if self.y is not None else None
+        X = self.X[indices]
+        y = self.y[indices] if self.y is not None else None
 
         X, y = self._pipeline.train(X, y)
-
-        return torch.Tensor(X), torch.Tensor(y)
+        return torch.Tensor(X), torch.Tensor(y) if y is not None else None
 
     def __getitem__(self, idx: int) -> tuple[Any, Any]:
         """Get an item from the dataset.
@@ -105,5 +103,4 @@ class MainDataset(Dataset):  # type: ignore[type-arg]
         y = np.expand_dims(self.y[idx], axis=0) if self.y is not None else None
 
         X, y = self._pipeline.train(X, y)
-
-        return torch.Tensor(X)[0], torch.Tensor(y)[0]
+        return torch.Tensor(X)[0], torch.Tensor(y)[0] if y is not None else None

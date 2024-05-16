@@ -10,7 +10,7 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
@@ -41,7 +41,16 @@ class MainTrainer(TorchTrainer, Logger):
         :return: The training and validation datasets.
         """
         if self.dataset is None:
-            raise ValueError("Dataset must be set.")
+            x_array = np.array(X.molecule_smiles)
+            train_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[train_indices]) if not self.int_type else torch.from_numpy(x_array[train_indices]),
+                torch.from_numpy(y[train_indices]),
+            )
+            test_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[test_indices]) if not self.int_type else torch.from_numpy(x_array[test_indices]),
+                torch.from_numpy(y[test_indices]),
+            )
+            return train_dataset_old, test_dataset_old
 
         train_dataset = deepcopy(self.dataset)
         train_dataset.initialize(X, y, train_indices)
@@ -62,7 +71,8 @@ class MainTrainer(TorchTrainer, Logger):
         :return: The prediction dataset.
         """
         if self.dataset is None:
-            raise ValueError("Dataset must be set.")
+            x_arr = np.array(x.molecule_ecfp)
+            return TensorDataset(torch.from_numpy(x_arr).int() if self.int_type else torch.from_numpy(x_arr).float())
 
         dataset = deepcopy(self.dataset)
         dataset.initialize(x)
