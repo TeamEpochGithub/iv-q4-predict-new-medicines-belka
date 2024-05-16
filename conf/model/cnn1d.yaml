@@ -11,6 +11,8 @@ y_sys:
 
 train_sys:
   steps:
+    - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
+      window_size: 6
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:

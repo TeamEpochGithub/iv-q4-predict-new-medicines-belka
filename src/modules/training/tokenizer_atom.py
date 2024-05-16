@@ -24,6 +24,8 @@ class TokenizerAtom(VerboseTrainingBlock):
         :param y: array containing the molecule labels
         :return: The tokenized sentences and labels"""
 
+        self.log_to_terminal(f"start training the tokenizer.")
+
         # extract the molecule smiles from XData
         smiles = X.molecule_smiles
 
@@ -31,6 +33,9 @@ class TokenizerAtom(VerboseTrainingBlock):
         encoder = StaticTokenizerEncoder(smiles, tokenize=self.segment_molecule)
         encoded = [encoder.encode(smile) for smile in smiles]
         encoded = np.array([pad_tensor(x, length=150) for x in encoded])
+
+        # print the vocabulary size of the tokenizer
+        self.log_to_terminal(f"the vocabulary swsssize of the tokenizer {encoder.vocab_size()}.")
 
         # save the tokenizer as a pickle file
         with open(f"tm/{self.get_hash()}", 'wb') as f:
