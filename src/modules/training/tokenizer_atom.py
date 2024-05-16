@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from rdkit import Chem
 import pickle
+import random
 from tqdm import tqdm
 from dataclasses import dataclass
 from src.typing.xdata import XData
@@ -17,6 +18,7 @@ class TokenizerAtom(VerboseTrainingBlock):
     param window_size: the size of each word"""
 
     window_size: int = 6
+    num_samples: int = 50000
 
     def train(self, X: XData, y: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Train the torch tokenizer on the sentences.
@@ -28,7 +30,8 @@ class TokenizerAtom(VerboseTrainingBlock):
         self.log_to_terminal(f"start training the tokenizer.")
 
         # extract the molecule smiles from XData
-        smiles = X.molecule_smiles
+        smiles = list(X.molecule_smiles)
+        smiles = random.sample(smiles, self.num_samples)
 
         # Use tqdm to wrap the SMILES list
         tqdm_smiles = tqdm(smiles, desc="Tokenizing molecules")
@@ -36,7 +39,7 @@ class TokenizerAtom(VerboseTrainingBlock):
         # train and apply the torch nlp tokenizer
         encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=self.segment_molecule)
         encoded = [encoder.encode(smile) for smile in smiles]
-        # encoded = np.array([pad_tensor(x, length=150) for x in encoded])
+        encoded = np.array([pad_tensor(x, length=150) for x in encoded])
 
 
         # save the tokenizer as a pickle file
@@ -56,7 +59,6 @@ class TokenizerAtom(VerboseTrainingBlock):
 
         # extract the smiles from the XData
         smiles = X.molecule_smiles
-        print(self.get_hash())
 
         # extract the tokenizer from the pickle file
         with open(f"tm/{self.get_hash()}", 'rb') as f:
@@ -70,16 +72,15 @@ class TokenizerAtom(VerboseTrainingBlock):
         """Transforms the molecule into a sequence of tokens.
         param smile: the smile of the molecule"""
 
-        # # convert the smile to the molecule object
-        # mol = Chem.MolFromSmiles(smile)
-        #
-        # # extract the atoms from the molecule
-        # tokens = [atom.GetSymbol() for atom in mol.GetAtoms()]
-        #
-        # # extract n-grams from the sequence
-        # length = len(tokens) - self.window_size + 1
-        # [" ".join(tokens[i:i + self.window_size]) for i in range(length)]
-        #
-        return smile
+        # convert the smile to the molecule object
+        mol = Chem.MolFromSmiles(smile)
 
+        # extract the atoms from the molecule
+        tokens = [atom.GetSymbol() for atom in mol.GetAtoms()]
+
+        # extract n-grams from the sequence
+        length = len(tokens) - self.window_size + 1
+        [" ".join(tokens[i:i + self.window_size]) for i in range(length)]
+
+        return smile
 
