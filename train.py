@@ -6,8 +6,11 @@ from pathlib import Path
 
 import hydra
 import numpy as np
+import numpy.typing as npt
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
+from epochalyst.pipeline.ensemble import EnsemblePipeline
+from epochalyst.pipeline.model.model import ModelPipeline
 from hydra.core.config_store import ConfigStore
 from hydra.utils import instantiate
 from omegaconf import DictConfig
@@ -17,7 +20,7 @@ from src.setup.setup_data import setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import setup_train_args
 from src.setup.setup_wandb import setup_wandb
-from src.typing.xdata import XData
+from src.typing.xdata import XData, slice_copy
 from src.utils.lock import Lock
 from src.utils.logger import logger
 from src.utils.set_torch_seed import set_torch_seed
@@ -75,7 +78,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     # Load the data if not cached
     X = XData(np.array([1]))
     y = np.array([1])
-    if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists():
+
+    if not x_cache_exists or not y_cache_exists or not splitter_cache_path.exists() or cfg.val_split:
         X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
@@ -85,6 +89,19 @@ def run_train_cfg(cfg: DictConfig) -> None:
         logger.info("Training full.")
         train_indices, test_indices = list(range(len(X))), []  # type: ignore[arg-type]
         fold = -1
+    elif cfg.val_split:
+        logger.info("Splitting data into train, test, and validation sets.")
+        splits, train_val_indices, val_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)
+        train_indices, test_indices = splits[0]
+        fold = 0
+        val_x = slice_copy(X, val_indices)
+        val_y = y[val_indices].flatten()
+        logger.info(f"Bind % in validation: {np.count_nonzero(val_y == 1) * 100 / len(val_y)}")
+        if len(X.building_blocks) > 1:
+            X.slice_all(train_val_indices)
+        if len(y) > 1:
+            y = y[train_val_indices]
+        logger.info(f"Bind % in train/test: {np.count_nonzero(y == 1) * 100 / (len(y) * 3)}")
     else:
         logger.info("Splitting Data into train and test sets.")
         train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
@@ -106,16 +123,57 @@ def run_train_cfg(cfg: DictConfig) -> None:
     )
     predictions, y_new = model_pipeline.train(X, y, **train_args)
 
+    scoring(cfg=cfg, test_indices=test_indices, y_new=y_new, predictions=predictions, val_x=val_x, val_y=val_y, model_pipeline=model_pipeline)
+
+    wandb.finish()
+
+
+def scoring(
+    cfg: DictConfig,
+    test_indices: list[int],
+    y_new: npt.NDArray[np.int_],
+    predictions: npt.NDArray[np.int_],
+    model_pipeline: ModelPipeline | EnsemblePipeline,
+    val_x: XData | None = None,
+    val_y: npt.NDArray[np.int_] | None = None,
+) -> None:
+    """Score the predictions and possible validation.
+
+    :param cfg: The dictionary configuration
+    :param test_indices: the test indices
+    :param y_new: The test set labels
+    :param prediction: The predictions on the test set
+    :param model_pipeline: The model pipeline
+    :param val_x: XData for validation set
+    :param val_y: Labels for validation y
+    :param val_indices: The indices for validation
+    """
+    print_section_separator("Scoring")
     if len(test_indices) > 0:
-        print_section_separator("Scoring")
         scorer = instantiate(cfg.scorer)
         score = scorer(y_new, predictions)
         logger.info(f"Score: {score}")
 
         if wandb.run:
             wandb.log({"Score": score})
+    elif wandb.run:
+        wandb.log({"Score": -1})
 
-    wandb.finish()
+    if val_x is not None and val_y is not None:
+        scorer = instantiate(cfg.scorer)
+        pred_val = model_pipeline.predict(val_x)
+        val_score = scorer(val_y, pred_val)
+        logger.info(f"Validation Score: {val_score}")
+
+        combined_score = 0.66 * score + 0.33 * val_score
+        logger.info(f"Percentage of training score in combined score: {len(y_new) / (len(y_new) + len(val_y))}")
+        logger.info(f"Combined Score: {combined_score}")
+        if wandb.run:
+            wandb.log({"Validation Score": val_score})
+            wandb.log({"Combined Score": combined_score})
+    elif wandb.run:
+        wandb.log({"Validation Score": -1})
+        wandb.log({"Combined Score": -1})
 
 
 if __name__ == "__main__":
