@@ -11,9 +11,9 @@ scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
 splitter:
-  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+  _target_: src.splitter.stratified_splitter.StratifiedSplitter
   n_splits: 5
-val_split: True
-sample_size: 10_000
+sample_size: 10_000_000
 sample_split: 0.015
+# val_split: true
 allow_multiple_instances: true
