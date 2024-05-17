@@ -1,8 +1,9 @@
-"""Module containing GCN model"""
+"""Module containing GCN model."""
 import torch
 from torch import nn
-from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.data import Data  # type: ignore[import-not-found]
+from torch_geometric.nn import GCNConv, global_mean_pool  # type: ignore[import-not-found]
+
 
 class GCNModel(nn.Module):
     """GCN model for graph classification.
@@ -17,8 +18,9 @@ class GCNModel(nn.Module):
         Number of classes for the classification task.
     """
 
-    def __init__(self, num_node_features: int, n_classes: int):
-        super(GCNModel, self).__init__()
+    def __init__(self, num_node_features: int, n_classes: int) -> None:
+        """Initialize the GCN model."""
+        super().__init__()
         hidden_dim = 256
         self.hidden_dim = hidden_dim
         self.conv1 = GCNConv(num_node_features, hidden_dim)
@@ -28,7 +30,8 @@ class GCNModel(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.1)
 
-    def forward(self, data : Data) -> torch.Tensor:
+    def forward(self, data: Data) -> torch.Tensor:
+        """Forward pass of the GCN model."""
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         x = self.conv1(x, edge_index)
@@ -44,6 +47,4 @@ class GCNModel(nn.Module):
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)
-        x = self.fc2(x)
-
-        return x
+        return self.fc2(x)

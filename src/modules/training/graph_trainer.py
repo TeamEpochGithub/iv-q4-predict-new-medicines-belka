@@ -1,7 +1,7 @@
 """Module for graph training block."""
 import gc
+import os
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -9,60 +9,95 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import Dataset, TensorDataset
-from torch_geometric.nn import DataParallel
-from torch_geometric.data import DataLoader as GeometricDataLoader, Data
+from torch.utils.data import Dataset
+from torch_geometric.data import Data  # type: ignore[import-not-found]
+from torch_geometric.data import DataLoader as GeometricDataLoader
+from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
 from src.typing.graph_dataset import GraphDataset
 from src.typing.xdata import XData
 
-from tqdm import tqdm
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 @dataclass
 class GraphTrainer(TorchTrainer, Logger):
     """Graph training block."""
+
     int_type: bool = False
 
     def create_datasets(
-            self,
-            x: XData,
-            y: npt.NDArray[np.int8],
-            train_indices: list[int],
-            test_indices: list[int],
-    ) -> tuple[GraphDataset, GraphDataset]:
+        self,
+        x: XData,
+        y: npt.NDArray[np.int8],
+        train_indices: list[int],
+        test_indices: list[int],
+    ) -> tuple[GraphDataset[Data], GraphDataset[Data]]:
+        """Create datasets for graph training."""
+        if x.molecule_graph is None:
+            raise ValueError("x.molecule_graph cannot be None")
+
         train_graphs = [x.molecule_graph[i] for i in train_indices]
-        train_labels = torch.from_numpy(y[train_indices]).to(self.device)
+        train_labels = torch.from_numpy(y[train_indices])
 
         test_graphs = [x.molecule_graph[i] for i in test_indices]
-        test_labels = torch.from_numpy(y[test_indices]).to(self.device)
+        test_labels = torch.from_numpy(y[test_indices])
 
-        train_dataset = GraphDataset(train_graphs, train_labels, device = self.device)
-        test_dataset = GraphDataset(test_graphs, test_labels, device = self.device)
+        train_dataset: GraphDataset[Data] = GraphDataset(train_graphs, train_labels, device=self.device)
+        test_dataset: GraphDataset[Data] = GraphDataset(test_graphs, test_labels, device=self.device)
 
         return train_dataset, test_dataset
 
-    def create_prediction_dataset(self, x: XData) -> GraphDataset:
+    def create_prediction_dataset(self, x: XData) -> GraphDataset[Data]:
+        """Create datasets for graph prediction."""
+        if x.molecule_graph is None:
+            raise ValueError("x.molecule_graph cannot be None")
+
         x_array = list(x.molecule_graph)
-        return GraphDataset(x_array, None, device = self.device)
+        return GraphDataset(x_array, None, device=self.device)
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
+        """Predicts graph prediction."""
         return super().custom_predict(x).flatten()
 
     def save_model_to_external(self) -> None:
+        """Save model to external file."""
         if wandb.run:
             model_artifact = wandb.Artifact(self.model_name, type="model")
             model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
             wandb.log_artifact(model_artifact)
 
+    def create_dataloaders(
+        self,
+        train_dataset: Dataset[tuple[Tensor, ...]],
+        test_dataset: Dataset[tuple[Tensor, ...]],
+    ) -> tuple[GeometricDataLoader, GeometricDataLoader]:
+        """Create the dataloaders for training and validation.
+
+        :param train_dataset: The training dataset.
+        :param test_dataset: The validation dataset.
+        :return: The training and validation dataloaders.
+        """
+        train_loader = GeometricDataLoader(
+            train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+        )
+        test_loader = GeometricDataLoader(
+            test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+        )
+        return train_loader, test_loader
+
     def _training_loop(
-            self,
-            train_loader: GeometricDataLoader,
-            test_loader: GeometricDataLoader,
-            train_losses: list[float],
-            val_losses: list[float],
-            fold: int = -1,
+        self,
+        train_loader: GeometricDataLoader,
+        test_loader: GeometricDataLoader,
+        train_losses: list[float],
+        val_losses: list[float],
+        fold: int = -1,
     ) -> None:
         fold_no = ""
 
@@ -124,17 +159,17 @@ class GraphTrainer(TorchTrainer, Logger):
     def _train_one_epoch(self, dataloader: GeometricDataLoader, epoch: int) -> float:
         losses = []
         self.model.train()
-        pbar = tqdm(dataloader, unit="batch",
-                    desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})")
+        pbar = tqdm(dataloader, unit="batch", desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})")
         for batch in pbar:
-            batch = batch.to(self.device)
-            self.log_to_terminal(f"Batch device: {batch.x.device}")
+            batch_device = batch.to(self.device)
+            self.log_to_terminal(f"Batch device: {batch_device.x.device}")
 
-            data = Data(x=batch.x, edge_index=batch.edge_index, batch=batch.batch)
+            data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
+            data = data.to(self.device)  # Ensure data is on the correct device
             y_pred = self.model(data).squeeze(1)
             self.log_to_terminal(f"Prediction device: {y_pred.device}")
 
-            target = batch.y.to(self.device)
+            target = batch_device.y.to(self.device)
 
             if target.shape != y_pred.shape:
                 target = target.view(y_pred.shape)
@@ -160,11 +195,12 @@ class GraphTrainer(TorchTrainer, Logger):
         pbar = tqdm(dataloader, unit="batch")
         with torch.no_grad():
             for batch in pbar:
-                batch = batch.to(self.device)
-                data = Data(x=batch.x, edge_index=batch.edge_index, batch=batch.batch)
+                batch_device = batch.to(self.device)
+                data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
+                data = data.to(self.device)  # Ensure data is on the correct device
                 y_pred = self.model(data).squeeze(1)
 
-                target = batch.y.to(self.device)
+                target = batch_device.y.to(self.device)
                 if target.shape != y_pred.shape:
                     target = target.view(y_pred.shape)
 
@@ -175,6 +211,7 @@ class GraphTrainer(TorchTrainer, Logger):
         return sum(losses) / len(losses)
 
     def predict_on_loader(self, dataloader: GeometricDataLoader) -> npt.NDArray[np.float32]:
+        """Predicts on data from data loader."""
         self.log_to_terminal("Predicting on the test data")
         self.model.eval()
         predictions = []
@@ -182,36 +219,15 @@ class GraphTrainer(TorchTrainer, Logger):
 
         with torch.no_grad():
             for batch in pbar:
-                batch = batch.to(self.device)
-                data = Data(x=batch.x, edge_index=batch.edge_index, batch=batch.batch)
+                batch_device = batch.to(self.device)
+                data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
+                data = data.to(self.device)  # Ensure data is on the correct device
                 y_pred = self.model(data).squeeze(1)
                 predictions.extend(y_pred.cpu().numpy())
 
         self.log_to_terminal("Done predicting")
         return np.array(predictions)
 
-    def create_dataloaders(
-            self,
-            train_dataset: Dataset[tuple[Tensor, ...]],
-            test_dataset: Dataset[tuple[Tensor, ...]],
-    ) -> tuple[GeometricDataLoader, GeometricDataLoader]:
-        """Create the dataloaders for training and validation.
-
-        :param train_dataset: The training dataset.
-        :param test_dataset: The validation dataset.
-        :return: The training and validation dataloaders.
-        """
-        train_loader = GeometricDataLoader(
-            train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-        )
-        test_loader = GeometricDataLoader(
-            test_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-        )
-        return train_loader, test_loader
 
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
     """Collate function for the dataloader.
@@ -220,3 +236,4 @@ def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
     :return: Collated batch.
     """
     X, y = batch
+    return X, y
