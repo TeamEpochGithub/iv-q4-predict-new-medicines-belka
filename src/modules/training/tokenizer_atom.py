@@ -5,6 +5,7 @@ import numpy.typing as npt
 from rdkit import Chem
 import pickle
 import random
+import torch
 from tqdm import tqdm
 from dataclasses import dataclass
 from src.typing.xdata import XData
@@ -17,10 +18,10 @@ class TokenizerAtom(VerboseTrainingBlock):
     """Train a torch tokenizer on the molecule smiles.
     param window_size: the size of each word"""
 
-    window_size: int = 6
-    num_samples: int = 50000
+    window_size: int = 10
+    num_samples: int = 1000000
 
-    def train(self, X: XData, y: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def train(self, X: XData, y: npt.NDArray[np.float32]) -> tuple[XData, npt.NDArray[np.float32]]:
         """Train the torch tokenizer on the sentences.
 
         :param X: XData containing the molecule smiles
@@ -29,27 +30,28 @@ class TokenizerAtom(VerboseTrainingBlock):
 
         self.log_to_terminal(f"start training the tokenizer.")
 
+        random.seed(42)
+
         # extract the molecule smiles from XData
         smiles = list(X.molecule_smiles)
-        smiles = random.sample(smiles, self.num_samples)
+        #sampled = random.sample(smiles, self.num_samples)
 
         # Use tqdm to wrap the SMILES list
         tqdm_smiles = tqdm(smiles, desc="Tokenizing molecules")
 
         # train and apply the torch nlp tokenizer
         encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=self.segment_molecule)
-        encoded = [encoder.encode(smile) for smile in smiles]
-        encoded = np.array([pad_tensor(x, length=150) for x in encoded])
-
-
-        # save the tokenizer as a pickle file
-        with open(f"tm/{self.get_hash()}", 'wb') as f:
-            pickle.dump(encoder, f)
+        encoded = [encoder.encode(smile) for smile in tqdm(smiles, desc="encode molecules")]
+        encoded = np.array([pad_tensor(x, length=150) for x in tqdm(encoded, desc="pad molecules")])
 
         # print the vocabulary size of the tokenizer
-        self.log_to_terminal(f"the vocabulary size of the tokenizer {encoder.vocab_size()}.")
+        self.log_to_terminal(f"the vocabulary size of the tokenizer {encoder.vocab_size}.")
 
-        return encoded, y
+        # save the tokenizer as a torch file
+        torch.save(encoder, f"tm/tokenizer")
+        X.molecule_ecfp = encoded
+
+        return X, y
 
     def predict(self, X: XData) -> npt.NDArray[np.float32]:
         """Predict using the model.
@@ -68,19 +70,10 @@ class TokenizerAtom(VerboseTrainingBlock):
         encoded = [encoder.encode(smile) for smile in smiles]
         return np.array([pad_tensor(x, length=150) for x in encoded])
 
-    def segment_molecule(self, smile: list[str]) -> list[str]:
+    def segment_molecule(self, smile: str) -> list[str]:
         """Transforms the molecule into a sequence of tokens.
         param smile: the smile of the molecule"""
 
-        # convert the smile to the molecule object
-        mol = Chem.MolFromSmiles(smile)
-
-        # extract the atoms from the molecule
-        tokens = [atom.GetSymbol() for atom in mol.GetAtoms()]
-
-        # extract n-grams from the sequence
-        length = len(tokens) - self.window_size + 1
-        [" ".join(tokens[i:i + self.window_size]) for i in range(length)]
-
-        return smile
+        length = len(smile) - self.window_size + 1
+        return [smile[i:i + self.window_size] for i in range(length)]
 

@@ -11,7 +11,7 @@ class TransformerEncoder(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(self, n_classes: int, nhead: int = 8, num_encoder_layers: int = 4, *, embedding: bool = True) -> None:
+    def __init__(self, n_classes: int, in_features: int = 142, nhead: int = 8, num_encoder_layers: int = 4, num_embeddings:int = 37, *, embedding: bool = True) -> None:
         """Initialize the CNN1D model.
 
         :param in_channels: The number of input channels.
@@ -26,7 +26,7 @@ class TransformerEncoder(nn.Module):
 
         # Embedding layer
         if embedding:
-            self._embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_dim, padding_idx=0)
+            self._embedding = nn.Embedding(num_embeddings=num_embeddings, embedding_dim=hidden_dim, padding_idx=0)
         else:
             self._embedding = nn.Linear(4, hidden_dim)
 
@@ -38,7 +38,7 @@ class TransformerEncoder(nn.Module):
         self.pool = nn.AdaptiveMaxPool1d(1)
 
         # Dense and Dropout layers
-        self.fc1 = nn.Linear(142, 1024)
+        self.fc1 = nn.Linear(in_features, 1024)
         self.dropout1 = nn.Dropout(0.1)
         self.fc2 = nn.Linear(1024, 1024)
         self.dropout2 = nn.Dropout(0.1)

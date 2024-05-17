@@ -4,7 +4,6 @@ defaults:
 
 x_sys:
   steps: []
-#    - _target_: src.modules.transformation.encoding.advanced_molecule_encoding.AdvancedMoleculeEncoding
 
 y_sys:
   steps: []
@@ -12,11 +11,13 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
+      window_size: 6
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
+        num_embeddings: 15000
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -27,15 +28,15 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 15
-      batch_size: 4096
+      batch_size: 4000
       patience: 1
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_MOL"]
+        retrieval: ["ECFP_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
-            p: 0.5
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
+#          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+#            p: 0.5
+#          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
       scheduler:
         _target_: functools.partial
         _args_:
