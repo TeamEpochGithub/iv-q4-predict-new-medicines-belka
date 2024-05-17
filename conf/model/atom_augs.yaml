@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+    - _target_: src.modules.transformation.encoding.simple_full_encoding.SimpleFullEncoding
 
 y_sys:
   steps: []
@@ -18,7 +18,6 @@ train_sys:
         n_classes: 3
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
@@ -27,14 +26,13 @@ train_sys:
         lr: 0.001
       epochs: 10
       batch_size: 4096
-      patience: 3
+      patience: 1
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_MOL"]
+        retrieval: ["ECFP_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
-            p: 0.5
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
@@ -52,6 +50,7 @@ train_sys:
         num_workers: 8
         prefetch_factor: 2
         persistent_workers: false
+
 
 pred_sys:
   steps:
