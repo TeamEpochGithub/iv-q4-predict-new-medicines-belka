@@ -230,6 +230,12 @@ class XData:
 
         if len(result) == 1:
             return result[0]
+
+        # STACKING
+        if self.retrieval & DataRetrieval.ECFP_BB:
+            # 3 arrays so shape is (3, 54|42|43), concatenate to single such that its 138
+            return np.concatenate(result, axis=0)
+
         return result
 
     def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:

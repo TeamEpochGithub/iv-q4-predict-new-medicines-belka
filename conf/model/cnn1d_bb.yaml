@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+    - _target_: src.modules.transformation.encoding.bb_encoder.BBEncoder
 
 y_sys:
   steps: []
@@ -25,9 +25,13 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 15
+      epochs: 10
       batch_size: 4096
       patience: 1
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["ECFP_BB"]
+        steps: []
       scheduler:
         _target_: functools.partial
         _args_:
@@ -40,7 +44,12 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      int_type: true
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 2
+        persistent_workers: false
+
 
 pred_sys:
   steps:

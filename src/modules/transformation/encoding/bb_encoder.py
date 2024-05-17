@@ -1,6 +1,10 @@
 from src.typing.xdata import XData
+import joblib
 
 from rdkit import Chem
+from tqdm import tqdm
+import numpy as np
+import numpy.typing as npt
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 
 
@@ -13,8 +17,12 @@ class BBEncoder(VerboseTransformationBlock):
         :param x: XData
         :return: XData with ecfp replaced by encodings"""
 
-        substructure1 = Chem.MolFromSmiles("O=COCC1c2ccccc2-c2ccccc21") # Biphenyl core
-        substructure2 = Chem.MolFromSmiles("CC(C)(C)OC(=O)") # Tert butyl acetate
+        fmoc = Chem.MolFromSmiles("O=COCC1c2ccccc2-c2ccccc21")  # Biphenyl core
+        boc = Chem.MolFromSmiles("CC(C)(C)OC(=O)")  # Tert butyl acetate
+
+        MAX_ENC_SIZE_BB1 = 42
+        MAX_ENC_SIZE_BB2 = 54
+        MAX_ENC_SIZE_BB3 = 43
 
         enc = {
             # Atoms
@@ -70,6 +78,12 @@ class BBEncoder(VerboseTransformationBlock):
 
             # Charges
             "+": 36,
+
+            ".": 37,
+            "\\": 38,
+            "%": 39,
+            "0": 40,
+
         }
 
         def remove_substructures(block: str) -> str:
@@ -79,12 +93,12 @@ class BBEncoder(VerboseTransformationBlock):
             :return: SMILE of modified block
             """
             block_mol = Chem.MolFromSmiles(block)
-            if molecule.HasSubstructMatch(common_substructure1):
-                # Delete substructure 1
-                block_mol = Chem.rdmolops.DeleteSubstructs(block_mol, common_substructure1, onlyFrags=False)
-            elif molecule.HasSubstructMatch(common_substructure2):
-                # Delete substructure 2
-                block_mol = Chem.rdmolops.DeleteSubstructs(block_mol, common_substructure2, onlyFrags=False)
+            if block_mol.HasSubstructMatch(fmoc):
+                # Delete fmoc
+                block_mol = Chem.rdmolops.DeleteSubstructs(block_mol, fmoc, onlyFrags=False)
+            elif block_mol.HasSubstructMatch(boc):
+                # Delete boc
+                block_mol = Chem.rdmolops.DeleteSubstructs(block_mol, boc, onlyFrags=False)
             else:
                 raise ValueError("Can't find substructure")
 
@@ -98,35 +112,28 @@ class BBEncoder(VerboseTransformationBlock):
             """
             x = 0
             tmp = []
-            while x < len(smile):
+            while x < len(block):
                 # Check two first
-                two_chars = smile[x:x+2]
+                two_chars = block[x:x+2]
                 if two_chars in enc:
                     tmp.append(enc[two_chars])
                     x += 2
                 else:
-                    tmp.append(enc[smile[x]])
+                    tmp.append(enc[block[x]])
                     x += 1
             tmp = tmp + [0] * (54 - len(tmp))
             return np.array(tmp).astype(np.uint8)
 
-
         def bb1_encoder(block: str) -> npt.NDArray[np.uint8]:
-            return encode_block(remove_substructures(block))
+            return encode_block(remove_substructures(block), MAX_ENC_SIZE_BB1)
 
-        bb1_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(bb1_encoder)(smile) for smile in tqdm(x.bb1_smiles.values(), desc="Encoding block 1"))
-        x.bb1_ecfp = x.bb1_smiles
-        for key in x.bb1_ecfp.keys():
-            bb1_ecfp[key] = bb1_encoding[key]
+        bb1_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(bb1_encoder)(smile) for smile in tqdm(x.bb1_smiles, desc="Encoding block 1"))
+        x.bb1_ecfp = bb1_encoding
 
-        bb2_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(bb2_encoder)(smile) for smile in tqdm(x.bb2_smiles.values(), desc="Encoding block 2"))
-        x.bb2_ecfp = x.bb2_smiles
-        for key in x.bb2_ecfp.keys():
-            bb2_ecfp[key] = bb2_encoding[key]
+        bb2_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_block)(smile, MAX_ENC_SIZE_BB2) for smile in tqdm(x.bb2_smiles, desc="Encoding block 2"))
+        x.bb2_ecfp = bb2_encoding
 
-        bb3_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(bb3_encoder)(smile) for smile in tqdm(x.bb3_smiles.values(), desc="Encoding block 3"))
-        x.bb3_ecfp = x.bb3_smiles
-        for key in x.bb3_ecfp.keys():
-            bb3_ecfp[key] = bb3_encoding[key]
+        bb3_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_block)(smile, MAX_ENC_SIZE_BB3) for smile in tqdm(x.bb3_smiles, desc="Encoding block 3"))
+        x.bb3_ecfp = bb3_encoding
 
         return x
