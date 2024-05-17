@@ -3,8 +3,8 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
-    # - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+  steps:
+    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
 
 y_sys:
   steps: []
@@ -12,29 +12,24 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D
+      model_name: MRBG
       model:
-        _target_: src.modules.training.models.cnn1d.CNN1D
-        n_classes: 3
+        _target_: src.modules.training.models.multi_res_bi_gru.MultiResidualBiGRU
+        out_size: 3
+        n_layers: 2
+        hidden_size: 128
+        input_size: 142
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 15
+      epochs: 10
       batch_size: 4096
       patience: 1
-      dataset:
-        _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_MOL"]
-        steps:
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
-            p: 0.5
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
       scheduler:
         _target_: functools.partial
         _args_:
@@ -47,11 +42,7 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      x_tensor_type: int
-      dataloader_args:
-        num_workers: 8
-        prefetch_factor: 2
-        persistent_workers: false
+      int_type: true
 
 pred_sys:
   steps:

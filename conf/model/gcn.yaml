@@ -6,7 +6,7 @@ x_sys:
   steps:
     - _target_: src.modules.transformation.atom_graph.AtomGraph
       convert_molecule: True
-      convert_bb: True
+      convert_building_blocks: False
 
 y_sys:
   steps: []
@@ -18,7 +18,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.gcn.GCNModel
         n_classes: 3
-        num_node_features: 2
+        num_node_features: 4
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -28,7 +28,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 128
+      batch_size: 256
       patience: 1
       scheduler:
         _target_: functools.partial
@@ -42,7 +42,10 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      int_type: true
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 2
+        persistent_workers: false
 
 pred_sys:
   steps:

@@ -30,20 +30,17 @@ class GCNModel(nn.Module):
 
     def forward(self, data : Data) -> torch.Tensor:
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        # First GCN Layer
+
         x = self.conv1(x, edge_index)
         x = self.relu(x)
         x = self.dropout(x)
 
-        # Second GCN Layer
         x = self.conv2(x, edge_index)
         x = self.relu(x)
         x = self.dropout(x)
 
-        # Global Mean Pooling
         x = global_mean_pool(x, batch)
 
-        # Fully Connected Layers
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)

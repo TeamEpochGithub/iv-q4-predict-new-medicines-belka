@@ -1,10 +1,13 @@
 """Class to split by BB."""
+import pickle
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
 
 from src.typing.xdata import XData
+from src.utils.logger import logger
 
 
 @dataclass
@@ -18,18 +21,24 @@ class BBSplitter:
 
     n_splits: int = 5
     indices_for_flattened_data: bool = False
-    bb_to_split_by: list[int] = field(default_factory=lambda: [1, 0, 0])
+    bb_to_split_by: list[int] = field(default_factory=lambda: [1, 1, 1])
 
-    def split(self, X: XData, y: npt.NDArray[np.int8]) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
+    def split(self, X: XData, y: npt.NDArray[np.int8], cache_path: Path | None = None) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
         """Split X and y into train and test indices.
 
         :param X: The Xdata
         :param y: Labels
         :return: List of indices
         """
-        bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles else [0]
-        bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles else [0]
-        bb3_values = range(len(X.bb3_smiles)) if X.bb3_smiles else [0]
+        # Load the splits if they exist
+        if cache_path is not None and cache_path.exists():
+            with open(cache_path, "rb") as f:
+                logger.info(f"Loading splits from {cache_path}")
+                return pickle.load(f)  # noqa: S301
+
+        bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles is not None else [0]
+        bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles is not None else [0]
+        bb3_values = range(len(X.bb3_smiles)) if X.bb3_smiles is not None else [0]
 
         if len(X.building_blocks) != len(y):
             raise ValueError("X is not equal to y")
@@ -71,6 +80,12 @@ class BBSplitter:
 
                 new_splits.append((np.array(new_train_indices), np.array(new_test_indices)))
             splits = new_splits
+
+        # Pickle splits
+        logger.debug(f"Finished splitting with size:{len(y)}")
+        if cache_path is not None:
+            with open(cache_path, "wb") as f:
+                pickle.dump(splits, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         return splits
 

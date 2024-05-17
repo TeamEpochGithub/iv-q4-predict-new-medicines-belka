@@ -1,4 +1,5 @@
 """Class to describe the data format."""
+import gc
 from dataclasses import dataclass
 from enum import IntFlag
 from typing import Any
@@ -39,7 +40,6 @@ class DataRetrieval(IntFlag):
     DESCRIPTORS_BB3 = 2**15
     DESCRIPTORS = DESCRIPTORS_MOL | DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
     DESCRIPTORS_BB = DESCRIPTORS_BB1 | DESCRIPTORS_BB2 | DESCRIPTORS_BB3
-
     GRAPHS_MOL = 2**16
     GRAPHS_BB1 = 2**17
     GRAPHS_BB2 = 2**18
@@ -102,11 +102,29 @@ class XData:
     bb2_desc: npt.NDArray[np.float32] | None = None
     bb3_desc: npt.NDArray[np.float32] | None = None
 
-    # graph
-    molecule_graph: npt.NDArray[np.float32] | None = None
-    bb1_graph: npt.NDArray[np.float32] | None = None
-    bb2_graph: npt.NDArray[np.float32] | None = None
-    bb3_graph: npt.NDArray[np.float32] | None = None
+    # Graph
+    molecule_graph: list[Any] | None = None
+    bb1_graph: list[Any] | None = None
+    bb2_graph: list[Any] | None = None
+    bb3_graph: list[Any] | None = None
+
+    def slice_all(self, slice_array: npt.NDArray[np.int_]) -> None:
+        """Slice all existing arrays in x data by numpy array.
+
+        :param slice_array: Array to slice by
+        """
+        if self.building_blocks is not None:
+            self.building_blocks = self.building_blocks[slice_array]
+        if self.molecule_smiles is not None:
+            self.molecule_smiles = self.molecule_smiles[slice_array]
+        if self.molecule_ecfp is not None:
+            self.molecule_ecfp = self.molecule_ecfp[slice_array]
+        if self.molecule_embedding is not None:
+            self.molecule_embedding = self.molecule_embedding[slice_array]
+        if self.molecule_desc is not None:
+            self.molecule_desc = self.molecule_desc[slice_array]
+
+        gc.collect()
 
     def __getitem__(self, idx: int | npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any] | list[Any]:  # noqa: C901 PLR0912 PLR0915
         """Get item from the data.
@@ -114,8 +132,8 @@ class XData:
         :param index: Index to retrieve
         :return: Data replaced with correct building_blocks
         """
-        if not isinstance(idx, int):
-            return self._getitems(idx)
+        if not isinstance(idx, np.integer):
+            return self._getitems(idx)  # type: ignore[arg-type]
 
         result = []
         item = self.building_blocks[idx]
@@ -179,7 +197,6 @@ class XData:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             result.append(self.molecule_desc[idx])
-
         if self.retrieval & DataRetrieval.DESCRIPTORS_BB1:
             if self.bb1_desc is None:
                 raise ValueError("No descriptor data available.")
@@ -193,22 +210,19 @@ class XData:
                 raise ValueError("No descriptor data available.")
             result.append(self.bb3_desc[item[2]])
 
-        # Graphs
+        # GRAPHS
         if self.retrieval & DataRetrieval.GRAPHS_MOL:
             if self.molecule_graph is None:
                 raise ValueError("No graph data available.")
             result.append(self.molecule_graph[idx])
-
         if self.retrieval & DataRetrieval.GRAPHS_BB1:
             if self.bb1_graph is None:
                 raise ValueError("No graph data available.")
             result.append(self.bb1_graph[item[0]])
-
         if self.retrieval & DataRetrieval.GRAPHS_BB2:
             if self.bb2_graph is None:
                 raise ValueError("No graph data available.")
             result.append(self.bb2_graph[item[1]])
-
         if self.retrieval & DataRetrieval.GRAPHS_BB3:
             if self.bb3_graph is None:
                 raise ValueError("No graph data available.")
@@ -218,7 +232,7 @@ class XData:
             return result[0]
         return result
 
-    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
+    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:
         """Retrieve items for all indices based on the specified retrieval flags.
 
         :param indices: List of indices to retrieve
@@ -243,11 +257,6 @@ class XData:
                 raise ValueError("No descriptor data available.")
             return self.molecule_desc[indices]
 
-        if self.retrieval == DataRetrieval.GRAPHS_MOL:
-            if self.molecule_graph is None:
-                raise ValueError("No graph data available.")
-            return self.molecule_graph[indices]
-
         if isinstance(indices, slice):
             indices_new = range(
                 indices.start if indices.start is not None else 0,
@@ -270,3 +279,35 @@ class XData:
         :return: String representation of the data
         """
         return f"XData with {len(self.building_blocks)} entries"
+
+
+def slice_copy(xdata: XData, slice_array: npt.NDArray[np.int_]) -> XData:
+    """Make a copy of xdata with sliced versions of the lists.
+
+    :param slice_array: The array with indices to retrieve
+    :param return: The sliced xdata class
+    """
+    return XData(
+        building_blocks=xdata.building_blocks[slice_array],
+        retrieval=xdata.retrieval,
+        # SMILES
+        molecule_smiles=xdata.molecule_smiles[slice_array] if xdata.molecule_smiles is not None else None,
+        bb1_smiles=xdata.bb1_smiles,
+        bb2_smiles=xdata.bb2_smiles,
+        bb3_smiles=xdata.bb3_smiles,
+        # ECFP
+        molecule_ecfp=xdata.molecule_ecfp[slice_array] if xdata.molecule_ecfp is not None else None,
+        bb1_ecfp=xdata.bb1_ecfp,
+        bb2_ecfp=xdata.bb2_ecfp,
+        bb3_ecfp=xdata.bb3_ecfp,
+        # Embedding
+        molecule_embedding=xdata.molecule_embedding[slice_array] if xdata.molecule_embedding is not None else None,
+        bb1_embedding=xdata.bb1_embedding,
+        bb2_embedding=xdata.bb2_embedding,
+        bb3_embedding=xdata.bb3_embedding,
+        # Descriptors
+        molecule_desc=xdata.molecule_desc[slice_array] if xdata.molecule_desc is not None else None,
+        bb1_desc=xdata.bb1_desc,
+        bb2_desc=xdata.bb2_desc,
+        bb3_desc=xdata.bb3_desc,
+    )

@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: xgboost_descriptors
+  - model: gcn
 
 # Use this when uploading to Kaggle
 
