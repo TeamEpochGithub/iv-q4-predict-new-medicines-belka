@@ -238,7 +238,7 @@ class XData:
 
         return result
 
-    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:
+    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
         """Retrieve items for all indices based on the specified retrieval flags.
 
         :param indices: List of indices to retrieve
@@ -262,6 +262,15 @@ class XData:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             return self.molecule_desc[indices]
+
+        if self.retrieval == DataRetrieval.ECFP_BB:
+            if self.bb1_ecfp is None or self.bb2_ecfp is None or self.bb3_ecfp is None:
+                raise ValueError("No building block ecfps exist.")
+            bb1_ecfp = np.array([self.bb1_ecfp[bb1] for bb1, _, _ in self.building_blocks[indices]])
+            bb2_ecfp = np.array([self.bb2_ecfp[bb2] for _, bb2, _ in self.building_blocks[indices]])
+            bb3_ecfp = np.array([self.bb3_ecfp[bb3] for _, _, bb3 in self.building_blocks[indices]])
+
+            return np.concatenate([bb1_ecfp, bb2_ecfp, bb3_ecfp], axis=1)
 
         if isinstance(indices, slice):
             indices_new = range(

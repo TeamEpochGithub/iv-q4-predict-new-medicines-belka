@@ -1,22 +1,23 @@
-from src.typing.xdata import XData
+"""Module to encode the individual building blocks."""
 import joblib
-
-from rdkit import Chem
-from tqdm import tqdm
 import numpy as np
 import numpy.typing as npt
+from rdkit import Chem  # type: ignore[import-not-found]
+from tqdm import tqdm
+
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
+from src.typing.xdata import XData
 
 
 class BBEncoder(VerboseTransformationBlock):
     """Class that transforms smiles of building blocks to encoding."""
 
     def custom_transform(self, x: XData) -> XData:
-        """Encode the SMILE building block strings
+        """Encode the SMILE building block strings.
 
         :param x: XData
-        :return: XData with ecfp replaced by encodings"""
-
+        :return: XData with ecfp replaced by encodings
+        """
         fmoc = Chem.MolFromSmiles("O=COCC1c2ccccc2-c2ccccc21")  # Biphenyl core
         boc = Chem.MolFromSmiles("CC(C)(C)OC(=O)")  # Tert butyl acetate
 
@@ -42,23 +43,18 @@ class BBEncoder(VerboseTransformationBlock):
             "i": 14,
             "B": 15,
             "H": 16,
-
             # Bonds
             "-": 17,
             "=": 18,
             "#": 19,
-
             # Bond configuration
             "/": 20,
-
             # Branches
             "(": 21,
             ")": 22,
-
             # Brackets
             "[": 23,
             "]": 24,
-
             # Numbers
             "1": 25,
             "2": 26,
@@ -69,21 +65,16 @@ class BBEncoder(VerboseTransformationBlock):
             "7": 31,
             "8": 32,
             "9": 33,
-
             # Stereochem
             "@": 34,
-
             # DNA
             "Dy": 35,
-
             # Charges
             "+": 36,
-
             ".": 37,
             "\\": 38,
             "%": 39,
             "0": 40,
-
         }
 
         def remove_substructures(block: str) -> str:
@@ -114,14 +105,14 @@ class BBEncoder(VerboseTransformationBlock):
             tmp = []
             while x < len(block):
                 # Check two first
-                two_chars = block[x:x+2]
+                two_chars = block[x : x + 2]
                 if two_chars in enc:
                     tmp.append(enc[two_chars])
                     x += 2
                 else:
                     tmp.append(enc[block[x]])
                     x += 1
-            tmp = tmp + [0] * (54 - len(tmp))
+            tmp = tmp + [0] * (bb - len(tmp))
             return np.array(tmp).astype(np.uint8)
 
         def bb1_encoder(block: str) -> npt.NDArray[np.uint8]:
