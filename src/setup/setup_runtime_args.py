@@ -54,6 +54,7 @@ def setup_train_args(
     train_sys = {
         "MainTrainer": main_trainer,
         "DecisionTrees": main_trainer,
+        "GraphTrainer": main_trainer,
     }
 
     if save_model_preds:

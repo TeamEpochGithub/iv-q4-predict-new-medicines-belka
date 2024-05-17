@@ -95,7 +95,7 @@ def _atom_attribute(smile: str) -> npt.NDArray[np.float32]:
     atoms = mol.GetAtoms()
 
     # Extract the attributes in the atom
-    atom_features = [[atom.GetAtomicNum(), atom.GetDegree()] for atom in atoms]
+    atom_features = [[atom.GetAtomicNum(), atom.GetDegree(), atom.GetHybridization(), atom.GetIsotope()] for atom in atoms]
 
     return np.array(atom_features)
 
