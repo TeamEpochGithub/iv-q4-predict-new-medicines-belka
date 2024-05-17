@@ -3,7 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps: 
+  steps:
     - _target_: src.modules.transformation.encoding.simple_full_encoding.SimpleFullEncoding
 
 y_sys:
@@ -32,7 +32,7 @@ train_sys:
         retrieval: ["ECFP_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.25 
+            p: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
@@ -45,7 +45,12 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      int_type: true
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 2
+        persistent_workers: false
+
 
 pred_sys:
   steps:

@@ -34,7 +34,7 @@ def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float)
     no_binds_df = train_data[(train_data["binds_BRD4"] == 0) & (train_data["binds_HSA"] == 0) & (train_data["binds_sEH"] == 0)]
     return pd.concat(
         [
-            binds_df.sample(min(round(sample_size * sample_split), len(binds_df)), random_state=42),
+            binds_df.sample(min(round(sample_size * (sample_split)), len(binds_df)), random_state=42),
             no_binds_df.sample(min(round(sample_size * (1 - sample_split)), len(no_binds_df)), random_state=42),
         ],
     )  # type: ignore[call-arg]

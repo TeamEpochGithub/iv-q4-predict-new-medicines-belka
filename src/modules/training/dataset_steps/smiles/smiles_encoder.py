@@ -1,17 +1,12 @@
 """Custom sequential class for augmentations."""
 
-from dataclasses import dataclass, field
-from inspect import signature
+from dataclasses import dataclass
 from typing import Any
 
-from epochalyst._core._caching._cacher import CacheArgs
-import torch
-from rdkit import Chem
-from epochalyst.pipeline.model.training.training_block import TrainingBlock
-from src.typing.xdata import XData, DataRetrieval
 import numpy as np
 import numpy.typing as npt
-
+from epochalyst._core._caching._cacher import CacheArgs
+from epochalyst.pipeline.model.training.training_block import TrainingBlock
 
 ENCODING = {
     "l": 1,
@@ -52,27 +47,38 @@ ENCODING = {
     "-": 36,
     ".": 37,
     "\\": 38,
+    "%": 39,
+    "0": 40,
 }
+
 
 @dataclass
 class SmilesEncoder(TrainingBlock):
     """Encode the SMILES string into categorical data."""
 
-    def train(self, x: Any, y: Any, cache_args: CacheArgs | None = None, **train_args: Any) -> tuple[Any, Any]:
+    def train(
+        self,
+        x: npt.NDArray[np.str_],
+        y: npt.NDArray[np.uint8],
+        _cache_args: CacheArgs | None = None,
+        **train_args: Any,
+    ) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.uint8]]:
+        """Encode the SMILES string into categorical data."""
         return self._encode_smiles(x), y
-    
-    def _encode_smiles(self, smiles: npt.NDArray[np.str_]) -> npt.NDArray[np.str_]:
+
+    def _encode_smiles(self, smiles: npt.NDArray[np.str_]) -> npt.NDArray[np.uint8]:
         """Encode the SMILE strings into categorical data."""
         smiles_flattend = smiles.flatten()
-        smiles_new = np.empty((len(smiles_flattend), 142), dtype=np.uint8)
+        smiles_new = np.empty((len(smiles_flattend), 145), dtype=np.uint8)
 
         for smiles_idx in range(len(smiles_flattend)):
             tmp = [ENCODING[i] for i in smiles_flattend[smiles_idx]]
-            tmp = tmp + [0] * (142 - len(tmp))
+            tmp = tmp + [0] * (145 - len(tmp))
             smiles_new[smiles_idx] = np.array(tmp).astype(np.uint8)
 
-        return smiles_new.reshape(smiles.shape + (-1,))
+        return smiles_new.reshape((*smiles.shape, -1))
 
     @property
     def is_augmentation(self) -> bool:
+        """Return whether the block is an augmentation."""
         return False

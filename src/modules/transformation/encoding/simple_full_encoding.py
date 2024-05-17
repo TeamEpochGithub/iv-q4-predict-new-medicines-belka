@@ -35,23 +35,18 @@ class SimpleFullEncoding(VerboseTransformationBlock):
             "i": 14,
             "B": 15,
             "H": 16,
-
             # Bonds
             "-": 17,
             "=": 18,
             "#": 19,
-
             # Bond configuration
             "/": 20,
-
             # Branches
             "(": 21,
             ")": 22,
-
             # Brackets
             "[": 23,
             "]": 24,
-
             # Numbers
             "1": 25,
             "2": 26,
@@ -62,13 +57,10 @@ class SimpleFullEncoding(VerboseTransformationBlock):
             "7": 31,
             "8": 32,
             "9": 33,
-
             # Stereochem
             "@": 34,
-
             # DNA
             "Dy": 35,
-
             # Charges
             "+": 36,
         }
@@ -85,7 +77,7 @@ class SimpleFullEncoding(VerboseTransformationBlock):
             tmp = []
             while x < len(smile):
                 # Check two first
-                two_chars = smile[x:x+2]
+                two_chars = smile[x : x + 2]
                 if two_chars in enc:
                     tmp.append(enc[two_chars])
                     x += 2

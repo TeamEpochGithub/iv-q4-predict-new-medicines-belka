@@ -25,7 +25,7 @@ class SimpleMoleculeEncoding(VerboseTransformationBlock):
             "H": 5,
             "S": 6,
             "F": 7,
-            "C": 7,
+            "C": 8,
             "r": 9,
             "s": 10,
             "/": 11,

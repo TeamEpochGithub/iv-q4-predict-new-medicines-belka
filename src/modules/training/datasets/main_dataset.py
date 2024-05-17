@@ -28,7 +28,7 @@ class MainDataset(Dataset):  # type: ignore[type-arg]
     steps: list[TrainingBlock] | None = None
 
     X: XData | None = None
-    y: npt.NDArray[np.float32] | None = None
+    y: npt.NDArray[np.int8] | None = None
     indices: npt.NDArray[np.int32] | None = None
 
     def __post_init__(self) -> None:
@@ -44,7 +44,7 @@ class MainDataset(Dataset):  # type: ignore[type-arg]
         # Setup Pipeline
         self.setup_pipeline(use_augmentations=False)
 
-    def initialize(self, X: XData, y: npt.NDArray[np.float32] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
+    def initialize(self, X: XData, y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
         """Set up the dataset for training."""
         self.X = X
         self.y = y
@@ -71,22 +71,20 @@ class MainDataset(Dataset):  # type: ignore[type-arg]
             return len(self.X)
         return len(self.indices)
 
-    def __getitems__(self, indices: list[int]) -> tuple[Any, Any]:
+    def __getitems__(self, indices: list[int] | npt.NDArray[np.int_]) -> tuple[Any, Any]:
         """Get items from the dataset."""
         if self.X is None:
             raise ValueError("Dataset not initialized.")
 
         if self.indices is not None:
-            ind = self.indices[indices]
+            indices = self.indices[indices]
 
         self.X.retrieval = self._retrieval_enum
-        X = self.X[ind]
-
-        y = self.y[ind] if self.y is not None else None
+        X = self.X[indices]
+        y = self.y[indices] if self.y is not None else None
 
         X, y = self._pipeline.train(X, y)
-
-        return torch.Tensor(X), torch.Tensor(y)
+        return torch.Tensor(X), torch.Tensor(y) if y is not None else None
 
     def __getitem__(self, idx: int) -> tuple[Any, Any]:
         """Get an item from the dataset.
@@ -105,5 +103,4 @@ class MainDataset(Dataset):  # type: ignore[type-arg]
         y = np.expand_dims(self.y[idx], axis=0) if self.y is not None else None
 
         X, y = self._pipeline.train(X, y)
-
-        return torch.Tensor(X)[0], torch.Tensor(y)[0]
+        return torch.Tensor(X)[0], torch.Tensor(y)[0] if y is not None else None
