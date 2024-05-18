@@ -12,11 +12,11 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from src.utils.filter_known_predictions import filter_known_predictions
 from src.config.submit_config import SubmitConfig
 from src.setup.setup_data import setup_inference_data
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import setup_pred_args
+from src.utils.filter_known_predictions import filter_known_predictions
 from src.utils.logger import logger
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -75,7 +75,6 @@ def run_submit(cfg: DictConfig) -> None:
     if cfg.filter_pred != "none":
         logger.info(f"Filter predictions on {cfg.filter_pred}")
         predictions_df = filter_known_predictions(directory, X, predictions_df, cfg.filter_pred)
-
 
     # Map predictions to ids from test data
     original_test = pd.read_parquet("data/raw/test.parquet")
