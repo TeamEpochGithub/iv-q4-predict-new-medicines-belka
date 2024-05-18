@@ -16,3 +16,7 @@ result_path: submission/
 
 # Local paths
 data_path: data/shrunken
+
+# known
+filter_pred: 'known' # 'unknown', 'none'
+

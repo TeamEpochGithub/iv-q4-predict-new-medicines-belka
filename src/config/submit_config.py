@@ -12,6 +12,7 @@ class SubmitConfig:
     :param raw_data_path: Path to the raw data.
     :param raw_target_path: Path to the raw target.
     :param result_path: Path to the result.
+    :param filter_pred: Type of filter
     """
 
     model: Any
@@ -20,3 +21,4 @@ class SubmitConfig:
     data_path: str
     processed_path: str
     result_path: str
+    filter_pred: str
