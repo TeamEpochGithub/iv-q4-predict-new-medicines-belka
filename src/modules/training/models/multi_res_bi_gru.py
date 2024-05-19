@@ -61,7 +61,7 @@ class MultiResidualBiGRU(nn.Module):
     :param n_layers: Number of ResidualBiGRU layers
     """
 
-    def __init__(self, input_size: int, hidden_size: int, out_size: int, n_layers: int) -> None:
+    def __init__(self, input_size: int, hidden_size: int,num_embeddings: int, out_size: int, n_layers: int) -> None:
         """Initialize a MultiResidualBiGRU model.
 
         :param input_size: Input size of model
@@ -71,7 +71,7 @@ class MultiResidualBiGRU(nn.Module):
         """
         super(MultiResidualBiGRU, self).__init__()  # noqa: UP008
 
-        self.embedding = nn.Embedding(num_embeddings=37, embedding_dim=hidden_size, padding_idx=0)
+        self.embedding = nn.Embedding(num_embeddings=num_embeddings, embedding_dim=hidden_size, padding_idx=0)
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.out_size = out_size
