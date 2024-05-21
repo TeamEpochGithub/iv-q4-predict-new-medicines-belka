@@ -4,22 +4,21 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.advanced_molecule_encoding.AdvancedMoleculeEncoding
+    - _target_: src.modules.transformation.encoder.smile_character_encoder.SmileCharacterEncoder
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        embedding: false
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
+        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
@@ -27,8 +26,15 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 128
-      patience: 1
+      batch_size: 4096
+      patience: 3
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+            p: 0.5
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
       scheduler:
         _target_: functools.partial
         _args_:
@@ -41,6 +47,11 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 2
+        persistent_workers: false
 
 pred_sys:
   steps:
