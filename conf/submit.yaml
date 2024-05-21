@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: gcn
+  - model: xgboost_ecfp
 
 # Use this when uploading to Kaggle
 
@@ -16,6 +16,7 @@ result_path: submission/
 
 # Local paths
 data_path: data/shrunken
+submission_path: data/submission.csv
 
-# known
-filter_pred: 'known' # 'unknown', 'none'
+# Replace known/unkown building block predictions with 0
+replace_predictions: 'known' # 'unknown', 'none'

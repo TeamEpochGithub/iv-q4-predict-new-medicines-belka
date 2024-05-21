@@ -19,6 +19,7 @@ class SubmitConfig:
     ensemble: Any
     post_ensemble: Any
     data_path: str
+    submission_path: str
     processed_path: str
     result_path: str
-    filter_pred: str
+    replace_predictions: str

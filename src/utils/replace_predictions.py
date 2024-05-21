@@ -1,4 +1,4 @@
-"""Replace the predictions of the known or unknown molecules to random."""
+"""Replace the known or unknown building block predictions to 0."""
 import pickle
 from pathlib import Path
 
@@ -8,11 +8,11 @@ import pandas as pd
 from src.typing.xdata import DataRetrieval, XData
 
 
-def filter_known_predictions(directory: Path, x: XData, y: pd.DataFrame, known: str) -> pd.DataFrame:
-    """Filter the predictions of the known or unknown molecules to 0.
+def replace_predictions(directory: Path, x: XData, y: pd.DataFrame, bb_type: str) -> pd.DataFrame:
+    """Replace the known or unknown building block predictions to 0.
 
     param directory: raw path the unique training blocks
-    param known: whether the known or unknown predictions are replaced
+    param bb_type: [known, unknown] whether the known or unknown predictions are replaced
     """
     # Extract the first building blocks in train
     with open(directory / "train_dicts/BBs_dict_reverse_1.p", "br") as f1:
@@ -32,7 +32,7 @@ def filter_known_predictions(directory: Path, x: XData, y: pd.DataFrame, known: 
 
     # Check whether we have to replace known or unknown
     accept = np.array(accepted)
-    if known == "unknown":
+    if bb_type == "unknown":
         accept = 1 - accept
 
     # Replace the predictions with the value 0

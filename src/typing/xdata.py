@@ -132,7 +132,7 @@ class XData:
         :param index: Index to retrieve
         :return: Data replaced with correct building_blocks
         """
-        if not isinstance(idx, np.integer):
+        if not isinstance(idx, (int | np.integer)):
             return self._getitems(idx)  # type: ignore[arg-type]
 
         result = []
