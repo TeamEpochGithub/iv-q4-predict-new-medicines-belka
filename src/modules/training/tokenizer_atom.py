@@ -9,24 +9,14 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from src.typing.xdata import XData
 from torchnlp.encoders.text import StaticTokenizerEncoder
-from torchnlp.encoders.text import pad_tensor
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
 
-identity = lambda x: x
+def identity(x):
+    return x
 
 @dataclass
 class TokenizerAtom(VerboseTrainingBlock):
     """Train a torch tokenizer on the molecule smiles."""
-
-    def train_tokenizer(self, smiles: list[list[str]]):
-        """Train the tokenizer on the smile molecules.
-        :param smiles: the segmented smile molecules"""
-
-        # Train the torch nlp tokenizer on the sequences
-        tqdm_smiles = tqdm(smiles, desc="Tokenizing molecules")
-        encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
-
-        return encoder
 
     def apply_tokenizer(self, smiles: list[list[str]], encoder):
         """ Apply the tokenizer on the smile molecules.
@@ -48,8 +38,11 @@ class TokenizerAtom(VerboseTrainingBlock):
         # Extract the smiles from each building block
         smiles = list(X.bb1_smiles) + list(X.bb2_smiles) + list(X.bb3_smiles)
 
-        # Train and apply the torch nlp tokenizer on the building blocks
-        encoder = self.train_tokenizer(smiles)
+        # Train the torch nlp tokenizer on the sequences
+        tqdm_smiles = tqdm(smiles, desc="Tokenizing molecules")
+        encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
+
+        # Apply the torch nlp tokenizer on the building blocks
         X.bb1_ecfp = self.apply_tokenizer(list(X.bb1_smiles), encoder)
         X.bb2_ecfp = self.apply_tokenizer(list(X.bb2_smiles), encoder)
         X.bb3_ecfp = self.apply_tokenizer(list(X.bb3_smiles), encoder)
@@ -58,12 +51,8 @@ class TokenizerAtom(VerboseTrainingBlock):
         self.log_to_terminal(f"the vocabulary size of the tokenizer {encoder.vocab_size}.")
 
         # Save the tokenizer as a torch file
-        # with open(f"tm/{self.get_hash()}", 'wb') as f:
-        #     f.write(encoder)
-
-        # # Save the tokenizer as a torch file
-        # joblib.dump(encoder, f"tm/{self.get_hash()}")
-
+        with open(f"tm/{self.get_hash()}.pkl", 'wb') as f:
+            pickle.dump(encoder, f)
 
         return X, y
 

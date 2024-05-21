@@ -69,7 +69,7 @@ class SegmentMolecule(VerboseTransformationBlock):
         # Perform the convolutional operation on each block
         data.bb1_smiles = self.parallel_segment(list(data.bb1_smiles),60)
         data.bb2_smiles = self.parallel_segment(list(data.bb2_smiles), 40)
-        data.bb3_smiles = self.parallel_segment(list(data.bb3_smiles), 40)
+        data.bb3_smiles = self.parallel_segment(list(data.bb3_smiles), 50)
 
         return data
 

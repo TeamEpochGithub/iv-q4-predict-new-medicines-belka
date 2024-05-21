@@ -233,7 +233,7 @@ class XData:
 
         if len(result) == 1:
             return result[0]
-        return np.concatenate(result, axis=0)
+        return result
 
     def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:
         """Retrieve items for all indices based on the specified retrieval flags.
