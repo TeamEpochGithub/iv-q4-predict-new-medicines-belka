@@ -1,9 +1,10 @@
 """Class to describe the data format."""
 import gc
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntFlag
 from typing import Any
-from typing import Callable
+
 import numpy as np
 import numpy.typing as npt
 

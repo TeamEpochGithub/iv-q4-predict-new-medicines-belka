@@ -2,6 +2,7 @@
 
 import pickle
 from dataclasses import dataclass
+
 import joblib
 import numpy as np
 import numpy.typing as npt

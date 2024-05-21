@@ -11,7 +11,7 @@ class TransformerEncoder(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(self, n_classes: int, in_features: int = 142, nhead: int = 8, num_encoder_layers: int = 4, num_embeddings:int = 37, *, embedding: bool = True) -> None:
+    def __init__(self, n_classes: int, in_features: int = 142, nhead: int = 8, num_encoder_layers: int = 4, num_embeddings: int = 37, *, embedding: bool = True) -> None:
         """Initialize the CNN1D model.
 
         :param in_channels: The number of input channels.
