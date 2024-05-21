@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gcn
+  - model: xgboost_ecfp
   - wandb: train
 
 data_path: data/shrunken
