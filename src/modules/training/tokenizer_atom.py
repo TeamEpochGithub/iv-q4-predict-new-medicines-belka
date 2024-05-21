@@ -3,9 +3,8 @@
 import numpy as np
 import numpy.typing as npt
 from rdkit import Chem
+import joblib
 import pickle
-import random
-import torch
 from tqdm import tqdm
 from dataclasses import dataclass
 from src.typing.xdata import XData
@@ -17,10 +16,25 @@ identity = lambda x: x
 
 @dataclass
 class TokenizerAtom(VerboseTrainingBlock):
-    """Train a torch tokenizer on the molecule smiles.
-    param window_size: the size of each word"""
+    """Train a torch tokenizer on the molecule smiles."""
 
-    num_samples: int = 0.5
+    def train_tokenizer(self, smiles: list[list[str]]):
+        """Train the tokenizer on the smile molecules.
+        :param smiles: the segmented smile molecules"""
+
+        # Train the torch nlp tokenizer on the sequences
+        tqdm_smiles = tqdm(smiles, desc="Tokenizing molecules")
+        encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
+
+        return encoder
+
+    def apply_tokenizer(self, smiles: list[list[str]], encoder):
+        """ Apply the tokenizer on the smile molecules.
+
+        :param smiles: the segmented smile molecules
+        :param encoder: torch nlp tokenizer"""
+
+        return np.array([encoder.encode(smile) for smile in tqdm(smiles, desc="encode molecules")])
 
     def custom_train(self, X: XData, y: npt.NDArray[np.float32]) -> tuple[XData, npt.NDArray[np.float32]]:
         """Train the torch tokenizer on the sentences.
@@ -31,42 +45,40 @@ class TokenizerAtom(VerboseTrainingBlock):
 
         self.log_to_terminal(f"start training the tokenizer.")
 
-        random.seed(42)
+        # Extract the smiles from each building block
+        smiles = list(X.bb1_smiles) + list(X.bb2_smiles) + list(X.bb3_smiles)
 
-        # extract the molecule smiles from XData
-        smiles = list(X.molecule_smiles)
-        sampled = random.sample(smiles, int(self.num_samples*len(smiles)))
+        # Train and apply the torch nlp tokenizer on the building blocks
+        encoder = self.train_tokenizer(smiles)
+        X.bb1_ecfp = self.apply_tokenizer(list(X.bb1_smiles), encoder)
+        X.bb2_ecfp = self.apply_tokenizer(list(X.bb2_smiles), encoder)
+        X.bb3_ecfp = self.apply_tokenizer(list(X.bb3_smiles), encoder)
 
-        # train the torch nlp tokenizer on the sequences
-        tqdm_smiles = tqdm(sampled, desc="Tokenizing molecules")
-        encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
-
-        # Apply the tokenizer on all the smiles
-        X.molecule_ecfp = [encoder.encode(smile) for smile in tqdm(smiles, desc="encode molecules")]
-
-        # print the vocabulary size of the tokenizer
+        # Print the vocabulary size of the tokenizer
         self.log_to_terminal(f"the vocabulary size of the tokenizer {encoder.vocab_size}.")
 
-        # save the tokenizer as a torch file
-        with open(f"tm/{self.get_hash()}.pkl", 'wb') as f:  # Use .pkl extension for clarity
-            pickle.dump(encoder, f)
+        # Save the tokenizer as a torch file
+        # with open(f"tm/{self.get_hash()}", 'wb') as f:
+        #     f.write(encoder)
+
+        # # Save the tokenizer as a torch file
+        # joblib.dump(encoder, f"tm/{self.get_hash()}")
+
 
         return X, y
 
-    def custom_predict(self, X: XData) -> npt.NDArray[np.float32]:
+    def custom_predict(self, X: XData) -> XData:
         """Predict using the model.
 
         :param X: XData containing the molecule smiles
         :return: the tokenized sentences"""
 
-        # extract the smiles from the XData
-        smiles = list(X.molecule_smiles)
+        # Extract the tokenizer from the pickle file
+        encoder = joblib.load(f"tm/{self.get_hash()}.pkl")
 
-        # extract the tokenizer from the pickle file
-        with open(f"tm/{self.get_hash()}.pkl", 'rb') as f:
-            encoder = pickle.load(f)
-
-        # apply the torch tokenizer on the smiles
-        X.molecule_ecfp = [encoder.encode(smile) for smile in smiles]
+        # Apply the torch tokenizer on each building block
+        X.bb1_smiles = self.apply_tokenizer(list(X.bb1_smiles), encoder)
+        X.bb2_smiles = self.apply_tokenizer(list(X.bb2_smiles), encoder)
+        X.bb3_smiles = self.apply_tokenizer(list(X.bb3_smiles), encoder)
 
         return X

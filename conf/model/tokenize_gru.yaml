@@ -5,8 +5,8 @@ defaults:
 x_sys:
   steps:
     - _target_: src.modules.transformation.segment_molecule.SegmentMolecule
-      window_size: 6
-      padding_size: 150
+      window_size: 10
+      padding_size: 60
 
 y_sys:
   steps: []
@@ -17,12 +17,9 @@ train_sys:
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D
       model:
-        _target_: src.modules.training.models.multi_res_bi_gru.MultiResidualBiGRU
-        out_size: 3
-        n_layers: 2
-        hidden_size: 64
-        input_size: 142
-        num_embeddings: 6
+        _target_: src.modules.training.models.cnn1d.CNN1D
+        n_classes: 3
+        num_embeddings: 7500
 
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -34,12 +31,12 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 6000
+      batch_size: 4000
       patience: 1
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["ECFP_MOL"]
-        steps:
+        retrieval: ["ECFP_BB"]
+        steps: []
       scheduler:
         _target_: functools.partial
         _args_:
