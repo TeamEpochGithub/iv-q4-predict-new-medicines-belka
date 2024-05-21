@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.advanced_molecule_encoding.AdvancedMoleculeEncoding
+    - _target_: src.modules.transformation.encoder.smile_vector_encoder.SmileVectorEncoder
 
 y_sys:
   steps: []

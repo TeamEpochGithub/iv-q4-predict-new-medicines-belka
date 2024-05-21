@@ -4,7 +4,7 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.simple_molecule_encoding.SimpleMoleculeEncoding
+    - _target_: src.modules.transformation.encoder.smile_character_encoder.SmileCharacterEncoder
 
 y_sys:
   steps: []

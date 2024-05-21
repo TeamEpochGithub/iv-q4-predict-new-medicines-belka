@@ -4,7 +4,8 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.bb_encoder.BBEncoder
+    - _target_: src.modules.transformation.encoder.smile_atom_encoder.SmileAtomEncoder
+      convert_molecules: true
 
 y_sys:
   steps: []
@@ -18,7 +19,6 @@ train_sys:
         n_classes: 3
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
@@ -30,8 +30,10 @@ train_sys:
       patience: 1
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["ECFP_BB"]
-        steps: []
+        retrieval: ["ECFP_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
