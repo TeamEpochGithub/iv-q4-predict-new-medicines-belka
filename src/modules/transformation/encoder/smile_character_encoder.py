@@ -8,7 +8,7 @@ from src.modules.transformation.verbose_transformation_block import VerboseTrans
 from src.typing.xdata import XData
 
 
-class SimpleMoleculeEncoding(VerboseTransformationBlock):
+class SmileCharacterEncoder(VerboseTransformationBlock):
     """Class that replicates the encoding of the highest public notebook."""
 
     def custom_transform(self, x: XData) -> XData:

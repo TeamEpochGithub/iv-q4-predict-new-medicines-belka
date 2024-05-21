@@ -135,7 +135,7 @@ class XData:
         :param index: Index to retrieve
         :return: Data replaced with correct building_blocks
         """
-        if not isinstance(idx, np.integer):
+        if not isinstance(idx, (int | np.integer)):
             return self._getitems(idx)  # type: ignore[arg-type]
 
         result = []
@@ -233,9 +233,15 @@ class XData:
 
         if len(result) == 1:
             return result[0]
+
+        # STACKING
+        if self.retrieval & DataRetrieval.ECFP_BB:
+            # 3 arrays so shape is (3, 54|42|43), concatenate to single such that its 138
+            return np.concatenate(result, axis=0)
+
         return result
 
-    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:
+    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
         """Retrieve items for all indices based on the specified retrieval flags.
 
         :param indices: List of indices to retrieve
@@ -259,6 +265,15 @@ class XData:
             if self.molecule_desc is None:
                 raise ValueError("No descriptor data available.")
             return self.molecule_desc[indices]
+
+        if self.retrieval == DataRetrieval.ECFP_BB:
+            if self.bb1_ecfp is None or self.bb2_ecfp is None or self.bb3_ecfp is None:
+                raise ValueError("No building block ecfps exist.")
+            bb1_ecfp = np.array([self.bb1_ecfp[bb1] for bb1, _, _ in self.building_blocks[indices]])
+            bb2_ecfp = np.array([self.bb2_ecfp[bb2] for _, bb2, _ in self.building_blocks[indices]])
+            bb3_ecfp = np.array([self.bb3_ecfp[bb3] for _, _, bb3 in self.building_blocks[indices]])
+
+            return np.concatenate([bb1_ecfp, bb2_ecfp, bb3_ecfp], axis=1)
 
         if isinstance(indices, slice):
             indices_new = range(

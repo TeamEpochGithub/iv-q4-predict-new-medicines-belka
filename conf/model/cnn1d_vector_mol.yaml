@@ -4,20 +4,20 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoder.smile_character_encoder.SmileCharacterEncoder
+    - _target_: src.modules.transformation.encoder.smile_vector_encoder.SmileVectorEncoder
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
+    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: TransformerEncoder
+      model_name: CNN1D
       model:
-        _target_: src.modules.training.models.transformer_encoder.TransformerEncoder
+        _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 30000
+        embedding: false
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -27,7 +27,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 4096
+      batch_size: 128
       patience: 1
       scheduler:
         _target_: functools.partial
@@ -41,7 +41,6 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      int_type: true
 
 pred_sys:
   steps:
