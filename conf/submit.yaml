@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: cnn1d_bb
+  - model: cnn1d_atom_bb
 
 # Use this when uploading to Kaggle
 
@@ -19,4 +19,4 @@ data_path: data/shrunken
 submission_path: data/submission.csv
 
 # Replace known/unkown building block predictions with 0
-replace_predictions: 'known' # 'unknown', 'none'
+replace_predictions: 'none' # 'known', 'unknown', 'none'
