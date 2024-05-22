@@ -83,14 +83,8 @@ class GraphTrainer(TorchTrainer, Logger):
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predicts graph prediction."""
-        return super().custom_predict(x).flatten()
-
-    def save_model_to_external(self) -> None:
-        """Save model to external file."""
-        if wandb.run:
-            model_artifact = wandb.Artifact(self.model_name, type="model")
-            model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
-            wandb.log_artifact(model_artifact)
+        predictions = super().custom_predict(x)
+        return predictions.flatten()
 
     def create_dataloaders(
         self,
@@ -118,6 +112,45 @@ class GraphTrainer(TorchTrainer, Logger):
             **self.dataloader_args,
         )
         return train_loader, test_loader
+
+    def predict_on_loader(
+        self,
+        loader: DataLoader[tuple[Tensor, ...]],
+    ) -> npt.NDArray[np.float32]:
+        """Predict on the loader.
+
+        :param loader: The loader to predict on.
+        :return: The predictions.
+        """
+        self.log_to_terminal("Predicting on the test data")
+        self.model.eval()
+        predictions = []
+        # Create a new dataloader from the dataset of the input dataloader with collate_fn
+        loader = DataLoader(
+            loader.dataset,
+            batch_size=loader.batch_size,
+            shuffle=False,
+            collate_fn=(
+                collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+            ),
+            **self.dataloader_args,
+        )
+        with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
+            for batch in tepoch:
+                data = batch.to(self.device)
+
+                y_pred = self.model(data).squeeze(1).cpu().numpy()
+                predictions.extend(y_pred)
+
+        self.log_to_terminal("Done predicting")
+        return np.array(predictions)
+
+    def save_model_to_external(self) -> None:
+        """Save model to external file."""
+        if wandb.run:
+            model_artifact = wandb.Artifact(self.model_name, type="model")
+            model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
+            wandb.log_artifact(model_artifact)
 
     def _training_loop(
         self,
@@ -232,24 +265,6 @@ class GraphTrainer(TorchTrainer, Logger):
                 pbar.set_description(desc=desc)
                 pbar.set_postfix(loss=sum(losses) / len(losses))
         return sum(losses) / len(losses)
-
-    def predict_on_loader(self, dataloader: GeometricDataLoader) -> npt.NDArray[np.float32]:
-        """Predicts on data from data loader."""
-        self.log_to_terminal("Predicting on the test data")
-        self.model.eval()
-        predictions = []
-        pbar = tqdm(dataloader, unit="batch")
-
-        with torch.no_grad():
-            for batch in pbar:
-                batch_device = batch.to(self.device)
-                data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
-                data = data.to(self.device)  # Ensure data is on the correct device
-                y_pred = self.model(data).squeeze(1)
-                predictions.extend(y_pred.cpu().numpy())
-
-        self.log_to_terminal("Done predicting")
-        return np.array(predictions)
 
 
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:

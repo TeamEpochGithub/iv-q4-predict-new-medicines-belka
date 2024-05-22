@@ -42,7 +42,7 @@ train_sys:
         cycle_decay: 1
         cycle_limit: 1
         warmup_t: 1
-        warmup_lr_init: 1e-5
+        warmup_lr_init: 1e-3
       n_folds: 5
       dataloader_args:
         num_workers: 24
