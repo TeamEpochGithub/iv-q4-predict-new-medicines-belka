@@ -12,11 +12,14 @@ class SubmitConfig:
     :param raw_data_path: Path to the raw data.
     :param raw_target_path: Path to the raw target.
     :param result_path: Path to the result.
+    :param filter_pred: Type of filter
     """
 
     model: Any
     ensemble: Any
     post_ensemble: Any
     data_path: str
+    submission_path: str
     processed_path: str
     result_path: str
+    replace_predictions: str

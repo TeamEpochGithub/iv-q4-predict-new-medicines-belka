@@ -17,6 +17,7 @@ from src.setup.setup_data import setup_inference_data
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import setup_pred_args
 from src.utils.logger import logger
+from src.utils.replace_predictions import replace_predictions
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -71,6 +72,10 @@ def run_submit(cfg: DictConfig) -> None:
     predictions_df["is_HSA"] = inference_data["is_HSA"]
     predictions_df["is_sEH"] = inference_data["is_sEH"]
 
+    if cfg.replace_predictions != "none":
+        logger.info(f"Replace {cfg.replace_predictions} predictions with 0")
+        predictions_df = replace_predictions(directory, X, predictions_df, cfg.replace_predictions)
+
     # Map predictions to ids from test data
     original_test = pd.read_parquet("data/raw/test.parquet")
 
@@ -94,10 +99,10 @@ def run_submit(cfg: DictConfig) -> None:
             final_predictions.append(predictions_df.iloc[i].binds_sEH)
 
     logger.info("Saving submission...")
+    submission_path = Path(cfg.submission_path)
     final_predictions_df = pd.DataFrame({"id": original_ids, "binds": final_predictions})
-    final_predictions_df.to_csv(directory / "submission.csv", index=False)
-
-    logger.info(f"Submission saved to {directory / 'submission.csv'}")
+    final_predictions_df.to_csv(submission_path, index=False)
+    logger.info(f"Submission saved to {submission_path}")
 
 
 if __name__ == "__main__":

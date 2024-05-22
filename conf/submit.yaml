@@ -16,3 +16,7 @@ result_path: submission/
 
 # Local paths
 data_path: data/shrunken
+submission_path: data/submission.csv
+
+# Replace known/unkown building block predictions with 0
+replace_predictions: 'none' # 'known', 'unknown', 'none'

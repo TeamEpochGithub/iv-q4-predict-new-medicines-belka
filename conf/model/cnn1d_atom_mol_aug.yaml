@@ -4,7 +4,8 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.encoding.simple_full_encoding.SimpleFullEncoding
+    - _target_: src.modules.transformation.encoder.smile_atom_encoder.SmileAtomEncoder
+      convert_molecules: true
 
 y_sys:
   steps: []
