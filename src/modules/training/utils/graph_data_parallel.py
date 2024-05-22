@@ -1,3 +1,4 @@
+"""Module containing custom GraphDataParallel class."""
 from torch_geometric.nn import DataParallel
 
 

@@ -24,8 +24,8 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
         lr: 0.001
-      epochs: 10 
-      batch_size: 2048 
+      epochs: 10
+      batch_size: 2048
       patience: 3
       dataset:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
@@ -45,7 +45,7 @@ train_sys:
         warmup_lr_init: 1e-5
       n_folds: 5
       dataloader_args:
-        num_workers: 24 
+        num_workers: 24
         prefetch_factor: 3
         persistent_workers: false
 

@@ -1,14 +1,12 @@
-"""Graph dataset for graph data"""
+"""Graph dataset for graph data."""
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-import torch
 from epochalyst.pipeline.model.training.training import TrainingPipeline
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
-from torch_geometric.data import Data #, GeometricDataset
 from torch.utils.data import Dataset
+from torch_geometric.data import Data  # , GeometricDataset
 
 from src.typing.xdata import DataRetrieval, XData
 
@@ -84,8 +82,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         X = self.X[indices]
         y = self.y[indices] if self.y is not None else None
 
-        graphs = self._pipeline.train(X, y)
-        return graphs
+        return self._pipeline.train(X, y)
 
     def __getitem__(self, idx: int) -> Data:
         """Get an item from the dataset.

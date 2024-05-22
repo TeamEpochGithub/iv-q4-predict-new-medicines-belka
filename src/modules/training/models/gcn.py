@@ -41,7 +41,6 @@ class GCNModel(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
-
     def forward(self, data: Data) -> torch.Tensor:
         """Forward pass of the GCN model."""
         x, edge_index, batch = data.x, data.edge_index, data.batch

@@ -1,17 +1,15 @@
 """Compute the graph representation of the molecule."""
 
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
-from typing import Any
 
 import joblib
 import numpy as np
 import numpy.typing as npt
-from rdkit import Chem  # type: ignore[import-not-found]
 import torch
-from tqdm import tqdm
+from rdkit import Chem  # type: ignore[import-not-found]
 from torch_geometric.data import Data
-from torch_geometric.utils import to_undirected
+from tqdm import tqdm
+
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
 
@@ -30,7 +28,6 @@ class AtomGraph(VerboseTransformationBlock):
     convert_molecule: bool = True
     convert_building_blocks: bool = True
 
-
     @staticmethod
     def _torch_graph(smile: str) -> npt.NDArray[np.float32]:
         """Create the torch graph from the smile format.
@@ -40,20 +37,18 @@ class AtomGraph(VerboseTransformationBlock):
         """
         atom_attributes = torch.from_numpy(_atom_attribute(smile)).float()
         bond_index, bond_attributes = _bond_attribute(smile)
-        bond_index = torch.from_numpy(bond_index).long().t().contiguous()
-        bond_index = to_undirected(bond_index)
-        bond_attributes = torch.from_numpy(bond_attributes).float()
-        graph = Data(x=atom_attributes, edge_index=bond_index, edge_attr=bond_attributes)
-        return graph
-
+        bond_index_torch = torch.from_numpy(bond_index).long().t().contiguous()
+        bond_attributes_torch = torch.from_numpy(bond_attributes).float()
+        return Data(x=atom_attributes, edge_index=bond_index_torch, edge_attr=bond_attributes_torch)
 
     def custom_transform(self, data: XData) -> XData:
         """Create a torch geometric graph from the molecule."""
         # Compute the embeddings for each molecule
         if self.convert_molecule and data.molecule_smiles is not None:
-            molecule_graphs = joblib.Parallel(n_jobs=-1)(joblib.delayed(self._torch_graph)(smile) for smile in tqdm(data.molecule_smiles, desc="Creating atomic graph for molecules"))
+            molecule_graphs = joblib.Parallel(n_jobs=-1)(
+                joblib.delayed(self._torch_graph)(smile) for smile in tqdm(data.molecule_smiles, desc="Creating atomic graph for molecules")
+            )
             data.molecule_graph = molecule_graphs
-
 
         # Compute the embeddings for each block
         if self.convert_building_blocks and data.bb1_smiles is not None and data.bb2_smiles is not None and data.bb3_smiles is not None:

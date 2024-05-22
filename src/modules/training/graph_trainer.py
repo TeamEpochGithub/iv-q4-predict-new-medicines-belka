@@ -1,6 +1,7 @@
 """Module for graph training block."""
 import gc
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -9,20 +10,16 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import Dataset, DataLoader
-from torch_geometric.data import Data  # type: ignore[import-not-found]
-from src.modules.training.datasets.graph_dataset import GraphDataset
-from typing import Any, Sequence, Mapping
-from torch_geometric.data import Dataset as GeometricDataset
-from torch_geometric.data import Batch
+from torch.utils.data import DataLoader, Dataset
+from torch_geometric.data import (
+    Batch,
+    Data,  # type: ignore[import-not-found]
+)
 from torch_geometric.loader import DataLoader as GeometricDataLoader
-from copy import deepcopy
 from tqdm import tqdm
-from pathlib import Path
-from torch.optim.lr_scheduler import LRScheduler
-from src.modules.training.utils.graph_data_parallel import GraphDataParallel
 
 from src.modules.logging.logger import Logger
+from src.modules.training.datasets.graph_dataset import GraphDataset
 from src.typing.xdata import XData
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -35,58 +32,13 @@ class GraphTrainer(TorchTrainer, Logger):
     int_type: bool = False
     dataset: GraphDataset | None = None
 
-    def __post_init__(self) -> None:
-        """Post init method for the TorchTrainer class."""
-        # Make sure to_predict is either "test" or "all" or "none"
-        if self.to_predict not in ["test", "all", "none"]:
-            raise ValueError("to_predict should be either 'test', 'all' or 'none'")
-
-        if self.n_folds == -1:
-            raise ValueError(
-                "Please specify the number of folds for cross validation or set n_folds to 0 for train full.",
-            )
-        self.save_model_to_disk = True
-        self._model_directory = Path("tm")
-        self.best_model_state_dict: dict[Any, Any] = {}
-
-        # Set optimizer
-        self.initialized_optimizer = self.optimizer(self.model.parameters())
-
-        # Set scheduler
-        self.initialized_scheduler: LRScheduler | None
-        if self.scheduler is not None:
-            self.initialized_scheduler = self.scheduler(self.initialized_optimizer)
-        else:
-            self.initialized_scheduler = None
-
-        # Set the device
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.log_to_terminal(f"Setting device: {self.device}")
-
-        # If multiple GPUs are available, distribute batch size over the GPUs
-        if torch.cuda.device_count() > 1:
-            self.log_to_terminal(f"Using {torch.cuda.device_count()} GPUs")
-            self.model = GraphDataParallel(self.model)
-
-        self.model.to(self.device)
-
-        # Early stopping
-        self.last_val_loss = np.inf
-        self.lowest_val_loss = np.inf
-
-        # Check validity of model_name
-        if " " in self.model_name:
-            raise ValueError("Spaces in model_name not allowed")
-
-        super(TorchTrainer, self).__post_init__()
-
     def create_datasets(
         self,
         X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
         test_indices: list[int],
-    ) -> tuple[list[Data], list[Data]]:
+    ) -> tuple[list[Data], list[Data]] | tuple[GraphDataset, GraphDataset]:
         """Create datasets for graph training."""
         if self.dataset is None:
             if X.molecule_graph is None:
@@ -113,13 +65,21 @@ class GraphTrainer(TorchTrainer, Logger):
 
         return train_dataset, test_dataset
 
-    def create_prediction_dataset(self, X: XData) -> list[Data]:
-        """Create datasets for graph prediction."""
+    def create_prediction_dataset(self, X: XData) -> GraphDataset | list[Data]:
+        """Create datasets for graph prediction.
+
+        :param X: The input data.
+        :return: Prediction dataset.
+        """
         if self.dataset is None:
             if X.molecule_graph is None:
                 raise ValueError("x.molecule_graph cannot be None")
 
             return X.molecule_graph
+
+        dataset = deepcopy(self.dataset)
+        dataset.initialize(X)
+        return dataset
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predicts graph prediction."""
@@ -131,33 +91,6 @@ class GraphTrainer(TorchTrainer, Logger):
             model_artifact = wandb.Artifact(self.model_name, type="model")
             model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
             wandb.log_artifact(model_artifact)
-
-    # def create_dataloaders(
-    #     self,
-    #     train_dataset: Dataset[tuple[Tensor, ...]],
-    #     test_dataset: Dataset[tuple[Tensor, ...]],
-    # ) -> tuple[GeometricDataLoader, GeometricDataLoader]:
-    #     """Create the dataloaders for training and validation.
-    #
-    #     :param train_dataset: The training dataset.
-    #     :param test_dataset: The validation dataset.
-    #     :return: The training and validation dataloaders.
-    #     """
-    #     print(train_dataset)
-    #     train_loader = GeometricDataLoader(
-    #         train_dataset,
-    #         batch_size=self.batch_size,
-    #         shuffle=True,
-    #         **self.dataloader_args
-    #     )
-    #     test_loader = GeometricDataLoader(
-    #         test_dataset,
-    #         batch_size=self.batch_size,
-    #         shuffle=False,
-    #         **self.dataloader_args
-    #     )
-    #     return train_loader, test_loader
-    #
 
     def create_dataloaders(
         self,
@@ -317,35 +250,6 @@ class GraphTrainer(TorchTrainer, Logger):
 
         self.log_to_terminal("Done predicting")
         return np.array(predictions)
-
-
-class GraphCollater:
-    def __init__(
-        self,
-        dataset: list[Data],
-    ):
-        self.dataset = dataset
-
-    def __call__(self, batch: list[Any]) -> Any:
-        elem = batch[0]
-        if isinstance(elem, Data):
-            return Batch.from_data_list(
-                batch,
-            )
-        elif isinstance(elem, float):
-            return torch.tensor(batch, dtype=torch.float)
-        elif isinstance(elem, int):
-            return torch.tensor(batch)
-        elif isinstance(elem, str):
-            return batch
-        elif isinstance(elem, Mapping):
-            return {key: self([data[key] for data in batch]) for key in elem}
-        elif isinstance(elem, tuple) and hasattr(elem, '_fields'):
-            return type(elem)(*(self(s) for s in zip(*batch)))
-        elif isinstance(elem, Sequence) and not isinstance(elem, str):
-            return [self(s) for s in zip(*batch)]
-
-        raise TypeError(f"DataLoader found invalid type: '{type(elem)}'")
 
 
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:

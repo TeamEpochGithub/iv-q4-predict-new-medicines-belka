@@ -2,17 +2,17 @@
 from dataclasses import dataclass
 from typing import Any
 
-from epochalyst.pipeline.model.training.training_block import TrainingBlock
-from rdkit import Chem  # type: ignore[import-not-found]
-from torch_geometric.data import Data
 import numpy as np
 import numpy.typing as npt
 import torch
+from epochalyst.pipeline.model.training.training_block import TrainingBlock
+from rdkit import Chem  # type: ignore[import-not-found]
+from torch_geometric.data import Data
 
 
 @dataclass
 class SmileToGraph(TrainingBlock):
-    """Turn smile representation into graph"""
+    """Turn smile representation into graph."""
 
     use_bond_atttributes: bool = False
 
@@ -20,8 +20,8 @@ class SmileToGraph(TrainingBlock):
         self,
         x: npt.NDArray[np.str_],
         y: npt.NDArray[np.uint8],
-        **train_args: Any
-    ) -> list[Data]:
+        **train_args: Any,
+    ) -> tuple[list[Data], None]:
         """Transform smile input into graph.
 
         :param x: The x molecule data
@@ -31,7 +31,7 @@ class SmileToGraph(TrainingBlock):
         return self._smiles_to_graph(x, y), None
 
     @staticmethod
-    def _smile_to_graph(smile: str, label: npt.NDArray[np.uint8] | None = None, use_bond_atttributes: bool = False) -> Data:
+    def _smile_to_graph(smile: str, label: npt.NDArray[np.uint8] | None = None, *, use_bond_atttributes: bool = False) -> Data:
         """Create the torch graph from the smile format.
 
         :param smile: list containing the smile format
@@ -39,24 +39,29 @@ class SmileToGraph(TrainingBlock):
         :return: list containing the atom and bond attributes
         """
         atom_attributes = torch.from_numpy(_atom_attribute(smile)).float()
-        bond_index, bond_attributes = _bond_index_attr(smile, use_bond_atttributes)
-        bond_index = torch.from_numpy(bond_index).long().t().contiguous()
+        bond_index, bond_attributes = _bond_index_attr(smile, get_bond_attributes=use_bond_atttributes)
+        bond_index_torch = torch.from_numpy(bond_index).long().t().contiguous()
         if use_bond_atttributes:
-            bond_attributes = torch.from_numpy(bond_attributes).float()
+            bond_attributes_torch = torch.from_numpy(bond_attributes).float()
         if label is not None:
-            label = torch.from_numpy(label).int()
+            label_torch = torch.from_numpy(label).int()
 
-        graph = Data(x=atom_attributes, edge_index=bond_index, edge_attr=bond_attributes if use_bond_atttributes else None, y=label if label is not None else None)
-        return graph
+        return Data(
+            x=atom_attributes,
+            edge_index=bond_index_torch,
+            edge_attr=bond_attributes_torch if use_bond_atttributes else None,
+            y=label_torch if label is not None else None,
+        )
 
     def _smiles_to_graph(self, smiles: npt.NDArray[np.str_], y: npt.NDArray[np.uint8] | None = None) -> list[Data]:
         """Transform smile to graph representation.
 
-        :param smiles: The smiles to transform"""
+        :param smiles: The smiles to transform
+        """
         graphs = []
         for i, smile in enumerate(smiles):
             curr_y = y[i] if y is not None else None
-            graphs.append(self._smile_to_graph(smile, curr_y, self.use_bond_atttributes))
+            graphs.append(self._smile_to_graph(smile, curr_y, use_bond_atttributes=self.use_bond_atttributes))
 
         return graphs
 
@@ -82,7 +87,7 @@ def _atom_attribute(smile: str) -> npt.NDArray[np.float32]:
     return np.array(atom_features)
 
 
-def _bond_index_attr(smile: str, get_bond_attributes: bool = False) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+def _bond_index_attr(smile: str, *, get_bond_attributes: bool = False) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     """Extract the bond attribute from the smile.
 
     param smile: the molecule string format
