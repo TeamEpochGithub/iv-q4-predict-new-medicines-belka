@@ -25,7 +25,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 16384
+      batch_size: 4096
       patience: 3
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
@@ -49,8 +49,8 @@ train_sys:
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 8
-        prefetch_factor: 4
+        num_workers: 28
+        prefetch_factor: 5
         persistent_workers: true
 
 pred_sys:

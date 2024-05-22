@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
+from src.utils.logger import logger
 
 MAX_ENC_SIZE_MOLECULE = 142
 MAX_ENC_SIZE_BB1 = 42
@@ -137,8 +138,11 @@ def encode_block(block: str, padding: int) -> npt.NDArray[np.uint8]:
         if two_chars in ENCODING:
             tmp.append(ENCODING[two_chars])
             x += 2
-        else:
+        elif block[x] in ENCODING:
             tmp.append(ENCODING[block[x]])
+            x += 1
+        else:
+            logger.info("Can't find " + block[x] + " nor " + block[x : x + 2] + ". Skipping...")
             x += 1
     tmp = tmp + [0] * (padding - len(tmp))
     return np.array(tmp).astype(np.uint8)

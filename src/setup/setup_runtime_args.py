@@ -1,5 +1,4 @@
 """File containing functions related to setting up runtime arguments for pipelines."""
-from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -7,9 +6,35 @@ from epochalyst.pipeline.ensemble import EnsemblePipeline
 from epochalyst.pipeline.model.model import ModelPipeline
 
 
+def setup_cache_args(processed_data_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Set cache arguments for pipeline.
+
+    :return: Tuple containing cache arguments for x, y, and train
+    """
+    cache_args_x = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'x'}",
+    }
+    cache_args_y = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'y'}",
+    }
+    cache_args_train = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'train'}",
+    }
+
+    return cache_args_x, cache_args_y, cache_args_train
+
+
 def setup_train_args(
     pipeline: ModelPipeline | EnsemblePipeline,
-    cache_args: dict[str, Any],
+    cache_args_x: dict[str, Any],
+    cache_args_y: dict[str, Any],
+    cache_args_train: dict[str, Any],
     train_indices: list[int],
     test_indices: list[int],
     fold: int = -1,
@@ -29,18 +54,14 @@ def setup_train_args(
     :return: Dictionary containing arguments
     """
     x_sys = {
-        "cache_args": deepcopy(cache_args),
+        "cache_args": cache_args_x,
     }
-    x_sys_path = Path(cache_args["storage_path"]) / "x"
-    x_sys_path.mkdir(parents=True, exist_ok=True)
-    x_sys["cache_args"]["storage_path"] = f"{x_sys_path}"
+    Path(cache_args_x["storage_path"]).mkdir(parents=True, exist_ok=True)
 
     y_sys = {
-        "cache_args": deepcopy(cache_args),
+        "cache_args": cache_args_y,
     }
-    y_sys_path = Path(cache_args["storage_path"]) / "y"
-    y_sys_path.mkdir(parents=True, exist_ok=True)
-    y_sys["cache_args"]["storage_path"] = f"{y_sys_path}"
+    Path(cache_args_y["storage_path"]).mkdir(parents=True, exist_ok=True)
 
     main_trainer = {
         "train_indices": train_indices,
@@ -58,10 +79,8 @@ def setup_train_args(
     }
 
     if save_model_preds:
-        train_sys["cache_args"] = deepcopy(cache_args)
-        train_sys_path = Path(cache_args["storage_path"]) / "x"
-        train_sys_path.mkdir(parents=True, exist_ok=True)
-        train_sys["cache_args"]["storage_path"] = f"{train_sys_path}"
+        train_sys["cache_args"] = cache_args_train
+        Path(cache_args_train["storage_path"]).mkdir(parents=True, exist_ok=True)
 
     pred_sys: dict[str, Any] = {}
 

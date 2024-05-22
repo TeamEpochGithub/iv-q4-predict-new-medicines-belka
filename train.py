@@ -4,6 +4,7 @@ import warnings
 from contextlib import nullcontext
 from pathlib import Path
 
+import coloredlogs
 import hydra
 import numpy as np
 import numpy.typing as npt
@@ -18,7 +19,7 @@ from omegaconf import DictConfig
 from src.config.train_config import TrainConfig
 from src.setup.setup_data import setup_xy
 from src.setup.setup_pipeline import setup_pipeline
-from src.setup.setup_runtime_args import setup_train_args
+from src.setup.setup_runtime_args import setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
 from src.typing.xdata import XData, slice_copy
 from src.utils.lock import Lock
@@ -28,6 +29,7 @@ from src.utils.set_torch_seed import set_torch_seed
 warnings.filterwarnings("ignore", category=UserWarning)
 # Makes hydra give full error messages
 os.environ["HYDRA_FULL_ERROR"] = "1"
+
 # Set up the config store, necessary for type checking of config yaml
 cs = ConfigStore.instance()
 cs.store(name="base_train", node=TrainConfig)
@@ -38,6 +40,10 @@ def run_train(cfg: DictConfig) -> None:
     """Train a model pipeline with a train-test split. Entry point for Hydra which loads the config file."""
     # Run the train config with an optional lock
     optional_lock = Lock if not cfg.allow_multiple_instances else nullcontext
+
+    # Install coloredlogs
+    coloredlogs.install()
+
     with optional_lock():
         run_train_cfg(cfg)
 
@@ -45,10 +51,6 @@ def run_train(cfg: DictConfig) -> None:
 def run_train_cfg(cfg: DictConfig) -> None:
     """Train a model pipeline with a train-test split."""
     print_section_separator("Q4 - Detect Medicine - Training")
-
-    import coloredlogs
-
-    coloredlogs.install()
 
     # Set seed
     set_torch_seed()
@@ -63,12 +65,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Cache arguments
-    processed_data_path = Path(cfg.processed_path)
-    cache_args = {
-        "output_data_type": "numpy_array",
-        "storage_type": ".pkl",
-        "storage_path": f"{processed_data_path}",
-    }
+    processed_data_path = Path(cfg.processed_path) / f"{cfg.sample_size:_}{'_val' if cfg.val_split else ''}"
+    cache_args_x, cache_args_y, cache_args_train = setup_cache_args(processed_data_path)
 
     # Setup the data
     X = XData(np.array([1]))
@@ -77,14 +75,15 @@ def run_train_cfg(cfg: DictConfig) -> None:
     val_y = None
 
     # Check if the data is cached
-    splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size}.pkl")
-    if not model_pipeline.get_x_cache_exists(cache_args) or not model_pipeline.get_y_cache_exists(cache_args) or not splitter_cache_path.exists() or cfg.val_split:
+    splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size:_}{'_val' if cfg.val_split else ''}.pkl")
+    splitter_cache_path.parent.mkdir(parents=True, exist_ok=True)
+    if not model_pipeline.get_x_cache_exists(cache_args_x) or not model_pipeline.get_y_cache_exists(cache_args_y) or not splitter_cache_path.exists() or cfg.val_split:
         X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
     if cfg.test_size == 0:
         if cfg.splitter.n_splits != 0:
-            raise ValueError("Test size is 0, but n_splits is not 0. Also please set n_splits to 0 if you want to run train full.")
+            raise ValueError("Test size is 0, but n_splits is not 0. Please set n_splits to 0 if you want to run train full.")
         logger.info("Training full.")
         train_indices, test_indices = list(range(len(X))), []  # type: ignore[arg-type]
         fold = -1
@@ -115,7 +114,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Train model pipeline")
     train_args = setup_train_args(
         pipeline=model_pipeline,
-        cache_args=cache_args,
+        cache_args_x=cache_args_x,
+        cache_args_y=cache_args_y,
+        cache_args_train=cache_args_train,
         train_indices=train_indices,
         test_indices=test_indices,
         save_model=True,
@@ -177,4 +178,5 @@ def scoring(
 
 
 if __name__ == "__main__":
+    # Run the train function
     run_train()
