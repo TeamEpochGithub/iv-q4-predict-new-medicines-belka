@@ -9,13 +9,20 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torch_geometric.data import Data  # type: ignore[import-not-found]
-from torch_geometric.data import DataLoader as GeometricDataLoader
+from src.modules.training.datasets.graph_dataset import GraphDataset
+from typing import Any, Sequence, Mapping
+from torch_geometric.data import Dataset as GeometricDataset
+from torch_geometric.data import Batch
+from torch_geometric.loader import DataLoader as GeometricDataLoader
+from copy import deepcopy
 from tqdm import tqdm
+from pathlib import Path
+from torch.optim.lr_scheduler import LRScheduler
+from src.modules.training.utils.graph_data_parallel import GraphDataParallel
 
 from src.modules.logging.logger import Logger
-from src.typing.graph_dataset import GraphDataset
 from src.typing.xdata import XData
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -26,36 +33,93 @@ class GraphTrainer(TorchTrainer, Logger):
     """Graph training block."""
 
     int_type: bool = False
+    dataset: GraphDataset | None = None
+
+    def __post_init__(self) -> None:
+        """Post init method for the TorchTrainer class."""
+        # Make sure to_predict is either "test" or "all" or "none"
+        if self.to_predict not in ["test", "all", "none"]:
+            raise ValueError("to_predict should be either 'test', 'all' or 'none'")
+
+        if self.n_folds == -1:
+            raise ValueError(
+                "Please specify the number of folds for cross validation or set n_folds to 0 for train full.",
+            )
+        self.save_model_to_disk = True
+        self._model_directory = Path("tm")
+        self.best_model_state_dict: dict[Any, Any] = {}
+
+        # Set optimizer
+        self.initialized_optimizer = self.optimizer(self.model.parameters())
+
+        # Set scheduler
+        self.initialized_scheduler: LRScheduler | None
+        if self.scheduler is not None:
+            self.initialized_scheduler = self.scheduler(self.initialized_optimizer)
+        else:
+            self.initialized_scheduler = None
+
+        # Set the device
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.log_to_terminal(f"Setting device: {self.device}")
+
+        # If multiple GPUs are available, distribute batch size over the GPUs
+        if torch.cuda.device_count() > 1:
+            self.log_to_terminal(f"Using {torch.cuda.device_count()} GPUs")
+            self.model = GraphDataParallel(self.model)
+
+        self.model.to(self.device)
+
+        # Early stopping
+        self.last_val_loss = np.inf
+        self.lowest_val_loss = np.inf
+
+        # Check validity of model_name
+        if " " in self.model_name:
+            raise ValueError("Spaces in model_name not allowed")
+
+        super(TorchTrainer, self).__post_init__()
 
     def create_datasets(
         self,
-        x: XData,
+        X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
         test_indices: list[int],
-    ) -> tuple[GraphDataset[Data], GraphDataset[Data]]:
+    ) -> tuple[list[Data], list[Data]]:
         """Create datasets for graph training."""
-        if x.molecule_graph is None:
-            raise ValueError("x.molecule_graph cannot be None")
+        if self.dataset is None:
+            if X.molecule_graph is None:
+                raise ValueError("x.molecule_graph cannot be None")
 
-        train_graphs = [x.molecule_graph[i] for i in train_indices]
-        train_labels = torch.from_numpy(y[train_indices])
+            train_graphs = []
+            for i in train_indices:
+                X.molecule_graph[i].y = torch.from_numpy(y[i])
+                train_graphs.append(X.molecule_graph[i])
 
-        test_graphs = [x.molecule_graph[i] for i in test_indices]
-        test_labels = torch.from_numpy(y[test_indices])
+            test_graphs = []
+            for i in test_indices:
+                X.molecule_graph[i].y = torch.from_numpy(y[i])
+                test_graphs.append(X.molecule_graph[i])
 
-        train_dataset: GraphDataset[Data] = GraphDataset(train_graphs, train_labels, device=self.device)
-        test_dataset: GraphDataset[Data] = GraphDataset(test_graphs, test_labels, device=self.device)
+            return train_graphs, test_graphs
+
+        train_dataset = deepcopy(self.dataset)
+        train_dataset.initialize(X, y, train_indices)
+        train_dataset.setup_pipeline(use_augmentations=True)
+
+        test_dataset = deepcopy(self.dataset)
+        test_dataset.initialize(X, y, test_indices)
 
         return train_dataset, test_dataset
 
-    def create_prediction_dataset(self, x: XData) -> GraphDataset[Data]:
+    def create_prediction_dataset(self, X: XData) -> list[Data]:
         """Create datasets for graph prediction."""
-        if x.molecule_graph is None:
-            raise ValueError("x.molecule_graph cannot be None")
+        if self.dataset is None:
+            if X.molecule_graph is None:
+                raise ValueError("x.molecule_graph cannot be None")
 
-        x_array = list(x.molecule_graph)
-        return GraphDataset(x_array, None, device=self.device)
+            return X.molecule_graph
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predicts graph prediction."""
@@ -68,26 +132,57 @@ class GraphTrainer(TorchTrainer, Logger):
             model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
             wandb.log_artifact(model_artifact)
 
+    # def create_dataloaders(
+    #     self,
+    #     train_dataset: Dataset[tuple[Tensor, ...]],
+    #     test_dataset: Dataset[tuple[Tensor, ...]],
+    # ) -> tuple[GeometricDataLoader, GeometricDataLoader]:
+    #     """Create the dataloaders for training and validation.
+    #
+    #     :param train_dataset: The training dataset.
+    #     :param test_dataset: The validation dataset.
+    #     :return: The training and validation dataloaders.
+    #     """
+    #     print(train_dataset)
+    #     train_loader = GeometricDataLoader(
+    #         train_dataset,
+    #         batch_size=self.batch_size,
+    #         shuffle=True,
+    #         **self.dataloader_args
+    #     )
+    #     test_loader = GeometricDataLoader(
+    #         test_dataset,
+    #         batch_size=self.batch_size,
+    #         shuffle=False,
+    #         **self.dataloader_args
+    #     )
+    #     return train_loader, test_loader
+    #
+
     def create_dataloaders(
         self,
         train_dataset: Dataset[tuple[Tensor, ...]],
         test_dataset: Dataset[tuple[Tensor, ...]],
-    ) -> tuple[GeometricDataLoader, GeometricDataLoader]:
+    ) -> tuple[DataLoader[tuple[Tensor, ...]], DataLoader[tuple[Tensor, ...]]]:
         """Create the dataloaders for training and validation.
 
         :param train_dataset: The training dataset.
         :param test_dataset: The validation dataset.
         :return: The training and validation dataloaders.
         """
-        train_loader = GeometricDataLoader(
+        train_loader = DataLoader(
             train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
+            collate_fn=(collate_fn if hasattr(train_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            **self.dataloader_args,
         )
-        test_loader = GeometricDataLoader(
+        test_loader = DataLoader(
             test_dataset,
             batch_size=self.batch_size,
             shuffle=False,
+            collate_fn=(collate_fn if hasattr(test_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            **self.dataloader_args,
         )
         return train_loader, test_loader
 
@@ -161,15 +256,11 @@ class GraphTrainer(TorchTrainer, Logger):
         self.model.train()
         pbar = tqdm(dataloader, unit="batch", desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})")
         for batch in pbar:
-            batch_device = batch.to(self.device)
-            self.log_to_terminal(f"Batch device: {batch_device.x.device}")
+            data = batch.to(self.device)
 
-            data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
-            data = data.to(self.device)  # Ensure data is on the correct device
-            y_pred = self.model(data).squeeze(1)
-            self.log_to_terminal(f"Prediction device: {y_pred.device}")
+            y_pred = self.model(data)
 
-            target = batch_device.y.to(self.device)
+            target = data.y
 
             if target.shape != y_pred.shape:
                 target = target.view(y_pred.shape)
@@ -195,12 +286,11 @@ class GraphTrainer(TorchTrainer, Logger):
         pbar = tqdm(dataloader, unit="batch")
         with torch.no_grad():
             for batch in pbar:
-                batch_device = batch.to(self.device)
-                data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
-                data = data.to(self.device)  # Ensure data is on the correct device
+                data = batch.to(self.device)
+                y_pred = self.model(data)
                 y_pred = self.model(data).squeeze(1)
 
-                target = batch_device.y.to(self.device)
+                target = data.y
                 if target.shape != y_pred.shape:
                     target = target.view(y_pred.shape)
 
@@ -229,11 +319,39 @@ class GraphTrainer(TorchTrainer, Logger):
         return np.array(predictions)
 
 
+class GraphCollater:
+    def __init__(
+        self,
+        dataset: list[Data],
+    ):
+        self.dataset = dataset
+
+    def __call__(self, batch: list[Any]) -> Any:
+        elem = batch[0]
+        if isinstance(elem, Data):
+            return Batch.from_data_list(
+                batch,
+            )
+        elif isinstance(elem, float):
+            return torch.tensor(batch, dtype=torch.float)
+        elif isinstance(elem, int):
+            return torch.tensor(batch)
+        elif isinstance(elem, str):
+            return batch
+        elif isinstance(elem, Mapping):
+            return {key: self([data[key] for data in batch]) for key in elem}
+        elif isinstance(elem, tuple) and hasattr(elem, '_fields'):
+            return type(elem)(*(self(s) for s in zip(*batch)))
+        elif isinstance(elem, Sequence) and not isinstance(elem, str):
+            return [self(s) for s in zip(*batch)]
+
+        raise TypeError(f"DataLoader found invalid type: '{type(elem)}'")
+
+
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
     """Collate function for the dataloader.
 
     :param batch: The batch to collate.
     :return: Collated batch.
     """
-    X, y = batch
-    return X, y
+    return Batch.from_data_list(batch[0])
