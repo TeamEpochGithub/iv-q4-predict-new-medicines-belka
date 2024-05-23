@@ -64,7 +64,7 @@ class TokenizerAtom(VerboseTrainingBlock):
 
         # Save the tokenizer as a pickle file
         with open(f"tm/{self.get_hash()}.pkl", "wb") as f:
-            pickle.dump(self.encoder, f)
+            pickle.dump(self.encoder, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         return X, y
 
