@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gcn_dataset
+  - model: cnn1d_atom_mol_aug_2
   - wandb: train
 
 data_path: data/shrunken
@@ -11,9 +11,10 @@ scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
 splitter:
+  # _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   _target_: src.splitter.stratified_splitter.StratifiedSplitter
   n_splits: 5
-sample_size: 10_000_000
-sample_split: 0.015
+sample_size: 100_000_000
+sample_split: -1
 # val_split: true
 allow_multiple_instances: true

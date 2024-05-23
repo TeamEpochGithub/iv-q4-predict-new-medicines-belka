@@ -8,7 +8,7 @@ from src.modules.transformation.verbose_transformation_block import VerboseTrans
 from src.typing.xdata import XData
 
 
-class SmileVectorEncoder(VerboseTransformationBlock):
+class SmileCharacterVectorEncoder(VerboseTransformationBlock):
     """Class that encodes the molecule smiles into vectors ."""
 
     def custom_transform(self, x: XData) -> XData:
