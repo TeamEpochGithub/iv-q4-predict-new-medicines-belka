@@ -21,7 +21,7 @@ from src.config.cv_config import CVConfig
 from src.scoring.scorer import Scorer
 from src.setup.setup_data import setup_train_x_data, setup_train_y_data
 from src.setup.setup_pipeline import setup_pipeline
-from src.setup.setup_runtime_args import setup_train_args
+from src.setup.setup_runtime_args import setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
 from src.utils.lock import Lock
 from src.utils.logger import logger
@@ -68,17 +68,11 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Cache arguments for x_sys and y_sys
-    processed_data_path = Path(cfg.processed_path)
-    (processed_data_path / "x").mkdir(parents=True, exist_ok=True)
-    (processed_data_path / "y").mkdir(parents=True, exist_ok=True)
-    cache_args = {
-        "output_data_type": "numpy_array",
-        "storage_type": ".pkl",
-        "storage_path": f"{processed_data_path}",
-    }
+    processed_data_path = Path(cfg.processed_path) / f"{cfg.sample_size:_}{'_val' if cfg.val_split else ''}"
+    cache_args_x, cache_args_y, cache_args_train = setup_cache_args(processed_data_path)
 
     # Check if the data is cached
-    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args)
+    x_cache_exists = model_pipeline.get_x_cache_exists(cache_args_x)
     # y_cache_exists = model_pipeline.get_y_cache_exists(cache_args)
 
     directory = Path(cfg.data_path)
@@ -110,7 +104,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     oof_predictions = np.zeros(y.shape, dtype=np.float64)
 
     for fold_no, (train_indices, test_indices) in enumerate(instantiate(cfg.splitter).split(y)):
-        score, predictions = run_fold(fold_no, X, y, train_indices, test_indices, cfg, scorer, output_dir, cache_args)
+        score, predictions = run_fold(fold_no, X, y, train_indices, test_indices, cfg, scorer, output_dir, cache_args_x, cache_args_y, cache_args_train)
         scores.append(score)
 
         # Save predictions
@@ -139,7 +133,9 @@ def run_fold(
     cfg: DictConfig,
     scorer: Scorer,
     output_dir: Path,
-    cache_args: dict[str, Any],
+    cache_args_x: dict[str, Any],
+    cache_args_y: dict[str, Any],
+    cache_args_train: dict[str, Any],
 ) -> tuple[float, Any]:
     """Run a single fold of the cross validation.
 
@@ -163,7 +159,9 @@ def run_fold(
 
     train_args = setup_train_args(
         pipeline=model_pipeline,
-        cache_args=cache_args,
+        cache_args_x=cache_args_x,
+        cache_args_y=cache_args_y,
+        cache_args_train=cache_args_train,
         train_indices=train_indices,
         test_indices=test_indices,
         fold=fold_no,
