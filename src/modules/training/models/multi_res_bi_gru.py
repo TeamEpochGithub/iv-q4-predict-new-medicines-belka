@@ -61,7 +61,7 @@ class MultiResidualBiGRU(nn.Module):
     :param n_layers: Number of ResidualBiGRU layers
     """
 
-    def __init__(self, input_size: int, hidden_size: int, num_embeddings: int, out_size: int, n_layers: int) -> None:
+    def __init__(self, input_size: int, hidden_size: int, out_size: int, n_layers: int, num_embeddings: int = 37) -> None:
         """Initialize a MultiResidualBiGRU model.
 
         :param input_size: Input size of model

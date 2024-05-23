@@ -19,7 +19,7 @@ class CNN1D(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(self, n_classes: int, num_embeddings: int, *, embedding: bool = True) -> None:
+    def __init__(self, n_classes: int, *, embedding: bool = True, num_embeddings: int = 37) -> None:
         """Initialize the CNN1D model.
 
         :param in_channels: The number of input channels.
@@ -30,7 +30,7 @@ class CNN1D(nn.Module):
         """
         super(CNN1D, self).__init__()  # noqa: UP008
         NUM_FILTERS = 32
-        hidden_dim = 64
+        hidden_dim = 128
         self.hidden_dim = hidden_dim
 
         # Embedding layer
@@ -40,9 +40,9 @@ class CNN1D(nn.Module):
             self._embedding = nn.Linear(4, hidden_dim)
 
         # Convolutional layers
-        self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=NUM_FILTERS, kernel_size=2, stride=1)
-        self.conv2 = nn.Conv1d(in_channels=NUM_FILTERS, out_channels=NUM_FILTERS * 2, kernel_size=2, stride=1)
-        self.conv3 = nn.Conv1d(in_channels=NUM_FILTERS * 2, out_channels=NUM_FILTERS * 3, kernel_size=2, stride=1)
+        self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=NUM_FILTERS, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv1d(in_channels=NUM_FILTERS, out_channels=NUM_FILTERS * 2, kernel_size=3, stride=1)
+        self.conv3 = nn.Conv1d(in_channels=NUM_FILTERS * 2, out_channels=NUM_FILTERS * 3, kernel_size=3, stride=1)
 
         # Pooling layer
         self.pool = nn.AdaptiveMaxPool1d(1)

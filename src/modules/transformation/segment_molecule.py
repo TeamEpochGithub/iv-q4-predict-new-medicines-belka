@@ -23,7 +23,7 @@ class SegmentMolecule(VerboseTransformationBlock):
     chunk_size: int = 10
 
     @staticmethod
-    def segment_molecule(smiles: list[str], window_size: int, padding_size: int) -> list[list[str]]:
+    def segment_molecule(smiles: npt.NDArray[np.str_], window_size: int, padding_size: int) -> npt.NDArray[np.str_]:
         """Perform the convolution operation on each smile.
 
         param smiles: list containing the smile molecules
@@ -40,9 +40,9 @@ class SegmentMolecule(VerboseTransformationBlock):
             # Pad the sequence with special token
             sequences.append(sequence + ["PAD"] * (padding_size - len(sequence)))
 
-        return sequences
+        return np.array(sequences)
 
-    def parallel_segment(self, smiles: list[str], padding_size: int) -> npt.NDArray[np.str_]:
+    def parallel_segment(self, smiles: npt.NDArray[np.str_], padding_size: int) -> npt.NDArray[np.str_]:
         """Perform the convolution operation using multiprocessing.
 
         param smiles: list containing the smile molecules
@@ -72,8 +72,8 @@ class SegmentMolecule(VerboseTransformationBlock):
             raise ValueError("There is no SMILE information for the molecules")
 
         # Perform the convolutional operation on each block
-        data.bb1_smiles = self.parallel_segment(list(data.bb1_smiles), 60)
-        data.bb2_smiles = self.parallel_segment(list(data.bb2_smiles), 40)
-        data.bb3_smiles = self.parallel_segment(list(data.bb3_smiles), 50)
+        data.bb1_smiles = self.parallel_segment(data.bb1_smiles, 60)
+        data.bb2_smiles = self.parallel_segment(data.bb2_smiles, 40)
+        data.bb3_smiles = self.parallel_segment(data.bb3_smiles, 50)
 
         return data

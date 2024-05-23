@@ -26,7 +26,7 @@ def identity(x: list[str]) -> list[str]:
 class TokenizerAtom(VerboseTrainingBlock):
     """Train a torch tokenizer on the molecule smiles."""
 
-    def apply_tokenizer(self, smiles: list[list[str]]) -> npt.NDArray[np.uint8]:
+    def apply_tokenizer(self, smiles: npt.NDArray[np.str_]) -> npt.NDArray[np.uint8]:
         """Apply the tokenizer on the smile molecules.
 
         :param smiles: the segmented smile molecules
@@ -55,14 +55,14 @@ class TokenizerAtom(VerboseTrainingBlock):
         self.encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
 
         # Apply the torch nlp tokenizer on the building blocks
-        X.bb1_ecfp = self.apply_tokenizer(list(X.bb1_smiles))
-        X.bb2_ecfp = self.apply_tokenizer(list(X.bb2_smiles))
-        X.bb3_ecfp = self.apply_tokenizer(list(X.bb3_smiles))
+        X.bb1_ecfp = self.apply_tokenizer(X.bb1_smiles)
+        X.bb2_ecfp = self.apply_tokenizer(X.bb2_smiles)
+        X.bb3_ecfp = self.apply_tokenizer(X.bb3_smiles)
 
         # Print the vocabulary size of the tokenizer
-        self.log_to_terminal(f"the vocabulary size of the tokenizer {self.encoder.vocab_size}.")
+        self.log_to_terminal(f"The vocabulary size of the tokenizer {self.encoder.vocab_size}.")
 
-        # Save the tokenizer as a torch file
+        # Save the tokenizer as a pickle file
         with open(f"tm/{self.get_hash()}.pkl", "wb") as f:
             pickle.dump(self.encoder, f)
 
@@ -81,9 +81,9 @@ class TokenizerAtom(VerboseTrainingBlock):
         # Extract the tokenizer from the pickle file
         self.encoder = joblib.load(f"tm/{self.get_hash()}.pkl")
 
-        # Apply the torch tokenizer on each building block
-        X.bb1_ecfp = self.apply_tokenizer(list(X.bb1_smiles))
-        X.bb2_ecfp = self.apply_tokenizer(list(X.bb2_smiles))
-        X.bb3_ecfp = self.apply_tokenizer(list(X.bb3_smiles))
+        # Apply the torch nlp tokenizer on the building blocks
+        X.bb1_ecfp = self.apply_tokenizer(X.bb1_smiles)
+        X.bb2_ecfp = self.apply_tokenizer(X.bb2_smiles)
+        X.bb3_ecfp = self.apply_tokenizer(X.bb3_smiles)
 
         return X

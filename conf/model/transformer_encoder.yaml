@@ -11,13 +11,12 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: TransformerEncoder
       model:
         _target_: src.modules.training.models.transformer_encoder.TransformerEncoder
         n_classes: 3
-        num_embeddings: 30000
+        num_embeddings: 37
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime

@@ -15,13 +15,12 @@ train_sys:
   steps:
     - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D
+      model_name: transformer_encoder
       model:
         _target_: src.modules.training.models.transformer_encoder.TransformerEncoder
         in_features: 150
         n_classes: 3
         num_embeddings: 5000
-
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
