@@ -35,6 +35,8 @@ train_sys:
             p: 0.5
           - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
             max_enc_size_molecule: 146
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.25
       scheduler:
         _target_: functools.partial
         _args_:

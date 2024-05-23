@@ -13,9 +13,8 @@ from src.modules.transformation.encoder.smile_atom_encoder import (
     MAX_ENC_SIZE_BB2,
     MAX_ENC_SIZE_BB3,
     MAX_ENC_SIZE_MOLECULE,
-    encode_block,
-    encode_block_1,
-    encode_molecule,
+    encode_smiles,
+    encode_smiles_bb_1,
 )
 
 
@@ -49,22 +48,22 @@ class SmilesAtomEncoder(TrainingBlock):
 
         # Only molecules
         if x.ndim == 1:
-            return np.array([encode_molecule(i, self.max_enc_size_molecule) for i in x]), y
+            return np.array([encode_smiles(i, self.max_enc_size_molecule) for i in x]), y
 
         # Only building blocks
         if x.shape[1] == 3:
             result = np.empty((*x.shape, self.max_enc_size_bb), dtype=np.uint8)
-            result[:, 0] = np.array([encode_block_1(j, self.max_enc_size_bb) for j in x[:, 0]])
-            result[:, 1] = np.array([encode_block(j, self.max_enc_size_bb) for j in x[:, 1]])
-            result[:, 2] = np.array([encode_block(j, self.max_enc_size_bb) for j in x[:, 2]])
+            result[:, 0] = np.array([encode_smiles_bb_1(j, self.max_enc_size_bb) for j in x[:, 0]])
+            result[:, 1] = np.array([encode_smiles(j, self.max_enc_size_bb) for j in x[:, 1]])
+            result[:, 2] = np.array([encode_smiles(j, self.max_enc_size_bb) for j in x[:, 2]])
             return result, y
 
         # Molecules and building blocks
         result = np.empty((*x.shape, self.max_enc_size_molecule), dtype=np.uint8)
-        result[:, 0] = np.array([encode_molecule(j, self.max_enc_size_molecule) for j in x[:, 0]])
-        result[:, 1] = np.array([encode_block_1(j, self.max_enc_size_molecule) for j in x[:, 1]])
-        result[:, 2] = np.array([encode_block(j, self.max_enc_size_molecule) for j in x[:, 2]])
-        result[:, 3] = np.array([encode_block(j, self.max_enc_size_molecule) for j in x[:, 3]])
+        result[:, 0] = np.array([encode_smiles(j, self.max_enc_size_molecule) for j in x[:, 0]])
+        result[:, 1] = np.array([encode_smiles_bb_1(j, self.max_enc_size_molecule) for j in x[:, 1]])
+        result[:, 2] = np.array([encode_smiles(j, self.max_enc_size_molecule) for j in x[:, 2]])
+        result[:, 3] = np.array([encode_smiles(j, self.max_enc_size_molecule) for j in x[:, 3]])
         return result, y
 
     @property
