@@ -23,7 +23,8 @@ class BBReaction(TrainingBlock):
 
         :param x: The building block strings
         :param y: The labels (ignored)
-        :return: Tuple of product smiles and labels (unchange)"""
+        :return: Tuple of product smiles and labels (unchange)
+        """
         result_molecules = []
 
         for bbs in x:
