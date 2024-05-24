@@ -42,7 +42,7 @@ class NormalSplitter(Splitter):
         logger.debug(f"Starting splitting with size:{len(y)}")
         kf = KFold(n_splits=self.n_splits, random_state=None, shuffle=False)
 
-        kf_splits = kf.split(X.building_blocks, y)
+        kf_splits = kf.split(X.encoded_rows, y)
         for train_index, test_index in kf_splits:
             splits.append((train_index, test_index))
 

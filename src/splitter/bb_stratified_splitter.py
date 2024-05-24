@@ -60,7 +60,7 @@ class BBStratifiedSplitter(Splitter):
         # Splitting the training set
         logger.info("Splitting the training set into Train/Test")
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
-        kf_splits = kf.split(X.building_blocks[train_validation_indices], y[train_validation_indices])
+        kf_splits = kf.split(X.encoded_rows[train_validation_indices], y[train_validation_indices])
         for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             splits.append((train_index, test_index))
         logger.debug(f"Finished splitting with size:{len(y)}")

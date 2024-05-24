@@ -51,7 +51,7 @@ class StratifiedSplitter(Splitter):
 
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
 
-        kf_splits = kf.split(X.building_blocks, y)
+        kf_splits = kf.split(X.encoded_rows, y)
         for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             splits.append((train_index, test_index))
 

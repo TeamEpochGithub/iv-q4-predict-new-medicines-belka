@@ -49,7 +49,7 @@ class BBSplitter(Splitter):
         bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles is not None else [0]
         bb3_values = range(len(X.bb3_smiles)) if X.bb3_smiles is not None else [0]
 
-        if len(X.building_blocks) != len(y):
+        if len(X.encoded_rows) != len(y):
             raise ValueError("X is not equal to y")
 
         # Split the data into n_splits
@@ -114,13 +114,13 @@ class BBSplitter(Splitter):
         :return: X_train, X_test
         """
         # Train split would have all the values of bb1, bb2, and bb3 and the test split would have all the other values of bb1, bb2, and bb3
-        train_bb1_bool = np.isin(X.building_blocks[:, 0], split_bb1_values)
+        train_bb1_bool = np.isin(X.encoded_rows[:, 0], split_bb1_values)
         if self.bb_to_split_by[0] == 0:
             train_bb1_bool = train_bb1_bool & False
-        train_bb2_bool = np.isin(X.building_blocks[:, 1], split_bb2_values)
+        train_bb2_bool = np.isin(X.encoded_rows[:, 1], split_bb2_values)
         if self.bb_to_split_by[1] == 0:
             train_bb2_bool = train_bb2_bool & False
-        train_bb3_bool = np.isin(X.building_blocks[:, 2], split_bb3_values)
+        train_bb3_bool = np.isin(X.encoded_rows[:, 2], split_bb3_values)
         if self.bb_to_split_by[2] == 0:
             train_bb3_bool = train_bb3_bool & False
         X_train = np.where(~train_bb1_bool & ~train_bb2_bool & ~train_bb3_bool)[0]
