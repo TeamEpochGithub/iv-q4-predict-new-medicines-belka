@@ -18,15 +18,19 @@ train_sys:
         num_node_features: 4
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
+        pos_weight:
+          _target_: torch.tensor
+          data: [100.0]
+          device: cuda
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
         lr: 0.001
-      epochs: 10
-      batch_size: 2048
-      patience: 3
+      epochs: 100
+      batch_size: 4096
+      patience: 10
       dataset:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
         retrieval: ["SMILES_MOL"]
@@ -37,7 +41,7 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 40
+        t_initial: 100
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1

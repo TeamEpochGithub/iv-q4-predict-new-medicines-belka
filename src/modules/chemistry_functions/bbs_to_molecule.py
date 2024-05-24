@@ -31,15 +31,14 @@ def bbs_to_molecule(bb1: str, bb2: str, bb3: str) -> str:
     BB1 = Chem.MolFromSmiles(bb1)
     BB2 = Chem.MolFromSmiles(bb2)
     BB3 = Chem.MolFromSmiles(bb3)
-    result = None
 
     # If BB1 has FMOC and BB2 don't have BORONATE and BB3 doesn't have acid
-    result = None
+    result = BB1
     bb1_fmoc_substruct_match = BB1.HasSubstructMatch(FMOC)
-    bb2_boronate_substruct_match = BB2.HasSubstructMatch(BORONATE)
-    bb3_cooh_substruct_match = BB3.HasSubstructMatch(ACID) and not BB3.HasSubstructMatch(FLUORIDE_ACID)
+    test = BB1.HasSubstructMatch(HALOGEN) and BB2.HasSubstructMatch(BORONATE) and BB3.HasSubstructMatch(ACID) and not BB3.HasSubstructMatch(FLUORIDE_ACID)
+    # print(bb1_fmoc_substruct_match, bb2_boronate_substruct_match, bb3_cooh_substruct_match)
 
-    if bb1_fmoc_substruct_match and not (bb2_boronate_substruct_match and bb3_cooh_substruct_match):
+    if bb1_fmoc_substruct_match and not test:
         # Use FMOC_TRIAZINE_REACTION to replace FMOC with triazine
         products = FMOC_TRIAZINE_REACTION.RunReactants([BB1])
         if len(products) == 0:
@@ -66,10 +65,13 @@ def bbs_to_molecule(bb1: str, bb2: str, bb3: str) -> str:
         products = NH2_TRIAZINE_REACTION2.RunReactants((result, BB3))
         if len(products) == 0:
             raise ValueError("No products were generated from nh2 triazine reaction 2")
+        result = products[0][0]
+        sanitize_molecule(result)
+
     elif result is not None and result.HasSubstructMatch(HALOGEN):
         result = boronate_cooh_reactions(result, BB2=BB2, BB3=BB3)
     else:
-        raise ValueError("Molecule does not contain triazine or halogn group")
+        raise ValueError("Molecule does not contain triazine or halogen group")
 
     if result is None:
         raise ValueError(f"No molecule was generated from bb1:{bb1}, bb2:{bb2}, bb3:{bb3}")
