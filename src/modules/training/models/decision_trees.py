@@ -1,6 +1,7 @@
 """Module containing Boosted Decision Tree Models."""
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -85,7 +86,9 @@ class DecisionTrees(VerboseTrainingBlock):
         self.log_to_terminal("Training completed.")
 
         # Save the model
-        self.save_model(f"tm/{self.get_hash()}")
+        trained_model_path = Path(f"tm/{self.get_hash()}")
+        trained_model_path.parent.mkdir(parents=True, exist_ok=True)
+        self.save_model(trained_model_path)
 
         # Get the predictions
         y_pred_proba = self.model.predict_proba(X_test)
@@ -117,7 +120,7 @@ class DecisionTrees(VerboseTrainingBlock):
         self.log_to_terminal("Predicting.")
         return self.model.predict_proba(x_pred)[:, 1]
 
-    def save_model(self, path: str) -> None:
+    def save_model(self, path: Path) -> None:
         """Save the model.
 
         :param path: Path to save model to
