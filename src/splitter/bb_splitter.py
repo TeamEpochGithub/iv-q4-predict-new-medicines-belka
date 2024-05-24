@@ -9,13 +9,14 @@ import numpy.typing as npt
 from src.typing.xdata import XData
 from src.utils.logger import logger
 
+from .base import Splitter
+
 
 @dataclass
-class BBSplitter:
+class BBSplitter(Splitter):
     """Class to split dataset by building blocks.
 
     :param n_splits: Number of splits
-    :param indices_for_flattened_data: If data is flattened to per protein, indices should be processed
     :param bb_to_split_by: Building blocks to split by
     """
 
@@ -23,8 +24,16 @@ class BBSplitter:
     indices_for_flattened_data: bool = False
     bb_to_split_by: list[int] = field(default_factory=lambda: [1, 1, 1])
 
-    def split(self, X: XData, y: npt.NDArray[np.int8], cache_path: Path | None = None) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
-        """Split X and y into train and test indices.
+    def split(
+        self,
+        X: XData,
+        y: npt.NDArray[np.int8],
+        cache_path: Path | None = None,
+    ) -> (
+        list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
+        | tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]
+    ):
+        """Split X and y into train and validation sets.
 
         :param X: The Xdata
         :param y: Labels
@@ -45,7 +54,7 @@ class BBSplitter:
 
         # Split the data into n_splits
         # Create splits where bb1_values are divided into n_splits, bb2_values are divided into n_splits, and bb3_values are divided into n_splits
-        # Train split would have all the values of bb1, bb2, and bb3 and the test split would have all the other values of bb1, bb2, and bb3
+        # Train split would have all the values of bb1, bb2, and bb3 and the validation split would have all the other values of bb1, bb2, and bb3
         bb1_values_split = np.array_split(bb1_values, self.n_splits)
         bb2_values_split = np.array_split(bb2_values, self.n_splits)
         bb3_values_split = np.array_split(bb3_values, self.n_splits)
@@ -126,3 +135,8 @@ class BBSplitter:
         X_test = np.where(train_bb1_bool & train_bb2_bool & train_bb1_bool)[0]
 
         return X_train, X_test
+
+    @property
+    def includes_validation(self) -> bool:
+        """Return if the splitter includes validation."""
+        return False

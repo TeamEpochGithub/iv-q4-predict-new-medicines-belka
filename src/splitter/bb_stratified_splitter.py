@@ -12,9 +12,11 @@ from src.splitter.bb_splitter import BBSplitter
 from src.typing.xdata import XData
 from src.utils.logger import logger
 
+from .base import Splitter
+
 
 @dataclass
-class BBStratifiedSplitter:
+class BBStratifiedSplitter(Splitter):
     """Class to split dataset into stratified multi label split.
 
     :param n_splits: Number of splits
@@ -28,7 +30,10 @@ class BBStratifiedSplitter:
         X: XData,
         y: npt.NDArray[np.int8],
         cache_path: Path,
-    ) -> tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+    ) -> (
+        list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
+        | tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]
+    ):
         """Split X and y into train and test indices.
 
         :param X: The Xdata
@@ -43,17 +48,19 @@ class BBStratifiedSplitter:
         if cache_path.exists():
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
-                splits, train_bb, val = pickle.load(f)  # noqa: S301
-                logger.info(f"Train/Val: {len(train_bb):,} / {len(val):,}")
-                return splits, train_bb, val
+                splits, train_validation_indices, test_indices = pickle.load(f)  # noqa: S301
+                return splits, train_validation_indices, test_indices
 
+        # Creating a Validation set
+        logger.info("Creating a validation set")
         bb_splitter = BBSplitter(n_splits=self.n_splits, bb_to_split_by=[1, 1, 1])
-        train_bb, val = bb_splitter.split(X, y)[0]
-        logger.info(f"Train/Val: {len(train_bb):,} / {len(val):,}")
+        train_validation_indices, test_indices = bb_splitter.split(X, y)[0]
+        logger.info(f"Train/Val: {len(train_validation_indices):,} / {len(test_indices):,}")
 
+        # Splitting the training set
+        logger.info("Splitting the training set into Train/Test")
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
-
-        kf_splits = kf.split(X.building_blocks[train_bb], y[train_bb])
+        kf_splits = kf.split(X.building_blocks[train_validation_indices], y[train_validation_indices])
         for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             splits.append((train_index, test_index))
         logger.debug(f"Finished splitting with size:{len(y)}")
@@ -63,6 +70,11 @@ class BBStratifiedSplitter:
         if not cache_path.parent.exists():
             cache_path.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_path, "wb") as f:
-            pickle.dump((splits, train_bb, val), f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump((splits, train_validation_indices, test_indices), f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        return splits, train_bb, val
+        return splits, train_validation_indices, test_indices
+
+    @property
+    def includes_validation(self) -> bool:
+        """Check if the splitter includes validation."""
+        return True
