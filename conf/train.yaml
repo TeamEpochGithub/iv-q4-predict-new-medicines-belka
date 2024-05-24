@@ -7,7 +7,7 @@ defaults:
   - wandb: train
 
 data_path: data/shrunken
-processed_path: data/processed
+cache_path: data/cache
 
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer

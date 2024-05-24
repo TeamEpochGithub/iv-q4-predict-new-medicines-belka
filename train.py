@@ -19,8 +19,9 @@ from omegaconf import DictConfig
 from src.config.train_config import TrainConfig
 from src.setup.setup_data import setup_xy
 from src.setup.setup_pipeline import setup_pipeline
-from src.setup.setup_runtime_args import setup_cache_args, setup_train_args
+from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
+from src.splitter.base import Splitter
 from src.typing.xdata import XData, slice_copy
 from src.utils.lock import Lock
 from src.utils.logger import logger
@@ -64,53 +65,57 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg)
 
+    # Cache/Processed Path
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split)
+    splitter_cache_path = cache_path / "splits.pkl"
+
     # Cache arguments
-    processed_data_path = Path(cfg.processed_path) / f"{cfg.sample_size:_}{'_val' if cfg.val_split else ''}"
-    cache_args_x, cache_args_y, cache_args_train = setup_cache_args(processed_data_path)
+    cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
     # Setup the data
     X = XData(np.array([1]))
     y = np.array([1])
-    val_x = None
-    val_y = None
+    x_test, y_test = None, None
+
+    train_indices: npt.NDArray[np.int64]
+    validation_indices: npt.NDArray[np.int64]
 
     # Check if the data is cached
-    splitter_cache_path = Path(f"data/splits/split_{cfg.sample_size:_}{'_val' if cfg.val_split else ''}.pkl")
-    splitter_cache_path.parent.mkdir(parents=True, exist_ok=True)
-    if not model_pipeline.get_x_cache_exists(cache_args_x) or not model_pipeline.get_y_cache_exists(cache_args_y) or not splitter_cache_path.exists() or cfg.val_split:
+    if not model_pipeline.get_x_cache_exists(cache_args_x) or not model_pipeline.get_y_cache_exists(cache_args_y) or not splitter_cache_path.exists():
         X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
-    if cfg.test_size == 0:
-        if cfg.splitter.n_splits != 0:
-            raise ValueError("Test size is 0, but n_splits is not 0. Please set n_splits to 0 if you want to run train full.")
-        logger.info("Training full.")
-        train_indices, test_indices = list(range(len(X))), []  # type: ignore[arg-type]
-        fold = -1
-    elif cfg.val_split:
-        logger.info("Splitting data into train, test, and validation sets.")
-        splits, train_val_indices, val_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)
-        train_indices, test_indices = splits[0]
-        fold = 0
-        val_x = slice_copy(X, val_indices)
-        val_y = y[val_indices].flatten()
-        logger.info(f"Bind % in validation: {np.count_nonzero(val_y == 1) * 100 / len(val_y)}")
-        if len(X.building_blocks) > 1:
-            X.slice_all(train_val_indices)
-        if len(y) > 1:
-            y = y[train_val_indices]
+    if cfg.splitter is None:
+        logger.info("Training on all data (full).")
+        # train_indices, validation_indices = list(range(len(X))), []
+        train_indices, validation_indices = np.arange(len(X)), np.array([])
+        fold_idx = -1
     else:
-        logger.info("Splitting Data into train and test sets.")
-        train_indices, test_indices = instantiate(cfg.splitter).split(X=X, y=y, cache_path=splitter_cache_path)[0]
-        val_x = None
-        val_y = None
-        fold = 0
-    logger.info(f"Train/Test size: {len(train_indices)}/{len(test_indices)}, Bind {np.count_nonzero(y == 1) * 100 / (len(y) * 3)}%")
+        fold_idx = 0
+        splitter: Splitter = instantiate(cfg.splitter) if cfg.splitter is not None else None
+        if splitter.includes_validation:
+            logger.info("Splitting data into train, validation and test sets.")
 
-    # Make sure tm directory exists
-    Path("tm").mkdir(parents=True, exist_ok=True)
+            splits: list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
+            train_validation_indices: npt.NDArray[np.int64]
+            test_indices: npt.NDArray[np.int64]
+            splits, train_validation_indices, test_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)  # type: ignore[assignment]
 
-    # Run the model pipeline
+            # Setup test data
+            x_test = slice_copy(X, test_indices)
+            y_test = y[test_indices].flatten()
+            logger.info(f"Binds in test: {np.count_nonzero(y_test == 1) * 100 / len(y_test):.2f}%")
+
+            # Zero-index the split
+            train_indices, validation_indices = splits[fold_idx]
+            X.slice_all(train_validation_indices)
+            y = y[train_validation_indices]
+        else:
+            logger.info("Splitting Data into train and validation sets.")
+            train_indices, validation_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)[fold_idx]  # type: ignore[assignment]
+        logger.info(f"Train/Test size: {len(train_indices)}/{len(validation_indices)}, Bind {np.count_nonzero(y == 1) * 100 / (len(y) * 3)}%")
+
+    # Run the pipeline and score the results
     print_section_separator("Train model pipeline")
     train_args = setup_train_args(
         pipeline=model_pipeline,
@@ -118,63 +123,71 @@ def run_train_cfg(cfg: DictConfig) -> None:
         cache_args_y=cache_args_y,
         cache_args_train=cache_args_train,
         train_indices=train_indices,
-        test_indices=test_indices,
+        validation_indices=validation_indices,
         save_model=True,
-        fold=fold,
+        fold=fold_idx,
     )
     predictions, y_new = model_pipeline.train(X, y, **train_args)
-
-    scoring(cfg=cfg, test_indices=test_indices, y_new=y_new, predictions=predictions, val_x=val_x, val_y=val_y, model_pipeline=model_pipeline)
+    scoring(cfg=cfg, validation_indices=validation_indices, y_new=y_new, predictions=predictions, x_test=x_test, y_test=y_test, model_pipeline=model_pipeline)
 
     wandb.finish()
 
 
 def scoring(
     cfg: DictConfig,
-    test_indices: list[int],
+    validation_indices: npt.NDArray[np.int_],
     y_new: npt.NDArray[np.int_],
     predictions: npt.NDArray[np.int_],
     model_pipeline: ModelPipeline | EnsemblePipeline,
-    val_x: XData | None = None,
-    val_y: npt.NDArray[np.int_] | None = None,
+    x_test: XData | None = None,
+    y_test: npt.NDArray[np.int_] | None = None,
 ) -> None:
     """Score the predictions and possible validation.
 
     :param cfg: The dictionary configuration
-    :param test_indices: the test indices
+    :param validation_indices: the validation indices
     :param y_new: The test set labels
-    :param prediction: The predictions on the test set
+    :param predictions: The predictions on the validation set
     :param model_pipeline: The model pipeline
-    :param val_x: XData for validation set
-    :param val_y: Labels for validation y
-    :param val_indices: The indices for validation
+    :param x_val: XData for test set
+    :param y_val: Labels for test y
     """
     print_section_separator("Scoring")
-    if len(test_indices) > 0:
-        scorer = instantiate(cfg.scorer)
-        score = scorer(y_new, predictions)
-        logger.info(f"Score: {score}")
 
-        if wandb.run:
-            wandb.log({"Score": score})
-    elif wandb.run:
-        wandb.log({"Score": -1})
+    # Set the scores to -1
+    validation_score = -1.0
+    test_score = -1.0
+    combined_score = -1.0
+    combined_score_val_percentage = None
 
-    if val_x is not None and val_y is not None:
-        scorer = instantiate(cfg.scorer)
-        pred_val = model_pipeline.predict(val_x)
-        val_score = scorer(val_y, pred_val)
-        logger.info(f"Validation Score: {val_score}")
+    # Instantiate the scorer
+    scorer = instantiate(cfg.scorer)
 
-        combined_score = 0.66 * score + 0.33 * val_score
-        logger.info(f"Percentage of training score in combined score: {len(y_new) / (len(y_new) + len(val_y))}")
-        logger.info(f"Combined Score: {combined_score}")
-        if wandb.run:
-            wandb.log({"Validation Score": val_score})
-            wandb.log({"Combined Score": combined_score})
-    elif wandb.run:
-        wandb.log({"Validation Score": -1})
-        wandb.log({"Combined Score": -1})
+    # Score the validation set
+    if len(validation_indices) > 0:
+        logger.info("Scoring on validation set")
+        validation_score = scorer(y_new, predictions)
+
+    # Score the test set
+    if x_test is not None and y_test is not None:
+        logger.info("Scoring on test set")
+        pred_val = model_pipeline.predict(x_test)
+        test_score = scorer(y_test, pred_val)
+        combined_score = 0.5 * validation_score + 0.5 * test_score
+        combined_score_val_percentage = 100 * (len(y_new) / (len(y_new) + len(y_test)))
+
+    # Log the scores
+    logger.info(f"Validation Score: {validation_score:.6f}")
+    logger.info(f"Test Score: {test_score:.6f}")
+    logger.info(f"Combined Score: {combined_score:.6f}, {str(combined_score_val_percentage) + '% of training score.' if combined_score_val_percentage is not None else ''}")
+    if wandb.run:
+        wandb.log(
+            {
+                "Validation Score": validation_score,
+                "Test Score": test_score,
+                "Combined Score": combined_score,
+            },
+        )
 
 
 if __name__ == "__main__":

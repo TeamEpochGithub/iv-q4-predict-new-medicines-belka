@@ -2,8 +2,29 @@
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import numpy.typing as npt
 from epochalyst.pipeline.ensemble import EnsemblePipeline
 from epochalyst.pipeline.model.model import ModelPipeline
+from omegaconf import DictConfig
+
+
+def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_size: int, sample_split: float) -> Path:
+    """Create cache path for processed data.
+
+    :param splitter_cfg: Splitter configuration
+    :param sample_size: Sample size
+    :param sample_split: Sample split
+    :return: Path to the cache
+    """
+    sample_size_pretty = f"{sample_size:_}"
+    sample_split_pretty = f"{sample_split!s}" if sample_split != -1 else "full"
+    splitter_cfg_hash = str(splitter_cfg.__hash__())[:5]
+
+    cache_path = Path(root_cache_path) / f"{sample_size_pretty}_{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
+    cache_path.mkdir(parents=True, exist_ok=True)
+
+    return cache_path
 
 
 def setup_cache_args(processed_data_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -35,8 +56,8 @@ def setup_train_args(
     cache_args_x: dict[str, Any],
     cache_args_y: dict[str, Any],
     cache_args_train: dict[str, Any],
-    train_indices: list[int],
-    test_indices: list[int],
+    train_indices: npt.NDArray[np.int_],
+    validation_indices: npt.NDArray[np.int_],
     fold: int = -1,
     *,
     save_model: bool = False,
@@ -65,7 +86,7 @@ def setup_train_args(
 
     main_trainer = {
         "train_indices": train_indices,
-        "test_indices": test_indices,
+        "test_indices": validation_indices,
         "save_model": save_model,
     }
 

@@ -75,7 +75,7 @@ def setup_train_x_data(directory: Path, train_data: pd.DataFrame) -> Any:  # noq
     molecule_smiles = train_data["molecule_smiles"].to_numpy(dtype=f'U{train_data["molecule_smiles"].str.len().max()}')
 
     return XData(
-        building_blocks=building_blocks,
+        encoded_rows=building_blocks,
         molecule_smiles=molecule_smiles,
         bb1_smiles=bb1,
         bb2_smiles=bb2,

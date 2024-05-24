@@ -1,5 +1,6 @@
 """File containing functions related to setting up the pipeline."""
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 from epochalyst.pipeline.ensemble import EnsemblePipeline
@@ -37,6 +38,9 @@ def setup_pipeline(cfg: DictConfig, *, is_train: bool = True) -> ModelPipeline |
 
     model_pipeline = instantiate(pipeline_cfg)
     logger.debug(f"Pipeline: \n{model_pipeline}")
+
+    # Make sure tm directory exists
+    Path("tm").mkdir(parents=True, exist_ok=True)
 
     return model_pipeline
 

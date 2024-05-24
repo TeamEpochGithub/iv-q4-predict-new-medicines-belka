@@ -24,7 +24,7 @@ class TrainConfig:
     model: Any
     ensemble: Any
     data_path: str
-    processed_path: str
+    cache_path: str
     scorer: Any
     wandb: WandBConfig
     splitter: Any
