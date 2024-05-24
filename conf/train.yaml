@@ -1,7 +1,9 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gcn_dataset
+  # - model: gcn_dataset
+  # - model: cnn1d_atom_mol_aug
+  - model: bb_reaction
   - wandb: train
 
 data_path: data/shrunken
@@ -13,7 +15,7 @@ scorer:
 splitter:
   _target_: src.splitter.stratified_splitter.StratifiedSplitter
   n_splits: 5
-sample_size: 10_000_000
-sample_split: 0.015
+sample_size: 1_000_000 #_000
+sample_split: -1
 # val_split: true
 allow_multiple_instances: true

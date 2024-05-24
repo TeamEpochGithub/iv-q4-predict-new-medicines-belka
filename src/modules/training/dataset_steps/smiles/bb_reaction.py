@@ -19,7 +19,11 @@ class BBReaction(TrainingBlock):
         y: npt.NDArray[np.uint8],
         **train_args: Any,
     ) -> tuple[npt.NDArray[np.str_], npt.NDArray[np.uint8]]:
-        """Trasform building blocks into the full molecule representation."""
+        """Transform building blocks into the full molecule representation.
+
+        :param x: The building block strings
+        :param y: The labels (ignored)
+        :return: Tuple of product smiles and labels (unchange)"""
         result_molecules = []
 
         for bbs in x:
