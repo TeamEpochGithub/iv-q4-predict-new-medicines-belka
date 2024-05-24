@@ -74,7 +74,7 @@ def bbs_to_molecule(bb1: str, bb2: str, bb3: str) -> str:
     if result is None:
         raise ValueError(f"No molecule was generated from bb1:{bb1}, bb2:{bb2}, bb3:{bb3}")
 
-    return result.MolToSmiles()
+    return Chem.MolToSmiles(result)
 
 
 def boronate_cooh_reactions(result: Chem.Mol, BB2: Chem.Mol, BB3: Chem.Mol) -> Chem.Mol:

@@ -8,6 +8,6 @@ def sanitize_molecule(molecule: Chem.Mol) -> None:
     :param molecule
     """
     try:
-        Chem.Sanitize(molecule)
+        Chem.SanitizeMol(molecule)
     except Chem.MolSanitizeException as e:
         raise ValueError(f"Sanitization of {Chem.MolToSmiles(molecule)} failed") from e
