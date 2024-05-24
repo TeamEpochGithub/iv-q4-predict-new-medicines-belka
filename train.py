@@ -27,9 +27,9 @@ from src.utils.lock import Lock
 from src.utils.logger import logger
 from src.utils.set_torch_seed import set_torch_seed
 
+# Set logging
 warnings.filterwarnings("ignore", category=UserWarning)
-# Makes hydra give full error messages
-os.environ["HYDRA_FULL_ERROR"] = "1"
+os.environ["HYDRA_FULL_ERROR"] = "1"  # Makes hydra give full error messages
 
 # Set up the config store, necessary for type checking of config yaml
 cs = ConfigStore.instance()
@@ -39,11 +39,11 @@ cs.store(name="base_train", node=TrainConfig)
 @hydra.main(version_base=None, config_path="conf", config_name="train")
 def run_train(cfg: DictConfig) -> None:
     """Train a model pipeline with a train-test split. Entry point for Hydra which loads the config file."""
-    # Run the train config with an optional lock
-    optional_lock = Lock if not cfg.allow_multiple_instances else nullcontext
-
     # Install coloredlogs
     coloredlogs.install()
+
+    # Run the train config with an optional lock
+    optional_lock = Lock if not cfg.allow_multiple_instances else nullcontext
 
     with optional_lock():
         run_train_cfg(cfg)
@@ -81,18 +81,21 @@ def run_train_cfg(cfg: DictConfig) -> None:
     validation_indices: npt.NDArray[np.int64]
 
     # Check if the data is cached
-    if not model_pipeline.get_x_cache_exists(cache_args_x) or not model_pipeline.get_y_cache_exists(cache_args_y) or not splitter_cache_path.exists():
+    if (
+        not model_pipeline.get_x_cache_exists(cache_args_x)
+        or not model_pipeline.get_y_cache_exists(cache_args_y)
+        or (cfg.splitter is not None and not splitter_cache_path.exists())
+    ):
         X, y = setup_xy(cfg)
 
     # Split the data into train and test if required
     if cfg.splitter is None:
         logger.info("Training on all data (full).")
-        # train_indices, validation_indices = list(range(len(X))), []
         train_indices, validation_indices = np.arange(len(X)), np.array([])
         fold_idx = -1
     else:
         fold_idx = 0
-        splitter: Splitter = instantiate(cfg.splitter) if cfg.splitter is not None else None
+        splitter: Splitter = instantiate(cfg.splitter)
         if splitter.includes_validation:
             logger.info("Splitting data into train, validation and test sets.")
 
