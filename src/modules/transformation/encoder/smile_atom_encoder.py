@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
+from src.utils.logger import logger
 
 MAX_ENC_SIZE_MOLECULE = 142
 MAX_ENC_SIZE_BB1 = 42
@@ -84,44 +85,25 @@ class SmileAtomEncoder(VerboseTransformationBlock):
         smiles = x.molecule_smiles
 
         if self.convert_molecules:
-            smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_molecules)(smile) for smile in tqdm(smiles, desc="Encoding Molcules Atomise"))
+            smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smiles)(smile, MAX_ENC_SIZE_MOLECULE) for smile in tqdm(smiles, desc="Encoding Molcules Atomise"))
             x.molecule_ecfp = np.stack(smiles_enc)
 
         if self.convert_building_blocks:
-            bb1_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(bb1_encoder)(smile) for smile in tqdm(x.bb1_smiles, desc="Encoding block 1 Atomwise"))
+            bb1_encoding = joblib.Parallel(n_jobs=-1)(
+                joblib.delayed(encode_smiles_bb_1)(smile, MAX_ENC_SIZE_BB1) for smile in tqdm(x.bb1_smiles, desc="Encoding block 1 Atomwise")
+            )
             x.bb1_ecfp = bb1_encoding
 
-            bb2_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_block)(smile, MAX_ENC_SIZE_BB2) for smile in tqdm(x.bb2_smiles, desc="Encoding block 2 Atomwise"))
+            bb2_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smiles)(smile, MAX_ENC_SIZE_BB2) for smile in tqdm(x.bb2_smiles, desc="Encoding block 2 Atomwise"))
             x.bb2_ecfp = bb2_encoding
 
-            bb3_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_block)(smile, MAX_ENC_SIZE_BB3) for smile in tqdm(x.bb3_smiles, desc="Encoding block 3 Atomwise"))
+            bb3_encoding = joblib.Parallel(n_jobs=-1)(joblib.delayed(encode_smiles)(smile, MAX_ENC_SIZE_BB3) for smile in tqdm(x.bb3_smiles, desc="Encoding block 3 Atomwise"))
             x.bb3_ecfp = bb3_encoding
 
         return x
 
 
-def encode_molecules(smile: str) -> npt.NDArray[np.uint8]:
-    """Encode an atom based on ENCODING dictionary.
-
-    :param smile: The smile string
-    :return: Encoded array
-    """
-    x = 0
-    tmp = []
-    while x < len(smile):
-        # Check two first
-        two_chars = smile[x : x + 2]
-        if two_chars in ENCODING:
-            tmp.append(ENCODING[two_chars])
-            x += 2
-        else:
-            tmp.append(ENCODING[smile[x]])
-            x += 1
-    tmp = tmp + [0] * (MAX_ENC_SIZE_MOLECULE - len(tmp))
-    return np.array(tmp).astype(np.uint8)
-
-
-def encode_block(block: str, bb: int) -> npt.NDArray[np.uint8]:
+def encode_smiles(smiles: str, padding: int) -> npt.NDArray[np.uint8]:
     """Encode an atom based on enc dictionary.
 
     :param smile: The smile string
@@ -129,22 +111,25 @@ def encode_block(block: str, bb: int) -> npt.NDArray[np.uint8]:
     """
     x = 0
     tmp = []
-    while x < len(block):
+    while x < len(smiles):
         # Check two first
-        two_chars = block[x : x + 2]
+        two_chars = smiles[x : x + 2]
         if two_chars in ENCODING:
             tmp.append(ENCODING[two_chars])
             x += 2
-        else:
-            tmp.append(ENCODING[block[x]])
+        elif smiles[x] in ENCODING:
+            tmp.append(ENCODING[smiles[x]])
             x += 1
-    tmp = tmp + [0] * (bb - len(tmp))
+        else:
+            logger.info("Can't find " + smiles[x] + " nor " + smiles[x : x + 2] + ". Skipping...")
+            x += 1
+    tmp = tmp + [0] * (padding - len(tmp))
     return np.array(tmp).astype(np.uint8)
 
 
-def bb1_encoder(block: str) -> npt.NDArray[np.uint8]:
+def encode_smiles_bb_1(block: str, padding: int) -> npt.NDArray[np.uint8]:
     """Encode an atom based on enc dictionary."""
-    return encode_block(remove_substructures(block), MAX_ENC_SIZE_BB1)
+    return encode_smiles(remove_substructures(block), padding)
 
 
 def remove_substructures(block: str) -> str:

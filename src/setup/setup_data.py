@@ -64,18 +64,18 @@ def setup_train_x_data(directory: Path, train_data: pd.DataFrame) -> Any:  # noq
         BBs_dict_reverse_3 = pickle.load(f3)  # noqa: S301 (Security issue)
 
     # Turn to numpy array
-    bb1 = np.array(list(BBs_dict_reverse_1.values()))
+    bb1 = np.array(list(BBs_dict_reverse_1.values()), dtype=f"U{max([len(i) for i in BBs_dict_reverse_1.values()])}")
     del BBs_dict_reverse_1
-    bb2 = np.array(list(BBs_dict_reverse_2.values()))
+    bb2 = np.array(list(BBs_dict_reverse_2.values()), dtype=f"U{max([len(i) for i in BBs_dict_reverse_2.values()])}")
     del BBs_dict_reverse_2
-    bb3 = np.array(list(BBs_dict_reverse_3.values()))
+    bb3 = np.array(list(BBs_dict_reverse_3.values()), dtype=f"U{max([len(i) for i in BBs_dict_reverse_3.values()])}")
     del BBs_dict_reverse_3
 
-    smile_encoding = train_data[["buildingblock1_smiles", "buildingblock2_smiles", "buildingblock3_smiles"]].to_numpy(dtype=np.int16)
-    molecule_smiles = train_data["molecule_smiles"].to_numpy()
+    building_blocks = train_data[["buildingblock1_smiles", "buildingblock2_smiles", "buildingblock3_smiles"]].to_numpy(dtype=np.int16)
+    molecule_smiles = train_data["molecule_smiles"].to_numpy(dtype=f'U{train_data["molecule_smiles"].str.len().max()}')
 
     return XData(
-        smile_encoding,
+        building_blocks=building_blocks,
         molecule_smiles=molecule_smiles,
         bb1_smiles=bb1,
         bb2_smiles=bb2,
