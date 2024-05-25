@@ -25,13 +25,9 @@ class BBReaction(TrainingBlock):
         :param y: The labels (ignored)
         :return: Tuple of product smiles and labels (unchange)
         """
-        result_molecules = []
+        result_molecules = np.array([bbs_to_molecule(bb[0], bb[1], bb[2]) for bb in x])
 
-        for bbs in x:
-            mol = bbs_to_molecule(bbs[0], bbs[1], bbs[2])
-            result_molecules.append(mol)
-
-        return np.array(result_molecules), y
+        return result_molecules, y
 
     @property
     def is_augmentation(self) -> bool:
