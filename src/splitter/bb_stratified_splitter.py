@@ -24,6 +24,7 @@ class BBStratifiedSplitter(Splitter):
     """
 
     n_splits: int = 5
+    test_size: float = 0.2
 
     def split(
         self,
@@ -40,30 +41,30 @@ class BBStratifiedSplitter(Splitter):
         :param y: Labels
         :return: List of indices
         """
-        splits = []
-
-        logger.debug(f"Starting splitting with size:{len(y)}")
-
         # Load the splits if they exist
         if cache_path.exists():
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
                 splits, train_validation_indices, test_indices = pickle.load(f)  # noqa: S301
+                logger.info(f"Train/Validation/Test Set Size: {len(splits[0][0]):,} / {len(splits[0][1]):,} / {len(test_indices):,}")
                 return splits, train_validation_indices, test_indices
 
-        # Creating a Validation set
-        logger.info("Creating a validation set")
-        bb_splitter = BBSplitter(n_splits=self.n_splits, bb_to_split_by=[1, 1, 1])
+        # Creating a Test set
+        logger.info("Creating a test set")
+        bb_splitter = BBSplitter(n_splits=(int(1 / self.test_size)), bb_to_split_by=[1, 1, 1])
         train_validation_indices, test_indices = bb_splitter.split(X, y)[0]
-        logger.info(f"Train/Val: {len(train_validation_indices):,} / {len(test_indices):,}")
+        logger.info(f"Train/Validation/Test Set Size: {len(splits[0][0]):,} / {len(splits[0][1]):,} / {len(test_indices):,}")
 
-        # Splitting the training set
-        logger.info("Splitting the training set into Train/Test")
+        # Splitting the rest into train and validation sets
+        logger.info("Splitting the training set into Train/Validation sets")
+        splits = []
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
         kf_splits = kf.split(X.encoded_rows[train_validation_indices], y[train_validation_indices])
-        for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
-            splits.append((train_index, test_index))
-        logger.debug(f"Finished splitting with size:{len(y)}")
+        for train_indices, test_indices in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
+            # Reindex the train and test indices
+            train_indices_reindexed = train_validation_indices[train_indices]
+            test_indices_reindexed = train_validation_indices[test_indices]
+            splits.append((train_indices_reindexed, test_indices_reindexed))
 
         # Pickle the splits
         logger.info(f"Saving splits to {cache_path}")
