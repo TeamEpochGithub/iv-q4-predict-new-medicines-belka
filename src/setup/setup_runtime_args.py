@@ -1,4 +1,5 @@
 """File containing functions related to setting up runtime arguments for pipelines."""
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -18,10 +19,10 @@ def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_siz
     :return: Path to the cache
     """
     sample_size_pretty = f"{sample_size:_}"
-    sample_split_pretty = f"{sample_split!s}" if sample_split != -1 else "full"
-    splitter_cfg_hash = str(splitter_cfg.__hash__())[:5]
+    sample_split_pretty = f"_{sample_split!s}" if sample_split != -1 else ""
+    splitter_cfg_hash = str(hashlib.sha256(str(splitter_cfg).encode("utf-8")).hexdigest())[:5]
 
-    cache_path = Path(root_cache_path) / f"{sample_size_pretty}_{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
+    cache_path = Path(root_cache_path) / f"{sample_size_pretty}{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
     cache_path.mkdir(parents=True, exist_ok=True)
 
     return cache_path
@@ -68,7 +69,7 @@ def setup_train_args(
     :param pipeline: Pipeline to receive arguments
     :param cache_args: Caching arguments
     :param train_indices: Train indices
-    :param test_indices: Test indices
+    :param validation_indices: Validation indices
     :param fold: Fold number if it exists
     :param save_model: Whether to save the model to File
     :param save_model_preds: Whether to save the model predictions
