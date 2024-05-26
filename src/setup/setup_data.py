@@ -12,6 +12,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import polars as pl
+from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
 
 from src.typing.xdata import XData
@@ -118,6 +119,50 @@ def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
     return X, y
 
 
+class GetXCache:
+    """Context manager to get X cache."""
+
+    def __init__(self, model_pipeline: ModelPipeline, cache_args_x: dict[str, Any], X: XData | None = None) -> None:
+        """Initialize the context manager."""
+        self.model_pipeline = model_pipeline
+        self.cache_args_x = cache_args_x
+        self.X = X
+
+    def __enter__(self) -> XData:
+        """Get X cache."""
+        if self.X is not None:
+            return self.X
+
+        self.X = self.model_pipeline.x_sys._get_cache(self.model_pipeline.x_sys.get_hash(), self.cache_args_x)  # noqa: SLF001
+        return self.X
+
+    def __exit__(self, *args: object) -> None:
+        """Delete X cache."""
+        del self.X
+
+
+class GetYCache:
+    """Context manager to get X cache."""
+
+    def __init__(self, model_pipeline: ModelPipeline, cache_args_y: dict[str, Any], y: npt.NDArray[np.int_] | None = None) -> None:
+        """Initialize the context manager."""
+        self.model_pipeline = model_pipeline
+        self.cache_args_y = cache_args_y
+        self.y = y
+
+    def __enter__(self) -> npt.NDArray[np.int_]:
+        """Get y cache."""
+        if self.y is not None:
+            return self.y
+
+        self.y = self.model_pipeline.y_sys._get_cache(self.model_pipeline.y_sys.get_hash(), self.cache_args_y)  # noqa: SLF001
+        return self.y
+
+    def __exit__(self, *args: object) -> None:
+        """Delete y cache."""
+        del self.y
+
+
 def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any:  # noqa: ANN401
     """Create data for inference with pipeline.
 
@@ -149,11 +194,3 @@ def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any: 
         bb2_smiles=bb2,
         bb3_smiles=bb3,
     )
-
-
-def setup_splitter_data() -> Any:  # noqa: ANN401
-    """Create data for splitter.
-
-    :return: Splitter data
-    """
-    raise NotImplementedError("Setup splitter data is competition specific, implement within competition repository")
