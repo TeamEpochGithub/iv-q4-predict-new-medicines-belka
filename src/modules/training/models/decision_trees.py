@@ -93,7 +93,7 @@ class DecisionTrees(VerboseTrainingBlock):
         # Get the predictions
         y_pred_proba = self.model.predict_proba(X_test)
         if self.multi_output:
-            return y_pred_proba.flatten(), y[test_indices].flatten()
+            return y_pred_proba, y[test_indices]
         return y_pred_proba[:, 1], y[test_indices]
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:

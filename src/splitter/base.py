@@ -14,8 +14,8 @@ class Splitter:
     @abstractmethod
     def split(
         self,
-        X: XData,
-        y: npt.NDArray[np.int8],
+        X: XData | None,
+        y: npt.NDArray[np.int8] | None,
         cache_path: Path,
     ) -> (
         list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]

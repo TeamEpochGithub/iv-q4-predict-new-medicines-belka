@@ -58,7 +58,7 @@ def setup_train_args(
     cache_args_y: dict[str, Any],
     cache_args_train: dict[str, Any],
     train_indices: npt.NDArray[np.int_],
-    validation_indices: npt.NDArray[np.int_],
+    validation_indices: npt.NDArray[np.int_] | None,
     fold: int = -1,
     *,
     save_model: bool = False,
@@ -75,6 +75,9 @@ def setup_train_args(
     :param save_model_preds: Whether to save the model predictions
     :return: Dictionary containing arguments
     """
+    if validation_indices is None:
+        validation_indices = np.array([])
+
     x_sys = {
         "cache_args": cache_args_x,
     }

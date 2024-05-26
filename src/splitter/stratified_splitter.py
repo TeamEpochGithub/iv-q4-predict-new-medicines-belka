@@ -27,8 +27,8 @@ class StratifiedSplitter(Splitter):
 
     def split(
         self,
-        X: XData,
-        y: npt.NDArray[np.int8],
+        X: XData | None,
+        y: npt.NDArray[np.int8] | None,
         cache_path: Path,
     ) -> (
         list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
@@ -40,18 +40,19 @@ class StratifiedSplitter(Splitter):
         :param y: Labels
         :return: List of indices
         """
-        splits = []
-        logger.debug(f"Starting splitting with size:{len(y)}")
-
         # Load the splits if they exist
         if cache_path.exists():
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
                 return pickle.load(f)  # noqa: S301
 
-        kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
+        if X is None or y is None:
+            raise TypeError("X or y cannot be None if no cache is available")
 
-        kf_splits = kf.split(X.encoded_rows, y)
+        splits = []
+        logger.debug(f"Starting splitting with size:{len(y)}")
+
+        kf_splits = MultilabelStratifiedKFold(n_splits=self.n_splits).split(X.encoded_rows, y)
         for train_index, test_index in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             splits.append((train_index, test_index))
 

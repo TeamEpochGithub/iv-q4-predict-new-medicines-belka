@@ -26,8 +26,8 @@ class BBSplitter(Splitter):
 
     def split(
         self,
-        X: XData,
-        y: npt.NDArray[np.int8],
+        X: XData | None,
+        y: npt.NDArray[np.int8] | None,
         cache_path: Path | None = None,
     ) -> (
         list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
@@ -44,6 +44,9 @@ class BBSplitter(Splitter):
             with open(cache_path, "rb") as f:
                 logger.info(f"Loading splits from {cache_path}")
                 return pickle.load(f)  # noqa: S301
+
+        if X is None or y is None:
+            raise TypeError("X or y cannot be None if no cache is available")
 
         bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles is not None else [0]
         bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles is not None else [0]

@@ -25,8 +25,8 @@ class NormalSplitter(Splitter):
 
     def split(
         self,
-        X: XData,
-        y: npt.NDArray[np.int8],
+        X: XData | None,
+        y: npt.NDArray[np.int8] | None,
         _cache_path: Path,
     ) -> (
         list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
@@ -38,6 +38,9 @@ class NormalSplitter(Splitter):
         :param y: Labels
         :return: List of indices
         """
+        if X is None or y is None:
+            raise TypeError("X or y cannot be None - Caching not implemented for NormalSplitter")
+
         splits = []
         logger.debug(f"Starting splitting with size:{len(y)}")
         kf = KFold(n_splits=self.n_splits, random_state=None, shuffle=False)
