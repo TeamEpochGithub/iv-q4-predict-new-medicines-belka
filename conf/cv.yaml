@@ -1,16 +1,25 @@
 defaults:
   - base_cv
   - hydra/logging
-  - model: ??? # Add models or ensembles
+  - model: cnn1d_atom_mol_aug_2
   - wandb: train
 
-raw_path: data/shrunken
-processed_path: data/processed
+data_path: data/shrunken
+cache_path: data/cache
 
 scorer:
-  _target_: ??? # Add scorer
+  _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
+  name: MAP
+
 splitter:
-  _target_: src.splitter.bb_splitter.BBSplitter
+  # _target_: src.splitter.stratified_splitter.StratifiedSplitter
+  # n_splits: 5
+  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   n_splits: 5
+  test_size: 0.2
+
+sample_size: 10_000_000
+sample_split: 0.05
+
 allow_multiple_instances: true
 save_folds: true
