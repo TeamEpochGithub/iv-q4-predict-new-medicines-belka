@@ -14,11 +14,12 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.graph_trainer.GraphTrainer
-      model_name: GCN
+      model_name: GCNEdges
       model:
-        _target_: src.modules.training.models.gcn.GCNModel
+        _target_: src.modules.training.models.gcn_edge_features.GCNWithEdgeFeatures
         n_classes: 3
         num_node_features: 4
+        num_edge_features: 2
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -27,8 +28,8 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
         lr: 0.001
-      epochs: 100
-      batch_size: 128
+      epochs: 10
+      batch_size: 256
       patience: 3
       scheduler:
         _target_: functools.partial

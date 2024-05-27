@@ -97,14 +97,14 @@ class GraphTrainer(TorchTrainer, Logger):
         :param test_dataset: The validation dataset.
         :return: The training and validation dataloaders.
         """
-        train_loader = DataLoader(
+        train_loader = GeometricDataLoader(
             train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
             collate_fn=(collate_fn if hasattr(train_dataset, "__getitems__") else None),  # type: ignore[arg-type]
             **self.dataloader_args,
         )
-        test_loader = DataLoader(
+        test_loader = GeometricDataLoader(
             test_dataset,
             batch_size=self.batch_size,
             shuffle=False,
@@ -126,7 +126,7 @@ class GraphTrainer(TorchTrainer, Logger):
         self.model.eval()
         predictions = []
         # Create a new dataloader from the dataset of the input dataloader with collate_fn
-        loader = DataLoader(
+        loader = GeometricDataLoader(
             loader.dataset,
             batch_size=loader.batch_size,
             shuffle=False,
