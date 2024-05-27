@@ -19,7 +19,7 @@ train_sys:
         _target_: src.modules.training.models.gcn_edge_features.GCNWithEdgeFeatures
         n_classes: 3
         num_node_features: 4
-        num_edge_features: 2
+        num_edge_features: 8
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -29,7 +29,7 @@ train_sys:
             path: torch.optim.AdamW
         lr: 0.001
       epochs: 10
-      batch_size: 256
+      batch_size: 512
       patience: 3
       scheduler:
         _target_: functools.partial
@@ -43,10 +43,10 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      # dataloader_args:
-      #   num_workers: 8
-      #   prefetch_factor: 2
-      #   persistent_workers: false
+      dataloader_args:
+        num_workers: 24
+        prefetch_factor: 3
+        persistent_workers: false
 
 pred_sys:
   steps:
