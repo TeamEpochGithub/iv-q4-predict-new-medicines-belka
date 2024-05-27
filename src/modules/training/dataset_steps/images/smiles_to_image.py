@@ -31,8 +31,7 @@ class SmilesToImage(TrainingBlock):
         :return: Image
         """
         images = [self.smiles_to_image(smiles, self.img_size) for smiles in X]
-
-        return np.array(images), y
+        return np.array(images).transpose(0, 3, 1, 2), y
 
     @staticmethod
     def smiles_to_image(smiles: str, img_size: int) -> npt.NDArray[np.float32]:
