@@ -14,7 +14,7 @@ train_sys:
       model_name: TIMM
       model:
         _target_: epochalyst.pipeline.model.training.models.timm.Timm
-        model_name: vgg11
+        model_name: efficientnet_b0
         in_channels: 3
         out_channels: 3
       criterion:
