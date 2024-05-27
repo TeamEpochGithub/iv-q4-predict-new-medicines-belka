@@ -19,7 +19,7 @@ class CNN1D(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(self, n_classes: int, num_embeddings: int = 37, *, embedding: bool = True) -> None:
+    def __init__(self, n_classes: int, num_embeddings: int = 41, hidden_dim: int = 256, filters: int = 128, *, embedding: bool = True) -> None:
         """Initialize the CNN1D model.
 
         :param in_channels: The number of input channels.
@@ -29,8 +29,7 @@ class CNN1D(nn.Module):
         :param verbose: Whether to print out the shape of the data at each step.
         """
         super(CNN1D, self).__init__()  # noqa: UP008
-        NUM_FILTERS = 32
-        hidden_dim = 128
+        NUM_FILTERS = filters
         self.hidden_dim = hidden_dim
 
         # Embedding layer
