@@ -1,7 +1,9 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: transformer_encoder
+  # - model: gcn_dataset
+  # - model: cnn1d_atom_mol_aug
+  - model: bb_reaction
   - wandb: train
 
 data_path: data/shrunken
