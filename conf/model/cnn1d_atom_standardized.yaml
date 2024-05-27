@@ -31,8 +31,8 @@ train_sys:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          # - _target_: src.modules.training.dataset_steps.smiles.smiles_standardizer.SmilesStandardizer
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_standardizer.SmilesStandardizer
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
       scheduler:
         _target_: functools.partial
         _args_:
