@@ -1,22 +1,24 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: gcn_dataset
-  # - model: cnn1d_atom_mol_aug
-  - model: bb_reaction
+  - model: xgboost_ecfp
   - wandb: train
 
 data_path: data/shrunken
-processed_path: data/processed
+cache_path: data/cache
 
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
+
 splitter:
-  # _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
-  _target_: src.splitter.stratified_splitter.StratifiedSplitter
+  # _target_: src.splitter.stratified_splitter.StratifiedSplitter
+  # n_splits: 5
+  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   n_splits: 5
-sample_size: 30_000_000
+  test_size: 0.2
+
+sample_size: 100_000
 sample_split: 0.015
-# val_split: true
+
 allow_multiple_instances: true

@@ -41,7 +41,7 @@ class OneHotProteinBB(VerboseTrainingBlock):
         """
         return self.add_protein_to_xdata(x)
 
-    def add_protein_to_xdata(self, x: XData) -> XData:
+    def add_protein_to_xdata(self, X: XData) -> XData:
         """Add protein to XData.
 
         :param x: XData
@@ -52,15 +52,11 @@ class OneHotProteinBB(VerboseTrainingBlock):
         sEH = np.array([0, 0, 1])
         protein_onehot = [BRD4, HSA, sEH]
 
-        x.retrieval = DataRetrieval.ECFP_BB
+        X.retrieval = DataRetrieval.ECFP_BB
 
         result = np.array(
-            [
-                np.concatenate((protein, x[i][0], x[i][1], x[i][2]))
-                for i in tqdm(range(len(x.building_blocks)), desc="Concatenating Protein to building_blocks")
-                for protein in protein_onehot
-            ],
+            [np.concatenate((protein, X[i][0], X[i][1], X[i][2])) for i in tqdm(range(len(X)), desc="Concatenating Protein to building_blocks") for protein in protein_onehot],
         )
-        x.molecule_ecfp = result
+        X.molecule_ecfp = result
 
-        return x
+        return X

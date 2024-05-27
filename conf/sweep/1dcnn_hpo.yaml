@@ -1,0 +1,51 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+project: detect-medicine
+program: cv.py
+name: 1DCNN HPO CV
+metric:
+  name: Combined Score
+  goal: maximize
+parameters:
+
+  model.train_sys.steps.0.dataset.steps.0.p:
+    min: 0.0
+    max: 1.0
+
+  model.train_sys.steps.0.dataset.steps.2.p:
+    min: 0.0
+    max: 1.0
+
+  model.train_sys.steps.0.batch_size:
+    values:
+      - 2048
+      - 4096
+      - 8192
+
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    min: 1e-04
+    max: 0.01
+
+  model.train_sys.steps.0.scheduler.t_initial:
+    values:
+      - 40
+      - 60
+      - 80
+
+  # model.train_sys.steps.0.scheduler.warmup_t:
+  #   min: 1
+  #   max: 5
+
+  # model.train_sys.steps.0.scheduler.warmup_lr_init:
+  #   distribution: log_uniform_values
+  #   max: 1e-05
+  #   min: 1e-09
+
+  # model.train_sys.steps.0.optimizer._args_.0.path:
+  #   values:
+  #     - torch.optim.Adam
+  #     - torch.optim.AdamW

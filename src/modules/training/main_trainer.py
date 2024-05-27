@@ -89,7 +89,7 @@ class MainTrainer(TorchTrainer, Logger):
         """
         self._fold = train_args.get("fold", -1)
         y_pred, y = super().custom_train(x, y, **train_args)
-        return y_pred.flatten(), y.flatten()
+        return y_pred, y
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predict using the model.
@@ -97,7 +97,7 @@ class MainTrainer(TorchTrainer, Logger):
         :param x: Input data
         :return: predictions
         """
-        return super().custom_predict(x).flatten()
+        return super().custom_predict(x)
 
     def save_model_to_external(self) -> None:
         """Save the model to external storage."""
