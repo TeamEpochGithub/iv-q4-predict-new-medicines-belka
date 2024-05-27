@@ -25,11 +25,11 @@ train_sys:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.Adam
+            path: torch.optim.AdamW
         lr: 0.001
-      epochs: 10
-      batch_size: 256
-      patience: 1
+      epochs: 100
+      batch_size: 2048
+      patience: 3
       scheduler:
         _target_: functools.partial
         _args_:
@@ -42,10 +42,10 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      dataloader_args:
-        num_workers: 8
-        prefetch_factor: 2
-        persistent_workers: false
+      # dataloader_args:
+      #   num_workers: 8
+      #   prefetch_factor: 2
+      #   persistent_workers: false
 
 pred_sys:
   steps:

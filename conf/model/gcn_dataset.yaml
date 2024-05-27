@@ -3,32 +3,35 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoder.smile_character_vector_encoder.SmileCharacterVectorEncoder
+  steps: []
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    # - _target_: src.modules.training.one_hot_protein.OneHotProtein
-    - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: GCN_DATASET
       model:
-        _target_: src.modules.training.models.cnn1d.CNN1D
+        _target_: src.modules.training.models.gcn.GCNModel
         n_classes: 3
-        embedding: false
+        num_node_features: 4
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.Adam
+            path: torch.optim.AdamW
         lr: 0.001
       epochs: 10
-      batch_size: 128
-      patience: 1
+      batch_size: 2048
+      patience: 3
+      dataset:
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
       scheduler:
         _target_: functools.partial
         _args_:
@@ -39,8 +42,12 @@ train_sys:
         cycle_decay: 1
         cycle_limit: 1
         warmup_t: 1
-        warmup_lr_init: 1e-5
+        warmup_lr_init: 1e-3
       n_folds: 5
+      dataloader_args:
+        num_workers: 24
+        prefetch_factor: 3
+        persistent_workers: false
 
 pred_sys:
   steps:
