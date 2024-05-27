@@ -19,7 +19,7 @@ class CNN1D(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(self, n_classes: int, *, embedding: bool = True) -> None:
+    def __init__(self, n_classes: int, num_embeddings: int = 37, *, embedding: bool = True) -> None:
         """Initialize the CNN1D model.
 
         :param in_channels: The number of input channels.
@@ -35,7 +35,7 @@ class CNN1D(nn.Module):
 
         # Embedding layer
         if embedding:
-            self._embedding = nn.Embedding(num_embeddings=41, embedding_dim=hidden_dim, padding_idx=0)
+            self._embedding = nn.Embedding(num_embeddings=num_embeddings, embedding_dim=hidden_dim, padding_idx=0)
         else:
             self._embedding = nn.Linear(4, hidden_dim)
 
