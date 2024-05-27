@@ -140,6 +140,6 @@ class BBSplitter(Splitter):
         return X_train, X_test
 
     @property
-    def includes_validation(self) -> bool:
-        """Return if the splitter includes validation."""
+    def includes_test(self) -> bool:
+        """Check if the splitter also generates a test set."""
         return False

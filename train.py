@@ -92,7 +92,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     else:
         fold_idx = 0
         splitter: Splitter = instantiate(cfg.splitter)
-        if splitter.includes_validation:
+        if splitter.includes_test:
             logger.info("Splitting data into train, validation and test sets.")
             splits: list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
             splits, _, test_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)  # type: ignore[assignment, misc]

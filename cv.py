@@ -37,7 +37,7 @@ cs.store(name="base_cv", node=CVConfig)
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="cv")
-def run_cv(cfg: DictConfig) -> None:  # TODO(Jeffrey): Use CVConfig instead of DictConfig
+def run_cv(cfg: DictConfig) -> None:
     """Do cv on a model pipeline with K fold split. Entry point for Hydra which loads the config file."""
     # Install coloredlogs
     coloredlogs.install()
@@ -88,7 +88,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     if cfg.splitter is None:
         raise ValueError("Splitter is required for cross validation.")
     splitter: Splitter = instantiate(cfg.splitter)
-    if splitter.includes_validation:
+    if splitter.includes_test:
         logger.info("Splitting data into train, validation and test sets.")
         splits, train_validation_indices, test_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)  # type: ignore[assignment]
     else:
