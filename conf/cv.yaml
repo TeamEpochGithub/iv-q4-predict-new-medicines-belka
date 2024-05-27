@@ -19,7 +19,7 @@ splitter:
   test_size: 0.2
 
 sample_size: 10_000_000
-sample_split: 0.05
+sample_split: 0.015
 
 allow_multiple_instances: true
 save_folds: true
