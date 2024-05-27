@@ -19,7 +19,7 @@ class CNN1D(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(self, n_classes: int, *, embedding: bool = True, num_embeddings: int = 37) -> None:
+    def __init__(self, n_classes: int, num_embeddings: int = 37, *, embedding: bool = True) -> None:
         """Initialize the CNN1D model.
 
         :param in_channels: The number of input channels.
