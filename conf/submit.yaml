@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: tokenize_gru
+  - model: transformer_tokenize
 
 # Use this when uploading to Kaggle
 

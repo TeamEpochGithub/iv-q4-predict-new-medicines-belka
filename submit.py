@@ -72,9 +72,9 @@ def run_submit(cfg: DictConfig) -> None:
     predictions_df["is_HSA"] = inference_data["is_HSA"]
     predictions_df["is_sEH"] = inference_data["is_sEH"]
 
-    if cfg.replace_predictions != "none":
-        logger.info(f"Replace {cfg.replace_predictions} predictions with 0")
-        predictions_df = replace_predictions(directory, X, predictions_df, cfg.replace_predictions)
+    # if cfg.replace_predictions != "none":
+    #     logger.info(f"Replace {cfg.replace_predictions} predictions with 0")
+    #     predictions_df = replace_predictions(directory, X, predictions_df, cfg.replace_predictions)
 
     # Map predictions to ids from test data
     original_test = pd.read_parquet("data/raw/test.parquet")

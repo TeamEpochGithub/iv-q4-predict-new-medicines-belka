@@ -31,11 +31,11 @@ class SegmentMolecule(VerboseTransformationBlock):
         sequences = []
         for smile in smiles:
             # remove the branches from the smile
-            new_smile = smile.replace("(", "").replace(")", "")
+            # new_smile = smile.replace("(", "").replace(")", "")
 
             # Extract n-grams from the sequence
-            length = len(new_smile) - window_size + 1
-            sequence = [" ".join(smile[i : i + window_size]) for i in range(length)]
+            length = len(smile) - window_size + 1
+            sequence = [" ".join(smile[i: i + window_size]) for i in range(length)]
 
             # Pad the sequence with special token
             sequences.append(sequence + ["PAD"] * (padding_size - len(sequence)))
@@ -72,8 +72,8 @@ class SegmentMolecule(VerboseTransformationBlock):
             raise ValueError("There is no SMILE information for the molecules")
 
         # Perform the convolutional operation on each block
-        data.bb1_smiles = self.parallel_segment(data.bb1_smiles, 60)
-        data.bb2_smiles = self.parallel_segment(data.bb2_smiles, 40)
-        data.bb3_smiles = self.parallel_segment(data.bb3_smiles, 50)
+        data.bb1_smiles = self.parallel_segment(data.bb1_smiles, 70)
+        data.bb2_smiles = self.parallel_segment(data.bb2_smiles, 50)
+        data.bb3_smiles = self.parallel_segment(data.bb3_smiles, 60)
 
         return data
