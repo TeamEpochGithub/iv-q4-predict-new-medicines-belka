@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d_atom_mol_aug_2
+  - model: xgboost_ecfp
   - wandb: train
 
 data_path: data/shrunken
@@ -12,12 +12,13 @@ scorer:
   name: MAP
 
 splitter:
-  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   # _target_: src.splitter.stratified_splitter.StratifiedSplitter
+  # n_splits: 5
+  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   n_splits: 5
   test_size: 0.2
 
-sample_size: 10_000_000
+sample_size: 100_000
 sample_split: 0.015
 
 allow_multiple_instances: true

@@ -114,15 +114,19 @@ def run_train_cfg(cfg: DictConfig) -> None:
         fold=fold_idx,
     )
 
-    # Train Model
+    # Train Model and make predictions on the validation set
     validation_predictions, _ = model_pipeline.train(X, y, **train_args)
 
-    # Score the predictions
-    with GetXCache(model_pipeline, cache_args_x, X) as X, GetYCache(model_pipeline, cache_args_y, y) as y:
+    # Make predictions on the test set if it exists
+    test_predictions = None
+    with GetXCache(model_pipeline, cache_args_x, X) as X:
         if test_indices is not None:
             X_sliced = slice_copy(X, test_indices)
             test_predictions = model_pipeline.predict(X_sliced)
             del X_sliced
+
+    # Score the predictions
+    with GetYCache(model_pipeline, cache_args_y, y) as y:
         scoring(
             y=y,
             validation_predictions=validation_predictions,

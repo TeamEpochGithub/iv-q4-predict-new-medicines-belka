@@ -56,7 +56,6 @@ class BBStratifiedSplitter(Splitter):
         logger.info("Creating a test set")
         bb_splitter = BBSplitter(n_splits=(int(1 / self.test_size)), bb_to_split_by=[1, 1, 1])
         train_validation_indices, test_indices = bb_splitter.split(X, y)[0]
-        logger.info(f"Train/Validation/Test Set Size: {len(splits[0][0]):,} / {len(splits[0][1]):,} / {len(test_indices):,}")
 
         # Splitting the rest into train and validation sets
         logger.info("Splitting the training set into Train/Validation sets")
@@ -68,6 +67,8 @@ class BBStratifiedSplitter(Splitter):
             train_indices_reindexed = train_validation_indices[train_indices]
             test_indices_reindexed = train_validation_indices[test_indices]
             splits.append((train_indices_reindexed, test_indices_reindexed))
+
+        logger.info(f"Train/Validation/Test Set Size: {len(splits[0][0]):,} / {len(splits[0][1]):,} / {len(test_indices):,}")
 
         # Pickle the splits
         logger.info(f"Saving splits to {cache_path}")
