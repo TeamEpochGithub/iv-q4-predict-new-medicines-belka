@@ -202,7 +202,8 @@ def run_fold(
     if test_indices is not None:
         with GetXCache(model_pipeline, cache_args_x, X) as X, GetYCache(model_pipeline, cache_args_y, y) as y:
             X_sliced = slice_copy(X, test_indices)
-            test_predictions = model_pipeline.predict(X_sliced)
+            prediction_args = {"train_sys": {"MainTrainer": {"use_single_model": True}}}
+            test_predictions = model_pipeline.predict(X_sliced, **prediction_args)
             test_score = instantiate(cfg.scorer)(y[test_indices], test_predictions)
             combined_score = 0.5 * validation_score + 0.5 * test_score
             del X_sliced

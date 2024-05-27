@@ -18,8 +18,7 @@ class SubmitConfig:
     model: Any
     ensemble: Any
     post_ensemble: Any
+    submission_start_id: int
     data_path: str
     submission_path: str
-    processed_path: str
-    result_path: str
     replace_predictions: str

@@ -91,13 +91,14 @@ class MainTrainer(TorchTrainer, Logger):
         y_pred, y = super().custom_train(x, y, **train_args)
         return y_pred, y
 
-    def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
+    def custom_predict(self, x: XData, **pred_args: Any) -> npt.NDArray[np.float64]:
         """Predict using the model.
 
         :param x: Input data
+        :param pred_args: Prediction arguments
         :return: predictions
         """
-        return super().custom_predict(x)
+        return super().custom_predict(x, **pred_args)
 
     def save_model_to_external(self) -> None:
         """Save the model to external storage."""

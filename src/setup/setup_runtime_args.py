@@ -124,7 +124,7 @@ def setup_train_args(
     return train_args
 
 
-def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict[str, Any]) -> dict[str, Any]:
+def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict[str, Any] | None = None) -> dict[str, Any]:
     """Set train arguments for pipeline.
 
     :param pipeline: Pipeline to receive arguments
@@ -140,9 +140,10 @@ def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict
     # }
     pred_args: dict[str, Any] = {}
 
-    pred_args["x_sys"] = {
-        "cache_args": cache_args,
-    }
+    if cache_args is not None:
+        pred_args["x_sys"] = {
+            "cache_args": cache_args,
+        }
 
     if isinstance(pipeline, EnsemblePipeline):
         pred_args = {
