@@ -9,13 +9,14 @@ import numpy.typing as npt
 from src.typing.xdata import XData
 from src.utils.logger import logger
 
+from .base import Splitter
+
 
 @dataclass
-class BBSplitter:
+class BBSplitter(Splitter):
     """Class to split dataset by building blocks.
 
     :param n_splits: Number of splits
-    :param indices_for_flattened_data: If data is flattened to per protein, indices should be processed
     :param bb_to_split_by: Building blocks to split by
     """
 
@@ -23,8 +24,16 @@ class BBSplitter:
     indices_for_flattened_data: bool = False
     bb_to_split_by: list[int] = field(default_factory=lambda: [1, 1, 1])
 
-    def split(self, X: XData, y: npt.NDArray[np.int8], cache_path: Path | None = None) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
-        """Split X and y into train and test indices.
+    def split(
+        self,
+        X: XData | None,
+        y: npt.NDArray[np.int8] | None,
+        cache_path: Path | None = None,
+    ) -> (
+        list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
+        | tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]
+    ):
+        """Split X and y into train and validation sets.
 
         :param X: The Xdata
         :param y: Labels
@@ -36,16 +45,19 @@ class BBSplitter:
                 logger.info(f"Loading splits from {cache_path}")
                 return pickle.load(f)  # noqa: S301
 
+        if X is None or y is None:
+            raise TypeError("X or y cannot be None if no cache is available")
+
         bb1_values = range(len(X.bb1_smiles)) if X.bb1_smiles is not None else [0]
         bb2_values = range(len(X.bb2_smiles)) if X.bb2_smiles is not None else [0]
         bb3_values = range(len(X.bb3_smiles)) if X.bb3_smiles is not None else [0]
 
-        if len(X.building_blocks) != len(y):
+        if len(X.encoded_rows) != len(y):
             raise ValueError("X is not equal to y")
 
         # Split the data into n_splits
         # Create splits where bb1_values are divided into n_splits, bb2_values are divided into n_splits, and bb3_values are divided into n_splits
-        # Train split would have all the values of bb1, bb2, and bb3 and the test split would have all the other values of bb1, bb2, and bb3
+        # Train split would have all the values of bb1, bb2, and bb3 and the validation split would have all the other values of bb1, bb2, and bb3
         bb1_values_split = np.array_split(bb1_values, self.n_splits)
         bb2_values_split = np.array_split(bb2_values, self.n_splits)
         bb3_values_split = np.array_split(bb3_values, self.n_splits)
@@ -105,13 +117,13 @@ class BBSplitter:
         :return: X_train, X_test
         """
         # Train split would have all the values of bb1, bb2, and bb3 and the test split would have all the other values of bb1, bb2, and bb3
-        train_bb1_bool = np.isin(X.building_blocks[:, 0], split_bb1_values)
+        train_bb1_bool = np.isin(X.encoded_rows[:, 0], split_bb1_values)
         if self.bb_to_split_by[0] == 0:
             train_bb1_bool = train_bb1_bool & False
-        train_bb2_bool = np.isin(X.building_blocks[:, 1], split_bb2_values)
+        train_bb2_bool = np.isin(X.encoded_rows[:, 1], split_bb2_values)
         if self.bb_to_split_by[1] == 0:
             train_bb2_bool = train_bb2_bool & False
-        train_bb3_bool = np.isin(X.building_blocks[:, 2], split_bb3_values)
+        train_bb3_bool = np.isin(X.encoded_rows[:, 2], split_bb3_values)
         if self.bb_to_split_by[2] == 0:
             train_bb3_bool = train_bb3_bool & False
         X_train = np.where(~train_bb1_bool & ~train_bb2_bool & ~train_bb3_bool)[0]
@@ -126,3 +138,8 @@ class BBSplitter:
         X_test = np.where(train_bb1_bool & train_bb2_bool & train_bb1_bool)[0]
 
         return X_train, X_test
+
+    @property
+    def includes_test(self) -> bool:
+        """Check if the splitter also generates a test set."""
+        return False

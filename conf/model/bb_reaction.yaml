@@ -10,32 +10,30 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.graph_trainer.GraphTrainer
-      model_name: GCN_DATASET
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: CNN1D
       model:
-        _target_: src.modules.training.models.gcn.GCNModel
+        _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_node_features: 4
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        pos_weight:
-          _target_: torch.tensor
-          data: [100.0]
-          device: cuda
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
         lr: 0.001
-      epochs: 100
+      epochs: 10
       batch_size: 4096
       patience: 10
       dataset:
-        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
-        retrieval: ["SMILES_MOL"]
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_BB"]
         steps:
-          - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
+          - _target_: src.modules.training.dataset_steps.smiles.bb_reaction.BBReaction
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+          # - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+          #   p: 0.25
       scheduler:
         _target_: functools.partial
         _args_:
@@ -46,12 +44,14 @@ train_sys:
         cycle_decay: 1
         cycle_limit: 1
         warmup_t: 1
-        warmup_lr_init: 1e-3
+        warmup_lr_init: 1e-5
       n_folds: 5
+      x_tensor_type: int
       dataloader_args:
         num_workers: 24
-        prefetch_factor: 3
+        prefetch_factor: 4
         persistent_workers: false
+
 
 pred_sys:
   steps:
