@@ -7,7 +7,7 @@ project: detect-medicine
 program: train.py
 name: GNN Sweep
 metric:
-  name: Combined Score
+  name: Test Score
   goal: maximize
 parameters:
 
