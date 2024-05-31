@@ -1,0 +1,61 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: GCN_DATASET
+      model:
+        _target_: src.modules.training.models.gcn.GCNModel
+        n_classes: 3
+        num_node_features: 4
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+        pos_weight:
+          _target_: torch.tensor
+          data: [100.0]
+          device: cuda
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 0.001
+      epochs: 100
+      batch_size: 4096
+      patience: 10
+      dataset:
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 100
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        warmup_t: 1
+        warmup_lr_init: 1e-3
+      n_folds: 5
+      dataloader_args:
+        num_workers: 24
+        prefetch_factor: 3
+        persistent_workers: false
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []

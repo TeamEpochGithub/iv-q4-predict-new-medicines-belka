@@ -12,6 +12,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import polars as pl
+from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
 
 from src.typing.xdata import XData
@@ -64,18 +65,18 @@ def setup_train_x_data(directory: Path, train_data: pd.DataFrame) -> Any:  # noq
         BBs_dict_reverse_3 = pickle.load(f3)  # noqa: S301 (Security issue)
 
     # Turn to numpy array
-    bb1 = np.array(list(BBs_dict_reverse_1.values()))
+    bb1 = np.array(list(BBs_dict_reverse_1.values()), dtype=f"U{max([len(i) for i in BBs_dict_reverse_1.values()])}")
     del BBs_dict_reverse_1
-    bb2 = np.array(list(BBs_dict_reverse_2.values()))
+    bb2 = np.array(list(BBs_dict_reverse_2.values()), dtype=f"U{max([len(i) for i in BBs_dict_reverse_2.values()])}")
     del BBs_dict_reverse_2
-    bb3 = np.array(list(BBs_dict_reverse_3.values()))
+    bb3 = np.array(list(BBs_dict_reverse_3.values()), dtype=f"U{max([len(i) for i in BBs_dict_reverse_3.values()])}")
     del BBs_dict_reverse_3
 
-    smile_encoding = train_data[["buildingblock1_smiles", "buildingblock2_smiles", "buildingblock3_smiles"]].to_numpy(dtype=np.int16)
-    molecule_smiles = train_data["molecule_smiles"].to_numpy()
+    building_blocks = train_data[["buildingblock1_smiles", "buildingblock2_smiles", "buildingblock3_smiles"]].to_numpy(dtype=np.int16)
+    molecule_smiles = train_data["molecule_smiles"].to_numpy(dtype=f'U{train_data["molecule_smiles"].str.len().max()}')
 
     return XData(
-        smile_encoding,
+        encoded_rows=building_blocks,
         molecule_smiles=molecule_smiles,
         bb1_smiles=bb1,
         bb2_smiles=bb2,
@@ -118,6 +119,50 @@ def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
     return X, y
 
 
+class GetXCache:
+    """Context manager to get X cache."""
+
+    def __init__(self, model_pipeline: ModelPipeline, cache_args_x: dict[str, Any], X: XData | None = None) -> None:
+        """Initialize the context manager."""
+        self.model_pipeline = model_pipeline
+        self.cache_args_x = cache_args_x
+        self.X = X
+
+    def __enter__(self) -> XData:
+        """Get X cache."""
+        if self.X is not None:
+            return self.X
+
+        self.X = self.model_pipeline.x_sys._get_cache(self.model_pipeline.x_sys.get_hash(), self.cache_args_x)  # noqa: SLF001
+        return self.X
+
+    def __exit__(self, *args: object) -> None:
+        """Delete X cache."""
+        del self.X
+
+
+class GetYCache:
+    """Context manager to get X cache."""
+
+    def __init__(self, model_pipeline: ModelPipeline, cache_args_y: dict[str, Any], y: npt.NDArray[np.int_] | None = None) -> None:
+        """Initialize the context manager."""
+        self.model_pipeline = model_pipeline
+        self.cache_args_y = cache_args_y
+        self.y = y
+
+    def __enter__(self) -> npt.NDArray[np.int_]:
+        """Get y cache."""
+        if self.y is not None:
+            return self.y
+
+        self.y = self.model_pipeline.y_sys._get_cache(self.model_pipeline.y_sys.get_hash(), self.cache_args_y)  # noqa: SLF001
+        return self.y
+
+    def __exit__(self, *args: object) -> None:
+        """Delete y cache."""
+        del self.y
+
+
 def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any:  # noqa: ANN401
     """Create data for inference with pipeline.
 
@@ -149,11 +194,3 @@ def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any: 
         bb2_smiles=bb2,
         bb3_smiles=bb3,
     )
-
-
-def setup_splitter_data() -> Any:  # noqa: ANN401
-    """Create data for splitter.
-
-    :return: Splitter data
-    """
-    raise NotImplementedError("Setup splitter data is competition specific, implement within competition repository")

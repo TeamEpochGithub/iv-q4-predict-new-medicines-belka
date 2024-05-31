@@ -3,9 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoder.smile_atom_encoder.SmileAtomEncoder
-      convert_molecules: true
+  steps: []
 
 y_sys:
   steps: []
@@ -23,23 +21,25 @@ train_sys:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.Adam
+            path: torch.optim.AdamW
         lr: 0.001
       epochs: 10
       batch_size: 4096
-      patience: 1
+      patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["ECFP_MOL"]
+        retrieval: ["SMILES_BB"]
         steps:
-          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.1
+          - _target_: src.modules.training.dataset_steps.smiles.bb_reaction.BBReaction
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+          # - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+          #   p: 0.25
       scheduler:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 40
+        t_initial: 100
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
@@ -48,8 +48,8 @@ train_sys:
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 8
-        prefetch_factor: 2
+        num_workers: 24
+        prefetch_factor: 4
         persistent_workers: false
 
 

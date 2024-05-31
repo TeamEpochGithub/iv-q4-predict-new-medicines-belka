@@ -1,5 +1,6 @@
 """Class to split into train test."""
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
@@ -8,9 +9,11 @@ from sklearn.model_selection import KFold
 from src.typing.xdata import XData
 from src.utils.logger import logger
 
+from .base import Splitter
+
 
 @dataclass
-class NormalSplitter:
+class NormalSplitter(Splitter):
     """Class to split dataset into train test.
 
     :param n_splits: Number of splits
@@ -20,18 +23,29 @@ class NormalSplitter:
     n_splits: int = 5
     indices_for_flattened_data: bool = False
 
-    def split(self, X: XData, y: npt.NDArray[np.int8]) -> list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]:
+    def split(
+        self,
+        X: XData | None,
+        y: npt.NDArray[np.int8] | None,
+        _cache_path: Path,
+    ) -> (
+        list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
+        | tuple[list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]], npt.NDArray[np.int64], npt.NDArray[np.int64]]
+    ):
         """Split X and y into train and test indices.
 
         :param X: The Xdata
         :param y: Labels
         :return: List of indices
         """
+        if X is None or y is None:
+            raise TypeError("X or y cannot be None - Caching not implemented for NormalSplitter")
+
         splits = []
         logger.debug(f"Starting splitting with size:{len(y)}")
         kf = KFold(n_splits=self.n_splits, random_state=None, shuffle=False)
 
-        kf_splits = kf.split(X.building_blocks, y)
+        kf_splits = kf.split(X.encoded_rows, y)
         for train_index, test_index in kf_splits:
             splits.append((train_index, test_index))
 
@@ -73,3 +87,8 @@ class NormalSplitter:
             splits = new_splits
 
         return splits
+
+    @property
+    def includes_test(self) -> bool:
+        """Check if the splitter also generates a test set."""
+        return False

@@ -1,17 +1,64 @@
 """File containing functions related to setting up runtime arguments for pipelines."""
-from copy import deepcopy
+import hashlib
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import numpy.typing as npt
 from epochalyst.pipeline.ensemble import EnsemblePipeline
 from epochalyst.pipeline.model.model import ModelPipeline
+from omegaconf import DictConfig
+
+
+def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_size: int, sample_split: float) -> Path:
+    """Create cache path for processed data.
+
+    :param splitter_cfg: Splitter configuration
+    :param sample_size: Sample size
+    :param sample_split: Sample split
+    :return: Path to the cache
+    """
+    sample_size_pretty = f"{sample_size:_}"
+    sample_split_pretty = f"_{sample_split!s}" if sample_split != -1 else ""
+    splitter_cfg_hash = str(hashlib.sha256(str(splitter_cfg).encode("utf-8")).hexdigest())[:5]
+
+    cache_path = Path(root_cache_path) / f"{sample_size_pretty}{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
+    cache_path.mkdir(parents=True, exist_ok=True)
+
+    return cache_path
+
+
+def setup_cache_args(processed_data_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Set cache arguments for pipeline.
+
+    :return: Tuple containing cache arguments for x, y, and train
+    """
+    cache_args_x = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'x'}",
+    }
+    cache_args_y = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'y'}",
+    }
+    cache_args_train = {
+        "output_data_type": "numpy_array",
+        "storage_type": ".pkl",
+        "storage_path": f"{processed_data_path / 'train'}",
+    }
+
+    return cache_args_x, cache_args_y, cache_args_train
 
 
 def setup_train_args(
     pipeline: ModelPipeline | EnsemblePipeline,
-    cache_args: dict[str, Any],
-    train_indices: list[int],
-    test_indices: list[int],
+    cache_args_x: dict[str, Any],
+    cache_args_y: dict[str, Any],
+    cache_args_train: dict[str, Any],
+    train_indices: npt.NDArray[np.int_],
+    validation_indices: npt.NDArray[np.int_] | None,
     fold: int = -1,
     *,
     save_model: bool = False,
@@ -22,29 +69,28 @@ def setup_train_args(
     :param pipeline: Pipeline to receive arguments
     :param cache_args: Caching arguments
     :param train_indices: Train indices
-    :param test_indices: Test indices
+    :param validation_indices: Validation indices
     :param fold: Fold number if it exists
     :param save_model: Whether to save the model to File
     :param save_model_preds: Whether to save the model predictions
     :return: Dictionary containing arguments
     """
+    if validation_indices is None:
+        validation_indices = np.array([])
+
     x_sys = {
-        "cache_args": deepcopy(cache_args),
+        "cache_args": cache_args_x,
     }
-    x_sys_path = Path(cache_args["storage_path"]) / "x"
-    x_sys_path.mkdir(parents=True, exist_ok=True)
-    x_sys["cache_args"]["storage_path"] = f"{x_sys_path}"
+    Path(cache_args_x["storage_path"]).mkdir(parents=True, exist_ok=True)
 
     y_sys = {
-        "cache_args": deepcopy(cache_args),
+        "cache_args": cache_args_y,
     }
-    y_sys_path = Path(cache_args["storage_path"]) / "y"
-    y_sys_path.mkdir(parents=True, exist_ok=True)
-    y_sys["cache_args"]["storage_path"] = f"{y_sys_path}"
+    Path(cache_args_y["storage_path"]).mkdir(parents=True, exist_ok=True)
 
     main_trainer = {
         "train_indices": train_indices,
-        "test_indices": test_indices,
+        "test_indices": validation_indices,
         "save_model": save_model,
     }
 
@@ -58,10 +104,8 @@ def setup_train_args(
     }
 
     if save_model_preds:
-        train_sys["cache_args"] = deepcopy(cache_args)
-        train_sys_path = Path(cache_args["storage_path"]) / "x"
-        train_sys_path.mkdir(parents=True, exist_ok=True)
-        train_sys["cache_args"]["storage_path"] = f"{train_sys_path}"
+        train_sys["cache_args"] = cache_args_train
+        Path(cache_args_train["storage_path"]).mkdir(parents=True, exist_ok=True)
 
     pred_sys: dict[str, Any] = {}
 
@@ -80,7 +124,7 @@ def setup_train_args(
     return train_args
 
 
-def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict[str, Any]) -> dict[str, Any]:
+def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict[str, Any] | None = None) -> dict[str, Any]:
     """Set train arguments for pipeline.
 
     :param pipeline: Pipeline to receive arguments
@@ -96,9 +140,10 @@ def setup_pred_args(pipeline: ModelPipeline | EnsemblePipeline, cache_args: dict
     # }
     pred_args: dict[str, Any] = {}
 
-    pred_args["x_sys"] = {
-        "cache_args": cache_args,
-    }
+    if cache_args is not None:
+        pred_args["x_sys"] = {
+            "cache_args": cache_args,
+        }
 
     if isinstance(pipeline, EnsemblePipeline):
         pred_args = {

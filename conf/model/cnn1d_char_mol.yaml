@@ -16,6 +16,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
+        num_embeddings: 41
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -31,10 +32,6 @@ train_sys:
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
-        steps:
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
-            p: 0.5
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_encoder.SmilesEncoder
       scheduler:
         _target_: functools.partial
         _args_:

@@ -40,7 +40,6 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      int_type: true
 
 pred_sys:
   steps:

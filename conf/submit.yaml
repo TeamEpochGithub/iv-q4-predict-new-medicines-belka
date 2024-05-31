@@ -1,20 +1,9 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: transformer_tokenize
+  - model: _pounded-commit
 
-# Use this when uploading to Kaggle
-
-###############
-#             #
-#    PATHS    #
-#             #
-###############
-
-# result_path: /kaggle/working/
-result_path: submission/
-
-# Local paths
+submission_start_id: 295246830
 data_path: data/shrunken
 submission_path: data/submission.csv
 

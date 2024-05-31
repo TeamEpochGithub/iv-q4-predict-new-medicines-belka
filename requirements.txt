@@ -2,6 +2,7 @@
 torch>=2.1.2+cu118
 torchaudio>=2.1.2+cu118
 torchvision>=0.16.2+cu118
+torch-geometric
 annotated_types==0.6.0
 coloredlogs==15.0.1
 epochalyst==0.3.3

@@ -1,6 +1,7 @@
 """Module for graph training block."""
 import gc
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -9,13 +10,16 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import Dataset
-from torch_geometric.data import Data  # type: ignore[import-not-found]
-from torch_geometric.data import DataLoader as GeometricDataLoader
+from torch.utils.data import DataLoader, Dataset
+from torch_geometric.data import (
+    Batch,
+    Data,  # type: ignore[import-not-found]
+)
+from torch_geometric.loader import DataLoader as GeometricDataLoader
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
-from src.typing.graph_dataset import GraphDataset
+from src.modules.training.datasets.graph_dataset import GraphDataset
 from src.typing.xdata import XData
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -26,40 +30,119 @@ class GraphTrainer(TorchTrainer, Logger):
     """Graph training block."""
 
     int_type: bool = False
+    dataset: GraphDataset | None = None
 
     def create_datasets(
         self,
-        x: XData,
+        X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
         test_indices: list[int],
-    ) -> tuple[GraphDataset[Data], GraphDataset[Data]]:
+    ) -> tuple[list[Data], list[Data]] | tuple[GraphDataset, GraphDataset]:
         """Create datasets for graph training."""
-        if x.molecule_graph is None:
-            raise ValueError("x.molecule_graph cannot be None")
+        if self.dataset is None:
+            if X.molecule_graph is None:
+                raise ValueError("x.molecule_graph cannot be None")
 
-        train_graphs = [x.molecule_graph[i] for i in train_indices]
-        train_labels = torch.from_numpy(y[train_indices])
+            train_graphs = []
+            for i in train_indices:
+                X.molecule_graph[i].y = torch.from_numpy(y[i])
+                train_graphs.append(X.molecule_graph[i])
 
-        test_graphs = [x.molecule_graph[i] for i in test_indices]
-        test_labels = torch.from_numpy(y[test_indices])
+            test_graphs = []
+            for i in test_indices:
+                X.molecule_graph[i].y = torch.from_numpy(y[i])
+                test_graphs.append(X.molecule_graph[i])
 
-        train_dataset: GraphDataset[Data] = GraphDataset(train_graphs, train_labels, device=self.device)
-        test_dataset: GraphDataset[Data] = GraphDataset(test_graphs, test_labels, device=self.device)
+            return train_graphs, test_graphs
+
+        train_dataset = deepcopy(self.dataset)
+        train_dataset.initialize(X, y, train_indices)
+        train_dataset.setup_pipeline(use_augmentations=True)
+
+        test_dataset = deepcopy(self.dataset)
+        test_dataset.initialize(X, y, test_indices)
 
         return train_dataset, test_dataset
 
-    def create_prediction_dataset(self, x: XData) -> GraphDataset[Data]:
-        """Create datasets for graph prediction."""
-        if x.molecule_graph is None:
-            raise ValueError("x.molecule_graph cannot be None")
+    def create_prediction_dataset(self, X: XData) -> GraphDataset | list[Data]:
+        """Create datasets for graph prediction.
 
-        x_array = list(x.molecule_graph)
-        return GraphDataset(x_array, None, device=self.device)
+        :param X: The input data.
+        :return: Prediction dataset.
+        """
+        if self.dataset is None:
+            if X.molecule_graph is None:
+                raise ValueError("x.molecule_graph cannot be None")
+
+            return X.molecule_graph
+
+        dataset = deepcopy(self.dataset)
+        dataset.initialize(X)
+        return dataset
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predicts graph prediction."""
-        return super().custom_predict(x).flatten()
+        return super().custom_predict(x)
+
+    def create_dataloaders(
+        self,
+        train_dataset: Dataset[tuple[Tensor, ...]],
+        test_dataset: Dataset[tuple[Tensor, ...]],
+    ) -> tuple[DataLoader[tuple[Tensor, ...]], DataLoader[tuple[Tensor, ...]]]:
+        """Create the dataloaders for training and validation.
+
+        :param train_dataset: The training dataset.
+        :param test_dataset: The validation dataset.
+        :return: The training and validation dataloaders.
+        """
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            collate_fn=(collate_fn if hasattr(train_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            **self.dataloader_args,
+        )
+        test_loader = DataLoader(
+            test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            collate_fn=(collate_fn if hasattr(test_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            **self.dataloader_args,
+        )
+        return train_loader, test_loader
+
+    def predict_on_loader(
+        self,
+        loader: DataLoader[tuple[Tensor, ...]],
+    ) -> npt.NDArray[np.float32]:
+        """Predict on the loader.
+
+        :param loader: The loader to predict on.
+        :return: The predictions.
+        """
+        self.log_to_terminal("Predicting on the test data")
+        self.model.eval()
+        predictions = []
+        # Create a new dataloader from the dataset of the input dataloader with collate_fn
+        loader = DataLoader(
+            loader.dataset,
+            batch_size=loader.batch_size,
+            shuffle=False,
+            collate_fn=(
+                collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+            ),
+            **self.dataloader_args,
+        )
+        with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
+            for batch in tepoch:
+                data = batch.to(self.device)
+
+                y_pred = self.model(data).squeeze(1).cpu().numpy()
+                predictions.extend(y_pred)
+
+        self.log_to_terminal("Done predicting")
+        return np.array(predictions)
 
     def save_model_to_external(self) -> None:
         """Save model to external file."""
@@ -67,29 +150,6 @@ class GraphTrainer(TorchTrainer, Logger):
             model_artifact = wandb.Artifact(self.model_name, type="model")
             model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
             wandb.log_artifact(model_artifact)
-
-    def create_dataloaders(
-        self,
-        train_dataset: Dataset[tuple[Tensor, ...]],
-        test_dataset: Dataset[tuple[Tensor, ...]],
-    ) -> tuple[GeometricDataLoader, GeometricDataLoader]:
-        """Create the dataloaders for training and validation.
-
-        :param train_dataset: The training dataset.
-        :param test_dataset: The validation dataset.
-        :return: The training and validation dataloaders.
-        """
-        train_loader = GeometricDataLoader(
-            train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-        )
-        test_loader = GeometricDataLoader(
-            test_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-        )
-        return train_loader, test_loader
 
     def _training_loop(
         self,
@@ -161,15 +221,11 @@ class GraphTrainer(TorchTrainer, Logger):
         self.model.train()
         pbar = tqdm(dataloader, unit="batch", desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})")
         for batch in pbar:
-            batch_device = batch.to(self.device)
-            self.log_to_terminal(f"Batch device: {batch_device.x.device}")
+            data = batch.to(self.device)
 
-            data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
-            data = data.to(self.device)  # Ensure data is on the correct device
-            y_pred = self.model(data).squeeze(1)
-            self.log_to_terminal(f"Prediction device: {y_pred.device}")
+            y_pred = self.model(data)
 
-            target = batch_device.y.to(self.device)
+            target = data.y
 
             if target.shape != y_pred.shape:
                 target = target.view(y_pred.shape)
@@ -195,12 +251,11 @@ class GraphTrainer(TorchTrainer, Logger):
         pbar = tqdm(dataloader, unit="batch")
         with torch.no_grad():
             for batch in pbar:
-                batch_device = batch.to(self.device)
-                data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
-                data = data.to(self.device)  # Ensure data is on the correct device
+                data = batch.to(self.device)
+                y_pred = self.model(data)
                 y_pred = self.model(data).squeeze(1)
 
-                target = batch_device.y.to(self.device)
+                target = data.y
                 if target.shape != y_pred.shape:
                     target = target.view(y_pred.shape)
 
@@ -210,24 +265,6 @@ class GraphTrainer(TorchTrainer, Logger):
                 pbar.set_postfix(loss=sum(losses) / len(losses))
         return sum(losses) / len(losses)
 
-    def predict_on_loader(self, dataloader: GeometricDataLoader) -> npt.NDArray[np.float32]:
-        """Predicts on data from data loader."""
-        self.log_to_terminal("Predicting on the test data")
-        self.model.eval()
-        predictions = []
-        pbar = tqdm(dataloader, unit="batch")
-
-        with torch.no_grad():
-            for batch in pbar:
-                batch_device = batch.to(self.device)
-                data = Data(x=batch_device.x, edge_index=batch_device.edge_index, batch=batch_device.batch)
-                data = data.to(self.device)  # Ensure data is on the correct device
-                y_pred = self.model(data).squeeze(1)
-                predictions.extend(y_pred.cpu().numpy())
-
-        self.log_to_terminal("Done predicting")
-        return np.array(predictions)
-
 
 def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
     """Collate function for the dataloader.
@@ -235,5 +272,4 @@ def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
     :param batch: The batch to collate.
     :return: Collated batch.
     """
-    X, y = batch
-    return X, y
+    return Batch.from_data_list(batch[0])

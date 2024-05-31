@@ -39,17 +39,17 @@ class MoleculeEmbedding(VerboseTransformationBlock):
 
         return np.array(embeddings)
 
-    def custom_transform(self, data: XData) -> XData:
+    def custom_transform(self, X: XData) -> XData:
         """Transform the sequence of embeddings into a single embedding."""
-        if data.bb1_embedding is None or data.bb2_embedding is None or data.bb3_embedding is None:
+        if X.bb1_embedding is None or X.bb2_embedding is None or X.bb3_embedding is None:
             raise ValueError("Missing embedding representation of the building block")
 
         if self.name_transform == "concat":
-            data.bb1_embedding = self.concat_embedding(data.bb1_embedding)
-            data.bb2_embedding = self.concat_embedding(data.bb2_embedding)
-            data.bb3_embedding = self.concat_embedding(data.bb3_embedding)
+            X.bb1_embedding = self.concat_embedding(X.bb1_embedding)
+            X.bb2_embedding = self.concat_embedding(X.bb2_embedding)
+            X.bb3_embedding = self.concat_embedding(X.bb3_embedding)
 
-            data.retrieval = DataRetrieval.EMBEDDING
-            data.molecule_embedding = np.array([data[i].flatten() for i in range(len(data.building_blocks))])  # type: ignore[union-attr]
+            X.retrieval = DataRetrieval.EMBEDDING
+            X.molecule_embedding = np.array([X[i].flatten() for i in range(len(X))])  # type: ignore[union-attr]
 
-        return data
+        return X
