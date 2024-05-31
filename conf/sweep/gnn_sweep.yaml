@@ -1,0 +1,43 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+project: detect-medicine
+program: train.py
+name: GNN Sweep
+metric:
+  name: Combined Score
+  goal: maximize
+parameters:
+
+  model.train_sys.steps.0.epochs:
+    values:
+      - 10
+      - 20
+      - 30
+      - 40
+      - 50
+
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    min: 1e-04
+    max: 0.01
+
+  model.train_sys.steps.0.scheduler.t_initial:
+    min: 2
+    max: 30
+
+  model.train_sys.steps.0.scheduler.warmup_t:
+    min: 1
+    max: 5
+
+  model.train_sys.steps.0.scheduler.cycle_limit:
+    min: 1
+    max: 2
+
+  model.train_sys.steps.0.scheduler.warmup_lr_init:
+    distribution: log_uniform_values
+    max: 1e-05
+    min: 1e-09
+
