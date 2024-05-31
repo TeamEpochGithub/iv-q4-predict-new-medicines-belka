@@ -15,7 +15,7 @@ print("Current Working Directory:", os.getcwd())
 from src.typing.xdata import XData
 
 x_data = XData(
-    building_blocks=np.array(train[['buildingblock1_smiles', 'buildingblock2_smiles', 'buildingblock3_smiles']], dtype=np.int16),
+    encoded_rows=np.array(train[['buildingblock1_smiles', 'buildingblock2_smiles', 'buildingblock3_smiles']], dtype=np.int16),
     molecule_smiles=train['molecule_smiles'].tolist(),
     bb1=train['buildingblock1_smiles'].tolist(),
     bb2=train['buildingblock2_smiles'].tolist(),

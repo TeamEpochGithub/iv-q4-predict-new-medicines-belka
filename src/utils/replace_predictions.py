@@ -3,12 +3,13 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from src.typing.xdata import DataRetrieval, XData
 
 
-def replace_predictions(directory: Path, x: XData, y: pd.DataFrame, bb_type: str) -> pd.DataFrame:
+def replace_predictions(directory: Path, x: XData, y: npt.NDArray[np.int_], bb_type: str) -> pd.DataFrame:
     """Replace the known or unknown building block predictions to 0.
 
     param directory: raw path the unique training blocks
@@ -22,20 +23,18 @@ def replace_predictions(directory: Path, x: XData, y: pd.DataFrame, bb_type: str
     x.retrieval = DataRetrieval.SMILES_BB1
 
     # Filter the unknown molecules
-    accepted = []
+    has_known_building_blocks = np.empty(len(x), dtype=np.int8)
 
     for idx in range(len(x)):
         if x[idx] in blocks:
-            accepted.append(1)
+            has_known_building_blocks[idx] = 1
         else:
-            accepted.append(0)
+            has_known_building_blocks[idx] = 0
 
     # Check whether we have to replace known or unknown
-    accept = np.array(accepted)
-    if bb_type == "unknown":
-        accept = 1 - accept
-
-    # Replace the predictions with the value 0
-    y.loc[(accept == 0), ["binds_BRD4", "binds_HSA", "binds_sEH"]] = 0
+    if bb_type == "known":
+        y = y * has_known_building_blocks[:, None]
+    elif bb_type == "unknown":
+        y = y * (1 - has_known_building_blocks)[:, None]
 
     return y

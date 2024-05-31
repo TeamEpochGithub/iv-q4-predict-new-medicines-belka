@@ -52,7 +52,7 @@ class DataRetrieval(IntFlag):
 class XData:
     """Class to describe data format of X.
 
-    :param building_blocks: Building blocks encoded
+    :param encoded_rows: Data as an integer tuple (len 3) encoded by building blocks
 
     :param molecule_smiles: Molecule smiles
     :param bb1_smiles: Building_block 1 smiles
@@ -75,7 +75,7 @@ class XData:
     :param bb3_desc: Descriptors for building_block 3 smiles
     """
 
-    building_blocks: npt.NDArray[np.int16]
+    encoded_rows: npt.NDArray[np.int16]
     retrieval: DataRetrieval = DataRetrieval.SMILES
 
     # SMILES
@@ -113,8 +113,8 @@ class XData:
 
         :param slice_array: Array to slice by
         """
-        if self.building_blocks is not None:
-            self.building_blocks = self.building_blocks[slice_array]
+        if self.encoded_rows is not None:
+            self.encoded_rows = self.encoded_rows[slice_array]
         if self.molecule_smiles is not None:
             self.molecule_smiles = self.molecule_smiles[slice_array]
         if self.molecule_ecfp is not None:
@@ -136,7 +136,7 @@ class XData:
             return self._getitems(idx)  # type: ignore[arg-type]
 
         result = []
-        item = self.building_blocks[idx]
+        item = self.encoded_rows[idx]
 
         # SMILES
         if self.retrieval & DataRetrieval.SMILES_MOL:
@@ -266,9 +266,9 @@ class XData:
         if self.retrieval == DataRetrieval.ECFP_BB:
             if self.bb1_ecfp is None or self.bb2_ecfp is None or self.bb3_ecfp is None:
                 raise ValueError("No building block ecfps exist.")
-            bb1_ecfp = np.array([self.bb1_ecfp[bb1] for bb1, _, _ in self.building_blocks[indices]])
-            bb2_ecfp = np.array([self.bb2_ecfp[bb2] for _, bb2, _ in self.building_blocks[indices]])
-            bb3_ecfp = np.array([self.bb3_ecfp[bb3] for _, _, bb3 in self.building_blocks[indices]])
+            bb1_ecfp = np.array([self.bb1_ecfp[bb1] for bb1, _, _ in self.encoded_rows[indices]])
+            bb2_ecfp = np.array([self.bb2_ecfp[bb2] for _, bb2, _ in self.encoded_rows[indices]])
+            bb3_ecfp = np.array([self.bb3_ecfp[bb3] for _, _, bb3 in self.encoded_rows[indices]])
 
             return np.concatenate([bb1_ecfp, bb2_ecfp, bb3_ecfp], axis=1)
 
@@ -286,14 +286,14 @@ class XData:
 
         :return: Length of data
         """
-        return len(self.building_blocks)
+        return len(self.encoded_rows)
 
     def __repr__(self) -> str:
         """Return a string representation of the data.
 
         :return: String representation of the data
         """
-        return f"XData with {len(self.building_blocks)} entries"
+        return f"XData with {len(self.encoded_rows)} entries"
 
 
 def slice_copy(xdata: XData, slice_array: npt.NDArray[np.int_]) -> XData:
@@ -303,7 +303,7 @@ def slice_copy(xdata: XData, slice_array: npt.NDArray[np.int_]) -> XData:
     :param return: The sliced xdata class
     """
     return XData(
-        building_blocks=xdata.building_blocks[slice_array],
+        encoded_rows=xdata.encoded_rows[slice_array],
         retrieval=xdata.retrieval,
         # SMILES
         molecule_smiles=xdata.molecule_smiles[slice_array] if xdata.molecule_smiles is not None else None,

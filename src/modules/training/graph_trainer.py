@@ -83,8 +83,7 @@ class GraphTrainer(TorchTrainer, Logger):
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predicts graph prediction."""
-        predictions = super().custom_predict(x)
-        return predictions.flatten()
+        return super().custom_predict(x)
 
     def create_dataloaders(
         self,

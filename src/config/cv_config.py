@@ -24,9 +24,11 @@ class CVConfig:
     model: Any
     ensemble: Any
     data_path: str
-    processed_path: str
+    cache_path: str
     scorer: Any
     wandb: WandBConfig
     splitter: Any
+    sample_size: int = 10000
+    sample_split: float = 0.5
     allow_multiple_instances: bool = False
     save_folds: bool = True
