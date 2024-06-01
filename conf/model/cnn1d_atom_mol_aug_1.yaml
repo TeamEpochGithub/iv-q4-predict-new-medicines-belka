@@ -27,7 +27,7 @@ train_sys:
         lr: 0.001
       epochs: 100
       batch_size: 4096
-      patience: 10
+      patience: 11
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["ECFP_MOL"]
