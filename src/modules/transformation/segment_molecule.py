@@ -30,12 +30,9 @@ class SegmentMolecule(VerboseTransformationBlock):
         """
         sequences = []
         for smile in smiles:
-            # remove the branches from the smile
-            # new_smile = smile.replace("(", "").replace(")", "")
-
             # Extract n-grams from the sequence
             length = len(smile) - window_size + 1
-            sequence = [" ".join(smile[i: i + window_size]) for i in range(length)]
+            sequence = [" ".join(smile[i : i + window_size]) for i in range(length)]
 
             # Pad the sequence with special token
             sequences.append(sequence + ["PAD"] * (padding_size - len(sequence)))

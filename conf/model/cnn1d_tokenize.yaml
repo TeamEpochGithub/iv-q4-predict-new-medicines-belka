@@ -1,0 +1,64 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.segment_molecule.SegmentMolecule
+      window_size: 10
+      padding_size: 60
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: cnn1d
+      model:
+        _target_: src.modules.training.models.cnn1d.CNN1D
+        n_classes: 3
+        num_embeddings: 9000
+        hidden_dim: 256
+        filters: 128
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+        # _target_: src.modules.loss.focal_loss.FocalLoss
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.Adam
+        lr: 0.001
+      epochs: 10
+      batch_size: 1000
+      patience: 2
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["ECFP_BB"]
+        steps: []
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 40
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        warmup_t: 1
+        warmup_lr_init: 1e-5
+      n_folds: 5
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 2
+        persistent_workers: false
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []
