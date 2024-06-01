@@ -62,11 +62,11 @@ class BBStratifiedSplitter(Splitter):
         splits = []
         kf = MultilabelStratifiedKFold(n_splits=self.n_splits)
         kf_splits = kf.split(X.encoded_rows[train_validation_indices], y[train_validation_indices])
-        for train_indices, test_indices in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
+        for train_indices, val_indices in tqdm(kf_splits, total=self.n_splits, desc="Creating splits"):
             # Reindex the train and test indices
             train_indices_reindexed = train_validation_indices[train_indices]
-            test_indices_reindexed = train_validation_indices[test_indices]
-            splits.append((train_indices_reindexed, test_indices_reindexed))
+            val_indices_reindexed = train_validation_indices[val_indices]
+            splits.append((train_indices_reindexed, val_indices_reindexed))
 
         logger.info(f"Train/Validation/Test Set Size: {len(splits[0][0]):,} / {len(splits[0][1]):,} / {len(test_indices):,}")
 
