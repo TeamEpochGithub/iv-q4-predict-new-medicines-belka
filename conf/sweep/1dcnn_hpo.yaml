@@ -4,6 +4,7 @@ command:
   - ${args_no_hyphens}
 method: bayes
 project: detect-medicine
+entity: team-epoch-iv
 program: cv.py
 name: 1DCNN HPO CV
 metric:
