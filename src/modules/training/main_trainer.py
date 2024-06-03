@@ -2,6 +2,7 @@
 import gc
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -151,6 +152,13 @@ class MainTrainer(TorchTrainer, Logger):
         # Remove the cuda cache
         torch.cuda.empty_cache()
         gc.collect()
+
+        # Create Checkpoint and keep every 5th checkpoint
+        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
+        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
+        if epoch % 5 != 0 and old_checkpoint.exists():
+            old_checkpoint.unlink()
+        torch.save(self.model, new_checkpoint)
 
         return sum(losses) / len(losses)
 
