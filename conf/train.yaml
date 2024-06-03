@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d_atom_mol_aug_2
+  - model: cnn1d_validation_100m
   - wandb: train
 
 
@@ -17,8 +17,8 @@ scorer:
 
 
 # Sampling
-sample_size: 1_000_000
-sample_split: 0.015
+sample_size: 100_000_000
+sample_split: -1
 
 
 # Splitting
