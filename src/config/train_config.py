@@ -31,3 +31,4 @@ class TrainConfig:
     sample_size: int = 10000
     sample_split: float = 0.5
     allow_multiple_instances: bool = False
+    time_limit: int | None = None

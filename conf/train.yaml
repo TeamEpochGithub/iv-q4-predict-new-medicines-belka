@@ -1,8 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: cnn1d_atom_mol_aug_1
-  - model: cnn1d_tokenize
+  - model: gbdms/sweep_xgb
   - wandb: train
 
 data_path: data/shrunken
@@ -18,7 +17,8 @@ splitter:
   _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   n_splits: 5
   test_size: 0.2
-sample_size: 100_000_000
-sample_split: -1
+sample_size: 1_000_000
+sample_split: 0.015
+time_limit: 1800
 
 allow_multiple_instances: true
