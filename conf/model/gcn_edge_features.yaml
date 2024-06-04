@@ -3,11 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.atom_graph.AtomGraph
-      convert_molecule: True
-      convert_building_blocks: False
-
+  steps: []
 y_sys:
   steps: []
 
@@ -31,6 +27,11 @@ train_sys:
       epochs: 10
       batch_size: 512
       patience: 3
+      dataset:
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
       scheduler:
         _target_: functools.partial
         _args_:

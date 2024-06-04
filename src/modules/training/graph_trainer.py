@@ -96,14 +96,14 @@ class GraphTrainer(TorchTrainer, Logger):
         :param test_dataset: The validation dataset.
         :return: The training and validation dataloaders.
         """
-        train_loader = GeometricDataLoader(
+        train_loader = DataLoader(
             train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
             collate_fn=(collate_fn if hasattr(train_dataset, "__getitems__") else None),  # type: ignore[arg-type]
             **self.dataloader_args,
         )
-        test_loader = GeometricDataLoader(
+        test_loader = DataLoader(
             test_dataset,
             batch_size=self.batch_size,
             shuffle=False,
