@@ -22,4 +22,3 @@ sample_split: 0.015
 
 allow_multiple_instances: true
 save_folds: true
-

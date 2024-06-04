@@ -1,9 +1,7 @@
 """GCN Edge Features Module."""
-import math
 
 import numpy as np
 import torch
-from pandas._typing import npt
 from torch import nn
 from torch_geometric.data import Data
 from torch_geometric.nn import NNConv, global_mean_pool
@@ -16,7 +14,6 @@ class GCNWithEdgeFeatures(nn.Module):
         """Initialize the GCN model."""
         super().__init__()
         self.hidden_dim = hidden_dim
-
 
         # Define edge networks
         edge_net1 = nn.Sequential(
@@ -71,46 +68,52 @@ class GCNWithEdgeFeatures(nn.Module):
         x = self.relu(self.fc3(x))
 
         x = self.dropout3(x)
-        output = self.fc4(x)
 
-        return output
+        return self.fc4(x)
 
 
-def unpack_bits(tensor, dim: int = -1, mask: int = 0b00000001, dtype=torch.uint8) -> torch.Tensor:
+def unpack_bits(tensor: torch.Tensor, dim: int = -1, mask: int = 0b00000001, dtype: torch.dtype = torch.uint8) -> torch.Tensor:
     """Unpack bits tensor into bits tensor."""
-    return F_unpackbits(tensor, dim=dim, mask=mask, dtype=dtype)
+    return f_unpackbits(tensor, dim=dim, mask=mask, dtype=dtype)
 
-def F_unpackbits(tensor, dim: int = -1, mask: int = 0b00000001, shape=None, out=None, dtype=torch.uint8):
+
+def f_unpackbits(
+    tensor: torch.Tensor,
+    dim: int = -1,
+    mask: int = 0b00000001,
+    shape: tuple[int, ...] | None = None,
+    out: torch.Tensor | None = None,
+    dtype: torch.dtype = torch.uint8,
+) -> torch.Tensor:
     """Unpack bits tensor into bits tensor."""
     dim = dim if dim >= 0 else dim + tensor.dim()
-    shape_, nibbles, nibble = packshape(tensor.shape, dim=dim, mask=mask, dtype=tensor.dtype, pack=False)
+    shape_, nibbles, nibble = packshape(tensor.shape, dim=dim, mask=mask, pack=False)
     shape = shape if shape is not None else shape_
     out = out if out is not None else torch.empty(shape, device=tensor.device, dtype=dtype)
-    assert out.shape == shape
 
     if shape[dim] % nibbles == 0:
         shift = torch.arange((nibbles - 1) * nibble, -1, -nibble, dtype=torch.uint8, device=tensor.device)
         shift = shift.view(nibbles, *((1,) * (tensor.dim() - dim - 1)))
         return torch.bitwise_and((tensor.unsqueeze(1 + dim) >> shift).view_as(out), mask, out=out)
-    else:
-        for i in range(nibbles):
-            shift = nibble * i
-            sliced_output = tensor_dim_slice(out, dim, slice(i, None, nibbles))
-            sliced_input = tensor.narrow(dim, 0, sliced_output.shape[dim])
-            torch.bitwise_and(sliced_input >> shift, mask, out=sliced_output)
+
+    for i in range(nibbles):
+        shift = nibble * i  # type: ignore[assignment]
+        sliced_output = tensor_dim_slice(out, dim, slice(i, None, nibbles))
+        sliced_input = tensor.narrow(dim, 0, sliced_output.shape[dim])
+        torch.bitwise_and(sliced_input >> shift, mask, out=sliced_output)
     return out
 
-def packshape(shape, dim: int = -1, mask: int = 0b00000001, dtype=torch.uint8, pack=True):
-    """ Defines pack shape. """
+
+def packshape(shape: tuple[int, ...], dim: int = -1, mask: int = 0b00000001, *, pack: bool = True) -> tuple[tuple[int, ...], int, int]:
+    """Define pack shape."""
     dim = dim if dim >= 0 else dim + len(shape)
     bits = 8
     nibble = 1 if mask == 0b00000001 else 2 if mask == 0b00000011 else 4 if mask == 0b00001111 else 8 if mask == 0b11111111 else 0
-    assert nibble <= bits and bits % nibble == 0
     nibbles = bits // nibble
-    shape = (shape[:dim] + (int(np.ceil(shape[dim] / nibbles)),) + shape[dim + 1:]) if pack else (
-            shape[:dim] + (shape[dim] * nibbles,) + shape[dim + 1:])
+    shape = (shape[:dim] + (int(np.ceil(shape[dim] / nibbles)),) + shape[dim + 1 :]) if pack else (shape[:dim] + (shape[dim] * nibbles,) + shape[dim + 1 :])
     return shape, nibbles, nibble
 
-def tensor_dim_slice(tensor, dim, dim_slice):
-    """ Slices a tensor for packing. """
+
+def tensor_dim_slice(tensor: torch.Tensor, dim: int, dim_slice: slice) -> torch.Tensor:
+    """Slices a tensor for packing."""
     return tensor[(dim if dim >= 0 else dim + tensor.dim()) * (slice(None),) + (dim_slice,)]

@@ -41,4 +41,3 @@ parameters:
     distribution: log_uniform_values
     max: 1e-05
     min: 1e-09
-
