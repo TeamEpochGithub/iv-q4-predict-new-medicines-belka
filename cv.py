@@ -189,6 +189,7 @@ def run_fold(
         validation_indices=validation_indices,
         fold=fold_no,
         save_model=cfg.save_folds,
+        output_dir=_output_dir,
     )
     validation_predictions, _ = model_pipeline.train(X, y, **train_args)
 
