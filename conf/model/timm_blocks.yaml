@@ -3,7 +3,10 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.blocks_to_image.BlocksToImage
+      img_width: 100
+      img_heigth: 50
 
 y_sys:
   steps: []
@@ -30,9 +33,9 @@ train_sys:
       patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_MOL"]
+        retrieval: ["EMBEDDING_BB"]
         steps:
-          - _target_: src.modules.training.dataset_steps.images.smiles_to_image.SmilesToImage
+          - _target_: src.modules.training.dataset_steps.images.blocks_to_image.BlocksToImage
             img_width: 100
             img_heigth: 50
       scheduler:

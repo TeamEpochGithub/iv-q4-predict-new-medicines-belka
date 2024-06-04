@@ -2,7 +2,7 @@ defaults:
   - base_train
   - hydra/logging
   # - model: cnn1d_atom_mol_aug_1
-  - model: cnn1d_tokenize
+  - model: timm_blocks
   - wandb: train
 
 data_path: data/shrunken
@@ -19,6 +19,6 @@ splitter:
   n_splits: 5
   test_size: 0.2
 sample_size: 100_000_000
-sample_split: -1
+sample_split: 0.015
 
 allow_multiple_instances: true

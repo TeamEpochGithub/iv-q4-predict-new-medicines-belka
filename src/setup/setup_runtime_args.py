@@ -101,6 +101,7 @@ def setup_train_args(
         "MainTrainer": main_trainer,
         "DecisionTrees": main_trainer,
         "GraphTrainer": main_trainer,
+        "ImageTrainer": main_trainer,
     }
 
     if save_model_preds:

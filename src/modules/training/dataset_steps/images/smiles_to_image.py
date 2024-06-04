@@ -16,7 +16,8 @@ class SmilesToImage(TrainingBlock):
     :param img_size: The Image size of the molecules
     """
 
-    img_size: int = 224
+    img_width: int = 224
+    img_heigth: int = 128
 
     def train(
         self,
@@ -30,11 +31,11 @@ class SmilesToImage(TrainingBlock):
         :param y: The labels for the molecules
         :return: Image
         """
-        images = [self.smiles_to_image(smiles, self.img_size) for smiles in X]
+        images = [self.smiles_to_image(smiles, self.img_width, self.img_heigth) for smiles in X]
         return np.array(images).transpose(0, 3, 1, 2), y
 
     @staticmethod
-    def smiles_to_image(smiles: str, img_size: int) -> npt.NDArray[np.float32]:
+    def smiles_to_image(smiles: str, img_width: int, img_heigth: int) -> npt.NDArray[np.float32]:
         """Turn a molecule smiles into an image.
 
         :param smiles: String representation of molecule
@@ -42,7 +43,7 @@ class SmilesToImage(TrainingBlock):
         :return: Image array
         """
         mol = Chem.MolFromSmiles(smiles)
-        return Draw.MolToImage(mol, size=(img_size, img_size))
+        return Draw.MolToImage(mol, size=(img_width, img_heigth))
 
     @property
     def is_augmentation(self) -> bool:
