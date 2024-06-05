@@ -64,7 +64,6 @@ def run_train(cfg: DictConfig) -> None:
                                 "Combined Score": -0.01,
                             },
                         )
-                        wandb.finish()
                     return None
                 except hydra.errors.InstantiationException:
                     logger.error("Training failed to instantiate.")
@@ -76,7 +75,6 @@ def run_train(cfg: DictConfig) -> None:
                                 "Combined Score": -0.1,
                             },
                         )
-                        wandb.finish()
                     return None
         else:
             run_train_cfg(cfg)

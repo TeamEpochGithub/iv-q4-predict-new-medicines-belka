@@ -9,6 +9,7 @@ x_sys:
       fingerprint:
         _target_: skfp.fingerprints.TopologicalTorsionFingerprint
         fp_size: 1024
+        verbose: 1
 
 
 y_sys:

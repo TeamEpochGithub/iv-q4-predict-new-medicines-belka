@@ -19,6 +19,6 @@ splitter:
   test_size: 0.2
 sample_size: 1_000_000
 sample_split: 0.015
-time_limit: 1800
+time_limit: 7200
 
 allow_multiple_instances: true
