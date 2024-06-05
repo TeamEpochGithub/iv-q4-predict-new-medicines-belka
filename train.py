@@ -45,7 +45,19 @@ def run_train(cfg: DictConfig) -> None:
     optional_lock = Lock if not cfg.allow_multiple_instances else nullcontext
 
     with optional_lock():
-        run_train_cfg(cfg)
+        try:
+            run_train_cfg(cfg)
+        except hydra.errors.InstantiationException:
+            logger.error("Training failed to instantiate.")
+            if wandb.run:
+                wandb.log(
+                    {
+                        "Validation Score": -0.1,
+                        "Test Score": -0.1,
+                        "Combined Score": -0.1,
+                    },
+                )
+            return
 
 
 def run_train_cfg(cfg: DictConfig) -> None:
