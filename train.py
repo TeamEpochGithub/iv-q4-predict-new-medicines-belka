@@ -1,5 +1,4 @@
 """Train.py is the main script for training the model and will take in the raw data and output a trained model."""
-import concurrent.futures
 import os
 import warnings
 from contextlib import nullcontext
@@ -44,40 +43,20 @@ def run_train(cfg: DictConfig) -> None:
     # Run the train config with an optional lock
     optional_lock = Lock if not cfg.allow_multiple_instances else nullcontext
 
-    # Add a time limit to the training so if it runs for too long it will stop and log -0.01 as the score
-    time_limit = cfg.time_limit
-
     with optional_lock():
-        if time_limit is not None:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(run_train_cfg, cfg)
-                try:
-                    result = future.result(timeout=time_limit)
-                    return result
-                except concurrent.futures.TimeoutError:
-                    logger.error(f"Training took too long and was stopped after {time_limit} seconds.")
-                    if wandb.run:
-                        wandb.log(
-                            {
-                                "Validation Score": -0.01,
-                                "Test Score": -0.01,
-                                "Combined Score": -0.01,
-                            },
-                        )
-                    return None
-                except hydra.errors.InstantiationException:
-                    logger.error("Training failed to instantiate.")
-                    if wandb.run:
-                        wandb.log(
-                            {
-                                "Validation Score": -0.1,
-                                "Test Score": -0.1,
-                                "Combined Score": -0.1,
-                            },
-                        )
-                    return None
-        else:
+        try:
             run_train_cfg(cfg)
+        except hydra.errors.InstantiationException:
+            logger.error("Training failed to instantiate.")
+            if wandb.run:
+                wandb.log(
+                    {
+                        "Validation Score": -0.1,
+                        "Test Score": -0.1,
+                        "Combined Score": -0.1,
+                    },
+                )
+            return
 
 
 def run_train_cfg(cfg: DictConfig) -> None:
