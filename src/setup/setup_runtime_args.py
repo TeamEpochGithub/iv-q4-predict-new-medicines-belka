@@ -105,6 +105,7 @@ def setup_train_args(
         "PredictionStatistics": {
             "output_dir": output_dir,
         },
+        "ImageTrainer": main_trainer,
     }
 
     if save_model_preds:
