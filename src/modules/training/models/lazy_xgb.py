@@ -1,5 +1,5 @@
 """Module for lazy xgboost trainer."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +28,19 @@ class LazyXGB(VerboseTrainingBlock):
     steps: list[TrainingBlock]
     retrieval: DataRetrieval = DataRetrieval.SMILES_MOL
     chunk_size: int = 10000
+    queue_size: int = field(default=2, init=True, repr=False, compare=False)
+
+    # Model parameters
+    eval_metric: str = "map"
+    booster: str = "gbtree"
+    eta: float = 0.1
+    max_depth: int = 6
+    objective: str = "binary:logistic"
+    tree_method: str = "hist"
+
+    # Training parameters
+    num_boost_round: int = 100
+    device: str = "cuda"
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a xgboost model in batches.
@@ -40,6 +53,10 @@ class LazyXGB(VerboseTrainingBlock):
         train_indices: list[int] | dict[str, Any] = train_args.get("train_indices", [])
         test_indices: list[int] | dict[str, Any] = train_args.get("test_indices", [])
 
+        # Create the model path
+        trained_model_path = Path(f"tm/{self.get_hash()}")
+        trained_model_path.parent.mkdir(parents=True, exist_ok=True)
+
         if isinstance(train_indices, dict) or isinstance(test_indices, dict):
             raise TypeError("Wrong input for train/test indices.")
 
@@ -51,37 +68,43 @@ class LazyXGB(VerboseTrainingBlock):
         y_train = y[train_indices]
         y_test = y[test_indices]
 
-        lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size)
+        lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size, max_queue_size=self.queue_size)
         iterator = lazy_xgb_dataset.get_iterator(X_train, y_train)
 
         self.log_to_terminal(f"Training {self.model_name} with {self.chunk_size} chunk_size.")
         params = {
-            "objective": "binary:logistic",
-            "eval_metric": "logloss",
-            "booster": "gbtree",
-            "eta": 0.1,
-            "max_depth": 6,
+            "objective": self.objective,
+            "eval_metric": self.eval_metric,
+            "booster": self.booster,
+            "eta": self.eta,
+            "max_depth": self.max_depth,
+            "device": "cuda",
+            "tree_method": "hist",
         }
-        num_boost_round = 100
         chunk_index = 0
         model = None
-        for data in iterator:
-            self.log_to_terminal(f"Training chunk {chunk_index}")
-            model = xgb.train(params, data, num_boost_round=num_boost_round, xgb_model=model)
-            chunk_index += 1
-        if model is None:
-            raise ValueError("XGBoost didn't train, maybe there was no data")
-        self.model = model
-        self.log_to_terminal("Training completed.")
 
-        # Save the model
-        trained_model_path = Path(f"tm/{self.get_hash()}")
-        trained_model_path.parent.mkdir(parents=True, exist_ok=True)
+        if trained_model_path.exists():
+            self.log_to_terminal(f"Loading model from {trained_model_path}")
+            self.model = self.load_model(trained_model_path)
+        else:
+            for data in iterator:
+                self.log_to_terminal(f"Training chunk {chunk_index}")
+                model = xgb.train(params, data, num_boost_round=self.num_boost_round, xgb_model=model)
+                chunk_index += 1
+            if model is None:
+                raise ValueError("XGBoost didn't train, maybe there was no data")
+            self.model = model
+            self.log_to_terminal("Training completed.")
+
         self.save_model(trained_model_path)
 
         # Get the predictions
         test_iterator = lazy_xgb_dataset.get_iterator(X_test, y_test)
         predictions = [self.model.predict(test_data) for test_data in test_iterator]
+
+        # Stop prefetch
+        lazy_xgb_dataset.stop_prefetching()
 
         return np.concatenate(predictions), y_test
 
@@ -91,7 +114,7 @@ class LazyXGB(VerboseTrainingBlock):
         :param x: XData
         :return: Predictions
         """
-        lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size)
+        lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size, max_queue_size=self.queue_size)
         x.retrieval = self.retrieval
         if not hasattr(self, "model"):
             self.model = self.load_model(f"tm/{self.get_hash()}")
@@ -106,6 +129,9 @@ class LazyXGB(VerboseTrainingBlock):
         for data in iterator:
             self.log_to_terminal(f"Predicting chunk {chunk_index}")
             predictions.append(self.model.predict(data))
+
+        # Stop prefetch
+        lazy_xgb_dataset.stop_prefetching()
 
         return np.concatenate(predictions)
 
