@@ -5,8 +5,8 @@ defaults:
 x_sys:
   steps:
     - _target_: src.modules.transformation.blocks_to_image.BlocksToImage
-      img_width: 100
-      img_heigth: 50
+      img_width: 80
+      img_heigth: 80
 
 y_sys:
   steps: []
@@ -36,8 +36,8 @@ train_sys:
         retrieval: ["EMBEDDING_BB"]
         steps:
           - _target_: src.modules.training.dataset_steps.images.blocks_to_image.BlocksToImage
-            img_width: 100
-            img_heigth: 50
+            img_width: 80
+            img_heigth: 80
       scheduler:
         _target_: functools.partial
         _args_:
