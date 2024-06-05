@@ -1,8 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: cnn1d_atom_mol_aug_1
-  - model: timm_blocks
+  - model: gbdms/sweep_xgb
   - wandb: train
 
 data_path: data/shrunken

@@ -1,0 +1,45 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+project: detect-medicine
+entity: team-epoch-iv
+program: train.py
+name: XGB Validation
+metric:
+  name: Validation Score
+  goal: maximize
+parameters:
+
+  model.train_sys.steps.0.n_estimators:
+    distribution: int_uniform
+    min: 10
+    max: 1000
+
+  model.x_sys.steps.0.fingerprint._target_:
+    values:
+      - skfp.fingerprints.AtomPairFingerprint
+      - skfp.fingerprints.AvalonFingerprint
+      - skfp.fingerprints.ECFPFingerprint
+      - skfp.fingerprints.PharmacophoreFingerprint
+      # - skfp.fingerprints.GhoseCrippenFingerprint (No fp_size)
+      - skfp.fingerprints.KlekotaRothFingerprint
+      # - skfp.fingerprints.LaggnerFingerprint (No fp_size)
+      - skfp.fingerprints.LingoFingerprint
+      # - skfp.fingerprints.MACCSFingerprint (No fp_size)
+      - skfp.fingerprints.MAPFingerprint
+      - skfp.fingerprints.MHFPFingerprint
+      - skfp.fingerprints.PatternFingerprint
+      # - skfp.fingerprints.PhysiochemicalFingerprint (No fp_size)
+      # - skfp.fingerprints.PubChemFingerprint (No fp_size)
+      - skfp.fingerprints.RDKitFingerprint
+      - skfp.fingerprints.SECFPFingerprint
+      - skfp.fingerprints.TopologicalTorsionFingerprint
+
+  model.x_sys.steps.0.fingerprint.fp_size:
+    values:
+      - 128
+      - 256
+      - 512
+      - 1024
