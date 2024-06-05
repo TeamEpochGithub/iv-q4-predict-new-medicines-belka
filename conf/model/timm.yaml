@@ -33,8 +33,16 @@ train_sys:
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.images.smiles_to_image.SmilesToImage
-            img_width: 100
-            img_heigth: 50
+            img_size: 224
+          - _target_: src.modules.training.dataset_steps.images.image_resized_crop.ImageResizedCrop
+            img_size: 100
+            sharpness: 10
+          - _target_: src.modules.training.dataset_steps.images.image_augmentation.ImageAugmentation
+            degree: 50
+            vertical: 0.3
+            horizontal: 0.3
+
+
       scheduler:
         _target_: functools.partial
         _args_:
@@ -51,6 +59,7 @@ train_sys:
         num_workers: 24
         prefetch_factor: 4
         persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 
 pred_sys:
