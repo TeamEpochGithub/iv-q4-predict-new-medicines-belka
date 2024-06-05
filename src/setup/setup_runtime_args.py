@@ -59,6 +59,7 @@ def setup_train_args(
     cache_args_train: dict[str, Any],
     train_indices: npt.NDArray[np.int_],
     validation_indices: npt.NDArray[np.int_] | None,
+    output_dir: Path,
     fold: int = -1,
     *,
     save_model: bool = False,
@@ -101,6 +102,10 @@ def setup_train_args(
         "MainTrainer": main_trainer,
         "DecisionTrees": main_trainer,
         "GraphTrainer": main_trainer,
+        "PredictionStatistics": {
+            "output_dir": output_dir,
+        },
+        "ImageTrainer": main_trainer,
     }
 
     if save_model_preds:

@@ -12,6 +12,7 @@ import wandb
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
 from hydra.utils import instantiate
+from matplotlib import pyplot as plt
 from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
@@ -124,6 +125,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         validation_indices=validation_indices,
         save_model=True,
         fold=fold_idx,
+        output_dir=output_dir,
     )
 
     # Train Model and make predictions on the validation set
@@ -146,6 +148,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
             test_predictions=test_predictions,
             test_indices=test_indices,
             cfg=cfg,
+            output_dir=output_dir,
         )
     wandb.finish()
 
@@ -157,6 +160,7 @@ def scoring(
     test_predictions: npt.NDArray[np.int_] | None,
     test_indices: npt.NDArray[np.int_] | None,
     cfg: DictConfig,
+    output_dir: Path | None = None,
 ) -> None:
     """Score the predictions and possible validation.
 
@@ -188,6 +192,46 @@ def scoring(
         logger.info("Scoring on test set")
         test_score = scorer(y[test_indices], test_predictions)
         combined_score = 0.5 * validation_score + 0.5 * test_score
+
+        # BRD4 accuracy
+        score_brd4 = scorer(y[test_indices][:, 0], test_predictions[:, 0])
+        logger.info(f"brd4 test accuracy: {score_brd4}")
+        # wandb.log()
+
+        # HSA accuracy
+        score_hsa = scorer(y[test_indices][:, 1], test_predictions[:, 1])
+        logger.info(f"hsa test accuracy: {score_hsa}")
+
+        # sEH accuracy
+        score_seh = scorer(y[test_indices][:, 2], test_predictions[:, 2])
+        logger.info(f"seh test accuracy: {score_seh}")
+
+        if wandb.run:
+            wandb.log(
+                {
+                    "BRD4 Test Score": score_brd4,
+                    "HSA Test Score": score_hsa,
+                    "sEH Test Score": score_seh,
+                },
+            )
+
+        if output_dir is not None:
+            logger.info(f"Saving histogram of probabilities to {output_dir}")
+            visualization_path = output_dir / "visualizations"
+            visualization_path.mkdir(exist_ok=True, parents=True)
+
+            # In the histogram apply a sigmoid to the probabilities
+            # Log scale the y axis
+            plt.figure()
+            plt.hist(1 / (1 + np.exp(-test_predictions[:, 0])), bins=50, alpha=0.5, label="BRD4")
+            plt.hist(1 / (1 + np.exp(-test_predictions[:, 1])), bins=50, alpha=0.5, label="HSA")
+            plt.hist(1 / (1 + np.exp(-test_predictions[:, 2])), bins=50, alpha=0.5, label="sEH")
+            plt.yscale("log")
+            plt.legend(loc="upper right")
+            plt.title("Histogram of probabilities")
+            plt.xlabel("Probability")
+            plt.ylabel("Frequency")
+            plt.savefig(visualization_path / "histogram_test.png")
 
     # Report the scores
     logger.info(f"Validation Score: {validation_score:.6f}")
