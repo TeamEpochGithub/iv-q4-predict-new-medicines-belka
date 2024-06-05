@@ -3,13 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.scikit_fingerprints.ScikitFingerprints
-      convert_molecules: True
-      fingerprint:
-        _target_: skfp.fingerprints.ECFPFingerprint
-        fp_size: 1024
-        verbose: 1
+  steps: []
 
 
 y_sys:
@@ -17,10 +11,15 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.models.decision_trees.DecisionTrees
+    - _target_: src.modules.training.models.lazy_xgb.LazyXGB
       model_name: "XGBClassifier"
-      n_estimators: 500
-      multi_output: true
+      chunk_size: 50000
+      steps:
+        - _target_: src.modules.training.dataset_steps.fingerprints.Fingerprints
+          fingerprint:
+            _target_: skfp.fingerprints.ECFPFingerprint
+            fp_size: 512
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps: []
