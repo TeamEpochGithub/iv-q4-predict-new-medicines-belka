@@ -21,49 +21,6 @@ def identity(x: list[str]) -> list[str]:
     """
     return x
 
-def segment_molecule(smile: str) -> list[str]:
-
-
-@dataclass
-class ConvolutionTokenizer(VerboseTrainingBlock):
-    """Train a torch tokenizer on the blocks or molecule smiles."""
-
-    building: bool = False
-    training: str = "10M"
-
-    def custom_train(self, x: XData, y: npt.NDArray[np.float32], **kwargs) -> tuple[XData, npt.NDArray[np.float32]]:
-        """Train the torch tokenizer on the molecule smiles.
-
-        :param x: XData containing the molecule smiles
-        :param y: array containing the molecule labels
-        :return: The tokenized sentences and labels
-        """
-
-        self.log_to_terminal(f"start training the tokenizer on f{self.training}.")
-
-        # Check whether the molecule smiles are present
-        if x.molecule_smiles is None:
-            raise ValueError("There is no SMILE information for the molecules")
-
-            # Extract the smiles from each building block
-            smiles = list(X.bb1_smiles) + list(X.bb2_smiles) + list(X.bb3_smiles)
-
-            # Train the torch nlp tokenizer on the sequences
-            tqdm_smiles = tqdm(smiles, desc="Tokenizing molecules")
-            self.encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
-
-            # Apply the torch nlp tokenizer on the building blocks
-            X.bb1_ecfp = self.apply_tokenizer(X.bb1_smiles)
-            X.bb2_ecfp = self.apply_tokenizer(X.bb2_smiles)
-            X.bb3_ecfp = self.apply_tokenizer(X.bb3_smiles)
-
-        # Extract the molecule smiles as a list for torch
-        tqdm_smiles = tqdm(list(x.molecule_smiles), desc="Tokenizing molecules")
-        self.encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=identity)
-
-
-
-
 @dataclass
 class TokenizerAtom(VerboseTrainingBlock):
     """Train a torch tokenizer on the molecule smiles."""
