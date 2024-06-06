@@ -149,7 +149,7 @@ class MainTrainer(TorchTrainer, Logger):
         if self.initialized_scheduler is not None:
             self.initialized_scheduler.step(epoch=epoch + 1)
 
-        # Remove the cuda cache
+        # Collect garbage
         torch.cuda.empty_cache()
         gc.collect()
 

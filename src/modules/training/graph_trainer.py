@@ -3,6 +3,7 @@ import gc
 import os
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -245,8 +246,17 @@ class GraphTrainer(TorchTrainer, Logger):
         if self.initialized_scheduler is not None:
             self.initialized_scheduler.step(epoch=epoch)
 
+        # Collect garbage
         torch.cuda.empty_cache()
         gc.collect()
+
+        # Create Checkpoint and keep every 5th checkpoint
+        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
+        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
+        if epoch % 5 != 0 and old_checkpoint.exists():
+            old_checkpoint.unlink()
+        torch.save(self.model, new_checkpoint)
+
         return sum(losses) / len(losses)
 
     def _val_one_epoch(self, dataloader: GeometricDataLoader, desc: str) -> float:
