@@ -129,7 +129,7 @@ class GraphTrainer(TorchTrainer, Logger):
         self.model.eval()
         predictions = []
         # Create a new dataloader from the dataset of the input dataloader with collate_fn
-        loader = GeometricDataLoader(
+        loader = DataLoader(
             loader.dataset,
             batch_size=loader.batch_size,
             shuffle=False,
