@@ -7,28 +7,26 @@ entity: team-epoch-iv
 metric:
   goal: maximize
   name: Validation Score
-name: CNN1D TOKENIZE HPO
+name: EfficientNet Data Augmentation
 parameters:
+
   model.train_sys.steps.0.dataset.steps.0.img_size:
-    values:
-      - 224
-      - 160
-      - 128
-  model.train_sys.steps.0.dataset.steps.1.img_size:
     distribution: int_uniform
-    max: 120
+    max: 140
     min: 60
 
-  model.train_sys.steps.0.dataset.steps.1.sharpness:
-    values:
-      - 15
-      - 10
-      - 5
-      - 1
   model.train_sys.steps.0.dataset.steps.2.degree:
     distribution: int_uniform
     max: 90
     min: 10
+
+  model.train_sys.steps.0.dataset.steps.2.vertical:
+    max: 0.6
+    min: 0.1
+
+  model.train_sys.steps.0.dataset.steps.2.horizontal:
+    max: 0.6
+    min: 0.1
 
   model.train_sys.steps.0.optimizer._args_.0.path:
     values:

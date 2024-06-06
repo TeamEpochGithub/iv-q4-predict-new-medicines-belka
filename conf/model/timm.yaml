@@ -33,16 +33,12 @@ train_sys:
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.images.smiles_to_image.SmilesToImage
-            img_size: 224
-          - _target_: src.modules.training.dataset_steps.images.image_resized_crop.ImageResizedCrop
             img_size: 100
-            sharpness: 10
+          - _target_: src.modules.training.dataset_steps.images.normalize_image.NormalizeImage
           - _target_: src.modules.training.dataset_steps.images.image_augmentation.ImageAugmentation
             degree: 50
             vertical: 0.3
             horizontal: 0.3
-
-
       scheduler:
         _target_: functools.partial
         _args_:
