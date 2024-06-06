@@ -13,23 +13,22 @@ from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import XData
 
 
-def segment_molecule(smile: str, window_size: int = 6) -> list[str]:
-    """Transform the molecule smile for the tokenizer.
-
-    :param smile: string representing the molecule smile
-    :param window_size: the size of each token in the sequence
-    :return: list containing the substructures"""
-
-    # Extract n-grams from the sequence
-    length = len(smile) - window_size + 1
-    return [" ".join(smile[i: i + window_size]) for i in range(length)]
-
 @dataclass
 class MoleculeTokenizer(VerboseTrainingBlock):
     """Train a torch tokenizer on the blocks or molecule smiles."""
 
     training: str = "10M"
     window_size: int = 6
+
+    def segment_molecule(self, smile: str) -> list[str]:
+        """Transform the molecule smile for the tokenizer.
+
+        :param smile: string representing the molecule smile
+        :return: list containing the substructures"""
+
+        # Extract n-grams from the sequence
+        length = len(smile) - self.window_size + 1
+        return [" ".join(smile[i: i + self.window_size]) for i in range(length)]
 
     def custom_train(self, x: XData, y: npt.NDArray[np.float32], **kwargs) -> tuple[XData, npt.NDArray[np.float32]]:
         """Train the torch tokenizer on the molecule smiles.
@@ -47,16 +46,14 @@ class MoleculeTokenizer(VerboseTrainingBlock):
 
         # Extract the molecule smiles as a list for torch
         tqdm_smiles = tqdm(list(x.molecule_smiles), desc="Tokenizing molecules")
-        encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=segment_molecule)
+        encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=self.segment_molecule)
 
         # Print the vocabulary size of the tokenizer
         self.log_to_terminal(f"The vocabulary size of the tokenizer {encoder.vocab_size}.")
 
-        vocab = encoder.index_to_token
-
         # Save the tokenizer as a pickle file
         with open(f"tm/tokenizer_samples={self.training}_window={str(self.window_size)}.pkl", "wb") as f:
-            pickle.dump(encoder, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(encoder.index_to_token, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         return x, y
 
