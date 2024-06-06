@@ -22,12 +22,13 @@ class LazyXGBDataset:
     chunk_size: int = 10000
     max_queue_size: int = field(default=2, init=True, repr=False, compare=False)
 
-    def __post_init__(self):
-        self.prefetch_queue = queue.Queue(maxsize=self.max_queue_size)  # to store prefetched matrices
-        self.prefetch_thread = None
+    def __post_init__(self) -> None:
+        """Initialize class."""
+        self.prefetch_queue: queue.Queue[xgb.DMatrix | None] = queue.Queue(maxsize=self.max_queue_size)  # to store prefetched matrices
+        self.prefetch_thread: threading.Thread | None = None
         self._stop_prefetch = threading.Event()
 
-    def get_iterator(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> Generator[xgb.DMatrix, None, None]:
+    def get_iterator(self, X: npt.NDArray[np.string_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> Generator[xgb.DMatrix, None, None]:
         """Get an iterator that yields prefetched DMatrix objects.
 
         :param X: Input x data
@@ -48,7 +49,7 @@ class LazyXGBDataset:
             X, y = step.train(X, y)
         return X, y
 
-    def _prefetch(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]):
+    def _prefetch(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> None:
         """Prefetch data and store in a queue for asynchronous access.
 
         :param X: Input x data
@@ -64,7 +65,7 @@ class LazyXGBDataset:
             self.prefetch_queue.put(dmatrix)
         self.prefetch_queue.put(None)  # Signal end of data
 
-    def _start_prefetch_thread(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]):
+    def _start_prefetch_thread(self, X: npt.NDArray[np.string_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> None:
         """Start a thread to prefetch data.
 
         :param X: Input x data
@@ -84,7 +85,7 @@ class LazyXGBDataset:
                 break
             yield dmatrix
 
-    def stop_prefetching(self):
+    def stop_prefetching(self) -> None:
         """Stop the prefetching thread and wait for it to terminate."""
         self._stop_prefetch.set()
         if self.prefetch_thread is not None:

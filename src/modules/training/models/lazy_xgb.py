@@ -37,10 +37,12 @@ class LazyXGB(VerboseTrainingBlock):
     max_depth: int = 6
     objective: str = "binary:logistic"
     tree_method: str = "hist"
+    max_bin: int = 256
 
     # Training parameters
     num_boost_round: int = 100
     device: str = "cuda"
+    update: bool = False
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a xgboost model in batches.
@@ -78,8 +80,9 @@ class LazyXGB(VerboseTrainingBlock):
             "booster": self.booster,
             "eta": self.eta,
             "max_depth": self.max_depth,
-            "device": "cuda",
-            "tree_method": "hist",
+            "device": self.device,
+            "tree_method": self.tree_method,
+            "max_bin": self.max_bin,
         }
         chunk_index = 0
         model = None
@@ -89,8 +92,16 @@ class LazyXGB(VerboseTrainingBlock):
             self.model = self.load_model(trained_model_path)
         else:
             for data in iterator:
+                if chunk_index == 1 and self.update:
+                    params.update(
+                        {
+                            "process_type": "update",
+                            "updater": "refresh",
+                            "refresh_leaf": True,
+                        },
+                    )
                 self.log_to_terminal(f"Training chunk {chunk_index}")
-                model = xgb.train(params, data, num_boost_round=self.num_boost_round, xgb_model=model)
+                model = xgb.train(params, data, num_boost_round=self.num_boost_round, xgb_model=model, verbose_eval=5)
                 chunk_index += 1
             if model is None:
                 raise ValueError("XGBoost didn't train, maybe there was no data")
@@ -117,7 +128,7 @@ class LazyXGB(VerboseTrainingBlock):
         lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size, max_queue_size=self.queue_size)
         x.retrieval = self.retrieval
         if not hasattr(self, "model"):
-            self.model = self.load_model(f"tm/{self.get_hash()}")
+            self.model = self.load_model(Path(f"tm/{self.get_hash()}"))
         iterator = lazy_xgb_dataset.get_iterator(x[:], np.zeros(len(x), dtype=np.int8))
 
         if self.model is None:
@@ -142,7 +153,7 @@ class LazyXGB(VerboseTrainingBlock):
         """
         joblib.dump(self.model, path)
 
-    def load_model(self, path: str) -> xgb.Booster:
+    def load_model(self, path: Path) -> xgb.Booster:
         """Load the model.
 
         :param path: Path to load model from

@@ -1,0 +1,56 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+project: detect-medicine
+entity: team-epoch-iv
+program: train.py
+name: LazyXGB Validation 10M
+metric:
+  name: Validation Score
+  goal: maximize
+parameters:
+
+  model.train_sys.steps.0.num_boost_round:
+    min: 10
+    max: 1000
+
+  model.train_sys.steps.0.chunk_size:
+    values:
+      - 100000
+      - 250000
+      - 500000
+      - 750000
+      - 1000000
+
+  model.train_sys.steps.0.eta:
+    min: 0.0
+    max: 0.5
+
+  model.train_sys.steps.0.max_depth:
+    min: 3
+    max: 8
+
+  model.train_sys.steps.0.steps.0.fingerprint.fp_size:
+    min: 128
+    max: 2048
+
+  model.train_sys.steps.0.objective:
+    values:
+      - "binary:logistic"
+      - "reg:logistic"
+      - "reg:squarederror"
+
+  model.train_sys.steps.0.eval_metric:
+    values:
+      - "map"
+      - "mae"
+      - "rmse"
+      - "mlogloss"
+      - "mape"
+      - "auc"
+
+  model.train_sys.steps.0.max_bin:
+    min: 16
+    max: 1024
