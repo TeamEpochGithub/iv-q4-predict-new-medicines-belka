@@ -57,7 +57,7 @@ def run_train(cfg: DictConfig) -> None:
                         "Combined Score": -0.1,
                     },
                 )
-            raise e
+            logger.error(e)
 
 
 def run_train_cfg(cfg: DictConfig) -> None:

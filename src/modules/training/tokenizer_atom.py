@@ -21,6 +21,7 @@ def identity(x: list[str]) -> list[str]:
     """
     return x
 
+
 @dataclass
 class TokenizerAtom(VerboseTrainingBlock):
     """Train a torch tokenizer on the molecule smiles."""
