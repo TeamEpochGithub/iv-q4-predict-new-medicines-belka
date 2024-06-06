@@ -14,7 +14,7 @@ from torch_geometric.data import Data
 class SmileToGraph(TrainingBlock):
     """Turn smile representation into graph."""
 
-    use_bond_atttributes: bool = False
+    use_bond_attributes: bool = True
 
     def train(
         self,
@@ -31,25 +31,26 @@ class SmileToGraph(TrainingBlock):
         return self._smiles_to_graph(x, y), None
 
     @staticmethod
-    def _smile_to_graph(smile: str, label: npt.NDArray[np.uint8] | None = None, *, use_bond_atttributes: bool = False) -> Data:
+    def _smile_to_graph(smile: str, label: npt.NDArray[np.uint8] | None = None, *, use_bond_attributes: bool = True) -> Data:
         """Create the torch graph from the smile format.
 
         :param smile: list containing the smile format
-        :param use_bond_atttributes: Use the bond attributes in the graph
+        :param use_bond_attributes: Use the bond attributes in the graph
         :return: list containing the atom and bond attributes
         """
         atom_attributes = torch.from_numpy(_atom_attribute(smile)).float()
-        bond_index, bond_attributes = _bond_index_attr(smile, get_bond_attributes=use_bond_atttributes)
+        bond_index, bond_attributes = _bond_attribute(smile)
         bond_index_torch = torch.from_numpy(bond_index).long().t().contiguous()
-        if use_bond_atttributes:
-            bond_attributes_torch = torch.from_numpy(bond_attributes).float()
+        bond_attributes_packed = pack_bits(bond_attributes)
+        if use_bond_attributes:
+            bond_attributes_torch = torch.from_numpy(bond_attributes_packed).to(torch.uint8)
         if label is not None:
             label_torch = torch.from_numpy(label).int()
 
         return Data(
             x=atom_attributes,
             edge_index=bond_index_torch,
-            edge_attr=bond_attributes_torch if use_bond_atttributes else None,
+            edge_attr=bond_attributes_torch,
             y=label_torch if label is not None else None,
         )
 
@@ -61,7 +62,7 @@ class SmileToGraph(TrainingBlock):
         graphs = []
         for i, smile in enumerate(smiles):
             curr_y = y[i] if y is not None else None
-            graphs.append(self._smile_to_graph(smile, curr_y, use_bond_atttributes=self.use_bond_atttributes))
+            graphs.append(self._smile_to_graph(smile, curr_y, use_bond_attributes=self.use_bond_attributes))
 
         return graphs
 
@@ -84,20 +85,18 @@ def _atom_attribute(smile: str) -> npt.NDArray[np.float32]:
     # Extract the attributes in the atom
     atom_features = [[atom.GetAtomicNum(), atom.GetDegree(), atom.GetHybridization(), atom.GetIsotope()] for atom in atoms]
 
-    return np.array(atom_features)
+    return np.array(atom_features, dtype=np.float32)
 
 
-def _bond_index_attr(smile: str, *, get_bond_attributes: bool = False) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+def _bond_attribute(smile: str) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.uint8]]:
     """Extract the bond attribute from the smile.
 
     param smile: the molecule string format
-    return: tensor containing the edge feature
+    return: tuple containing the edge index and edge features
     """
-    # Extract the bonds from the smile
     mol = Chem.MolFromSmiles(smile)
     bonds = mol.GetBonds()
 
-    # Extract the attributes and the edge index
     edge_features = []
     edge_index = []
 
@@ -106,8 +105,63 @@ def _bond_index_attr(smile: str, *, get_bond_attributes: bool = False) -> tuple[
         edge_index.append((start, end))
         edge_index.append((end, start))
 
-        if get_bond_attributes:
-            edge_features.append([int(bond.GetIsConjugated()), int(bond.IsInRing())])
-            edge_features.append([int(bond.GetIsConjugated()), int(bond.IsInRing())])
+        edge_features.append([int(bond.GetIsConjugated()), int(bond.IsInRing())])
+        edge_features.append([int(bond.GetIsConjugated()), int(bond.IsInRing())])
 
-    return np.array(edge_index), np.array(edge_features)
+    edge_index_np = np.array(edge_index, dtype=np.int64)
+    edge_features_np = np.array(edge_features, dtype=np.uint8)
+
+    return edge_index_np, edge_features_np
+
+
+def pack_bits(tensor: npt.NDArray[np.uint8], dim: int = -1, mask: int = 0b00000001) -> npt.NDArray[np.uint8]:
+    """Pack bits of the input numpy array."""
+    shape, nibbles, nibble = packshape(tensor.shape, dim=dim, mask=mask, pack=True)
+    return np.packbits(tensor, axis=dim, bitorder="little")
+
+
+def unpack_bits(tensor: torch.Tensor, dim: int = -1, mask: int = 0b00000001, dtype: torch.dtype = torch.uint8) -> torch.Tensor:
+    """Unpack bits tensor into bits tensor."""
+    return f_unpackbits(tensor, dim=dim, mask=mask, dtype=dtype)
+
+
+def f_unpackbits(
+    tensor: torch.Tensor,
+    dim: int = -1,
+    mask: int = 0b00000001,
+    shape: tuple[int, ...] | None = None,
+    out: torch.Tensor | None = None,
+    dtype: torch.dtype = torch.uint8,
+) -> torch.Tensor:
+    """Unpack bits tensor into bits tensor."""
+    dim = dim if dim >= 0 else dim + tensor.dim()
+    shape_, nibbles, nibble = packshape(tensor.shape, dim=dim, mask=mask, pack=False)
+    shape = shape if shape is not None else shape_
+    out = out if out is not None else torch.empty(shape, device=tensor.device, dtype=dtype)
+
+    if shape[dim] % nibbles == 0:
+        shift = torch.arange((nibbles - 1) * nibble, -1, -nibble, dtype=torch.uint8, device=tensor.device)
+        shift = shift.view(nibbles, *((1,) * (tensor.dim() - dim - 1)))
+        return torch.bitwise_and((tensor.unsqueeze(1 + dim) >> shift).view_as(out), mask, out=out)
+
+    for i in range(nibbles):
+        shift = nibble * i  # type: ignore[assignment]
+        sliced_output = tensor_dim_slice(out, dim, slice(i, None, nibbles))
+        sliced_input = tensor.narrow(dim, 0, sliced_output.shape[dim])
+        torch.bitwise_and(sliced_input >> shift, mask, out=sliced_output)
+    return out
+
+
+def packshape(shape: tuple[int, ...], dim: int = -1, mask: int = 0b00000001, *, pack: bool = True) -> tuple[tuple[int, ...], int, int]:
+    """Define pack shape."""
+    dim = dim if dim >= 0 else dim + len(shape)
+    bits = 8
+    nibble = 1 if mask == 0b00000001 else 2 if mask == 0b00000011 else 4 if mask == 0b00001111 else 8 if mask == 0b11111111 else 0
+    nibbles = bits // nibble
+    shape = (shape[:dim] + (int(np.ceil(shape[dim] / nibbles)),) + shape[dim + 1 :]) if pack else (shape[:dim] + (shape[dim] * nibbles,) + shape[dim + 1 :])
+    return shape, nibbles, nibble
+
+
+def tensor_dim_slice(tensor: torch.Tensor, dim: int, dim_slice: slice) -> torch.Tensor:
+    """Slices a tensor for packing."""
+    return tensor[(dim if dim >= 0 else dim + tensor.dim()) * (slice(None),) + (dim_slice,)]

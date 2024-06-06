@@ -10,7 +10,7 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torch_geometric.data import (
     Batch,
     Data,  # type: ignore[import-not-found]
@@ -87,8 +87,8 @@ class GraphTrainer(TorchTrainer, Logger):
 
     def create_dataloaders(
         self,
-        train_dataset: Dataset[tuple[Tensor, ...]],
-        test_dataset: Dataset[tuple[Tensor, ...]],
+        train_dataset: GraphDataset,
+        test_dataset: GraphDataset,
     ) -> tuple[DataLoader[tuple[Tensor, ...]], DataLoader[tuple[Tensor, ...]]]:
         """Create the dataloaders for training and validation.
 
@@ -125,7 +125,7 @@ class GraphTrainer(TorchTrainer, Logger):
         self.model.eval()
         predictions = []
         # Create a new dataloader from the dataset of the input dataloader with collate_fn
-        loader = DataLoader(
+        loader = GeometricDataLoader(
             loader.dataset,
             batch_size=loader.batch_size,
             shuffle=False,
