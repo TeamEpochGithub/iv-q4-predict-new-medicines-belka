@@ -20,11 +20,11 @@ parameters:
     max: 90
     min: 10
 
-  model.train_sys.steps.0.dataset.steps.2.vertical:
+  model.train_sys.steps.0.dataset.steps.2.p_vertical:
     max: 0.6
     min: 0.1
 
-  model.train_sys.steps.0.dataset.steps.2.horizontal:
+  model.train_sys.steps.0.dataset.steps.2.p_horizontal:
     max: 0.6
     min: 0.1
 

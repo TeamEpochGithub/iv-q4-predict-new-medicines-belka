@@ -14,8 +14,8 @@ class ImageAugmentation(TrainingBlock):
     """Perform image augmentations on the molecule images."""
 
     degree: float = 90
-    vertical: float = 0.5
-    horizontal: float = 0.5
+    p_vertical: float = 0.5
+    p_horizontal: float = 0.5
 
     def train(
         self,
@@ -30,8 +30,8 @@ class ImageAugmentation(TrainingBlock):
         :return: Image
         """
         # Define the random image transformations
-        horizontal = transforms.RandomHorizontalFlip(p=self.vertical)
-        vertical = transforms.RandomVerticalFlip(p=self.vertical)
+        horizontal = transforms.RandomHorizontalFlip(p=self.p_horizontal)
+        vertical = transforms.RandomVerticalFlip(p=self.p_vertical)
         rotations = transforms.RandomRotation(degrees=self.degree)
 
         # Convert the arrays to torch tensors and perform the transformations
