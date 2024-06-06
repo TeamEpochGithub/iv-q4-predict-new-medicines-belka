@@ -1,44 +1,32 @@
-"""GCN Edge Features Module."""
+"""GCN with Transformer Convolutions Module."""
 
 import numpy as np
 import torch
 from torch import nn
 from torch_geometric.data import Data
-from torch_geometric.nn import NNConv, global_mean_pool
+from torch_geometric.nn import global_mean_pool, TransformerConv
 
 
-class GCNWithEdgeFeatures(nn.Module):
-    """GCN Model with Edge Features."""
-
+class GNNTransformerModel(torch.nn.Module):
     def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32) -> None:
         """Initialize the GCN model."""
         super().__init__()
         self.hidden_dim = hidden_dim
 
-        # Define edge networks
-        self.edge_net1 = nn.Sequential(
-            nn.Linear(num_edge_features, hidden_dim * num_node_features),
-            nn.ReLU(),
-            nn.Linear(hidden_dim * num_node_features, hidden_dim * num_node_features),
-        )
+        self.conv1 = TransformerConv(in_channels=num_node_features, out_channels=hidden_dim, heads=4, concat=False,
+                                     edge_dim=num_edge_features, dropout=0.1)
+        self.conv2 = TransformerConv(in_channels=hidden_dim, out_channels=hidden_dim * 2, heads=4, concat=False,
+                                     edge_dim=num_edge_features, dropout=0.1)
 
-        self.edge_net2 = nn.Sequential(
-            nn.Linear(num_edge_features, hidden_dim * hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim * hidden_dim, hidden_dim * hidden_dim * 2),
-        )
-
-        self.conv1 = NNConv(num_node_features, hidden_dim, self.edge_net1, aggr="mean")
-        self.conv2 = NNConv(hidden_dim, hidden_dim * 2, self.edge_net2, aggr="mean")
         self.pool = global_mean_pool
 
-        self.fc1 = nn.Linear(hidden_dim * 2, 512)
+        self.fc1 = nn.Linear(hidden_dim * 2, 1024)
         self.dropout1 = nn.Dropout(0.1)
-        self.fc2 = nn.Linear(512, 512)
+        self.fc2 = nn.Linear(1024, 1024)
         self.dropout2 = nn.Dropout(0.1)
-        self.fc3 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(1024, 512)
         self.dropout3 = nn.Dropout(0.1)
-        self.fc4 = nn.Linear(256, n_classes)
+        self.fc4 = nn.Linear(512, n_classes)
 
         # Define activation function
         self.relu = nn.ReLU()
