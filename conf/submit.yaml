@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: _pounded-commit
+  - model: cnn1d_tokenize
 
 submission_start_id: 295246830
 data_path: data/shrunken
