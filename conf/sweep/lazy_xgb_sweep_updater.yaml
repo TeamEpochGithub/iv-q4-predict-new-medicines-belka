@@ -18,11 +18,10 @@ parameters:
 
   model.train_sys.steps.0.chunk_size:
     values:
-      - 10000
-      - 25000
-      - 50000
-      - 100000
+      - 250000
       - 500000
+      - 1000000
+      - 2500000
 
   model.train_sys.steps.0.eta:
     min: 0.0
@@ -34,7 +33,6 @@ parameters:
 
   model.train_sys.steps.0.steps.0.bits:
     values:
-      - 64
       - 128
       - 256
       - 512
@@ -52,8 +50,6 @@ parameters:
 
   model.train_sys.steps.0.eval_metric:
     values:
-      - "map"
-      - "mae"
       - "rmse"
       - "mlogloss"
       - "mape"

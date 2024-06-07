@@ -18,7 +18,7 @@ train_sys:
       queue_size: -1
       num_boost_round: 500
       device: cpu
-      update: True
+      # update: True
       scale_pos_weight: 100
       # Model parameters
       eval_metric: mlogloss
