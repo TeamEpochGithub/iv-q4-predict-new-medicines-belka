@@ -35,6 +35,11 @@ train_sys:
             use_atom_chem_features: true
             use_atom_pharmacophore_features: true
             use_bond_features: true
+          - _target_: src.modules.training.dataset_steps.graphs.graph_augmentations.GraphAugmentationBlock
+            p_node_drop: 0.1
+            p_edge_drop: 0.1
+            p_edge_mask: 0.1
+            p_node_mask: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
