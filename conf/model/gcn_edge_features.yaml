@@ -14,8 +14,8 @@ train_sys:
       model:
         _target_: src.modules.training.models.gcn_edge_features.GCNWithEdgeFeatures
         n_classes: 3
-        num_node_features: 4
-        num_edge_features: 8
+        num_node_features: 22
+        num_edge_features: 2
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -31,7 +31,10 @@ train_sys:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
         retrieval: [ "SMILES_MOL" ]
         steps:
-          - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
+          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
+            use_atom_chem_features: true
+            use_atom_pharmacophore_features: true
+            use_bond_features: true
       scheduler:
         _target_: functools.partial
         _args_:
@@ -45,9 +48,9 @@ train_sys:
         warmup_lr_init: 1e-5
       n_folds: 5
       dataloader_args:
-        num_workers: 24
-        prefetch_factor: 3
-        persistent_workers: false
+        num_workers: 26
+        prefetch_factor: 4
+        persistent_workers: true
 
 pred_sys:
   steps:
