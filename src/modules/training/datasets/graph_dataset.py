@@ -1,13 +1,12 @@
 """Graph dataset for graph data."""
 from dataclasses import dataclass
-from typing import Union, List
 
 import numpy as np
 import numpy.typing as npt
+import torch
 from epochalyst.pipeline.model.training.training import TrainingPipeline
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 from torch.utils.data import Dataset
-import torch
 from torch_geometric.data import Data
 
 from src.typing.xdata import DataRetrieval, XData
@@ -28,7 +27,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
     retrieval: list[str] | None = None
     steps: list[TrainingBlock] | None = None
 
-    X: Union[XData, List[Data]] | None = None
+    X: XData | list[Data] | None = None
     y: npt.NDArray[np.int8] | None = None
     indices: npt.NDArray[np.int32] | None = None
 
@@ -45,7 +44,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         # Setup Pipeline
         self.setup_pipeline(use_augmentations=False)
 
-    def initialize(self, X: Union[XData, List[Data]], y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
+    def initialize(self, X: XData | list[Data] | None, y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
         """Set up the dataset for training."""
         self.X = X
         self.y = y
@@ -72,7 +71,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
             return len(self.X)
         return len(self.indices)
 
-    def __getitems__(self, indices: list[int] | npt.NDArray[np.int_]) -> tuple[List[Data], torch.Tensor | None]:
+    def __getitems__(self, indices: list[int] | npt.NDArray[np.int_]) -> tuple[list[Data], torch.Tensor | None]:
         """Get items from the dataset."""
         if self.X is None:
             raise ValueError("Dataset not initialized.")
@@ -80,7 +79,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         if self.indices is not None:
             indices = self.indices[indices]
 
-        self.X.retrieval = self._retrieval_enum
+        self.X.retrieval = self._retrieval_enum  # type: ignore[union-attr]
         X = [self.X[i] for i in indices]
         y = self.y[indices] if self.y is not None else None
 
@@ -91,8 +90,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         else:
             y_tensor = None
 
-        # Move graph data to the specified device
-        X = [data for data in X]
+        X = list(X)
 
         return X, y_tensor
 
@@ -108,7 +106,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         if self.indices is not None:
             idx = self.indices[idx]
 
-        self.X.retrieval = self._retrieval_enum
+        self.X.retrieval = self._retrieval_enum  # type: ignore[union-attr]
         X = np.expand_dims(self.X[idx], axis=0)
         y = np.expand_dims(self.y[idx], axis=0) if self.y is not None else None
 

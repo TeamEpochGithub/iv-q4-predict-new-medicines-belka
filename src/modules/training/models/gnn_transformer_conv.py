@@ -4,19 +4,19 @@ import numpy as np
 import torch
 from torch import nn
 from torch_geometric.data import Data
-from torch_geometric.nn import global_mean_pool, TransformerConv
+from torch_geometric.nn import TransformerConv, global_mean_pool
 
 
 class GNNTransformerModel(torch.nn.Module):
+    """Transformer GCN Module."""
+
     def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32) -> None:
         """Initialize the GCN model."""
         super().__init__()
         self.hidden_dim = hidden_dim
 
-        self.conv1 = TransformerConv(in_channels=num_node_features, out_channels=hidden_dim, heads=4, concat=False,
-                                     edge_dim=num_edge_features, dropout=0.1)
-        self.conv2 = TransformerConv(in_channels=hidden_dim, out_channels=hidden_dim * 2, heads=4, concat=False,
-                                     edge_dim=num_edge_features, dropout=0.1)
+        self.conv1 = TransformerConv(in_channels=num_node_features, out_channels=hidden_dim, heads=4, concat=False, edge_dim=num_edge_features, dropout=0.1)
+        self.conv2 = TransformerConv(in_channels=hidden_dim, out_channels=hidden_dim * 2, heads=4, concat=False, edge_dim=num_edge_features, dropout=0.1)
 
         self.pool = global_mean_pool
 
