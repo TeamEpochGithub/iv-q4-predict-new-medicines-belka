@@ -2,6 +2,7 @@
 import gc
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -30,14 +31,14 @@ class MainTrainer(TorchTrainer, Logger):
         X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
-        test_indices: list[int],
+        validation_indices: list[int],
     ) -> tuple[Dataset[tuple[Tensor, ...]], Dataset[tuple[Tensor, ...]]]:
         """Create the datasets for training and validation.
 
         :param x: The input data.
         :param y: The target variable.
         :param train_indices: The indices to train on.
-        :param test_indices: The indices to test on.
+        :param validation_indices: The indices to validate on.
         :return: The training and validation datasets.
         """
         if self.dataset is None:
@@ -46,20 +47,20 @@ class MainTrainer(TorchTrainer, Logger):
                 torch.from_numpy(x_array[train_indices]),
                 torch.from_numpy(y[train_indices]),
             )
-            test_dataset_old = TensorDataset(
-                torch.from_numpy(x_array[test_indices]),
-                torch.from_numpy(y[test_indices]),
+            validation_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[validation_indices]),
+                torch.from_numpy(y[validation_indices]),
             )
-            return train_dataset_old, test_dataset_old
+            return train_dataset_old, validation_dataset_old
 
         train_dataset = deepcopy(self.dataset)
         train_dataset.initialize(X, y, train_indices)
         train_dataset.setup_pipeline(use_augmentations=True)
 
-        test_dataset = deepcopy(self.dataset)
-        test_dataset.initialize(X, y, test_indices)
+        validation_dataset = deepcopy(self.dataset)
+        validation_dataset.initialize(X, y, validation_indices)
 
-        return train_dataset, test_dataset
+        return train_dataset, validation_dataset
 
     def create_prediction_dataset(
         self,
@@ -148,9 +149,16 @@ class MainTrainer(TorchTrainer, Logger):
         if self.initialized_scheduler is not None:
             self.initialized_scheduler.step(epoch=epoch + 1)
 
-        # Remove the cuda cache
+        # Collect garbage
         torch.cuda.empty_cache()
         gc.collect()
+
+        # Create Checkpoint and keep every 5th checkpoint
+        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
+        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
+        if epoch % 5 != 0 and old_checkpoint.exists():
+            old_checkpoint.unlink()
+        torch.save(self.model, new_checkpoint)
 
         return sum(losses) / len(losses)
 
