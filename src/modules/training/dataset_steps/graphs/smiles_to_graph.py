@@ -53,24 +53,16 @@ class SmilesToGraph(TrainingBlock):
     use_atom_pharmacophore_features: bool = False
     use_bond_features: bool = False
 
-    # _atom_chem_features: list[Callable[[Mol], int]] = field(default_factory=list)
-    # _num_atom_chem_features: int = 0
-    # _atom_pharma_features: Callable[[Mol], npt.NDArray[np.uint8]] | None = None
-    # _num_atom_pharma_features: int = 0
-    # _num_atom_features: int = 0
+    _atom_chem_features: list[Callable[[Mol], int]] = field(default_factory=list, repr=False, compare=False)
+    _num_atom_chem_features: int = field(default=0, repr=False, compare=False)
+    _atom_pharma_features: Callable[[Mol], npt.NDArray[np.uint8]] | None = field(default=None, repr=False, compare=False)
+    _num_atom_pharma_features: int = field(default=0, repr=False, compare=False)
+    _num_atom_features: int = field(default=0, repr=False, compare=False)
 
-    # _num_bond_features: int = 0
+    _num_bond_features: int = field(default=0, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Post init function."""
-        # Instatiate the variables
-        self._atom_chem_features: list[Callable[[Mol], int]] = field(default_factory=list)
-        self._num_atom_chem_features: int = 0
-        self._atom_pharma_features: Callable[[Mol], npt.NDArray[np.uint8]] | None = None
-        self._num_atom_pharma_features: int = 0
-        self._num_atom_features: int = 0
-        self._num_bond_features: int = 0
-
         # Add Atom Features
         if self.use_atom_chem_features:
             self._atom_chem_features = [
