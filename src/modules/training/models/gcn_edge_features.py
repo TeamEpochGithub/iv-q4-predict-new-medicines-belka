@@ -9,43 +9,58 @@ from src.modules.training.dataset_steps.graphs.smiles_to_graph import unpack_ato
 
 
 class GCNWithEdgeFeatures(nn.Module):
-    """GCN Model with Edge Features."""
+    """GCN Model with Edge Features.
 
-    def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32) -> None:
-        """Initialize the GCN model."""
+    :param num_node_features: Number of features per node
+    :param num_edge_features: Number of edge features per node
+    :param n_classes:  Number of classes to predict
+    """
+
+
+    def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32, out_features: int = 512, dropout : float = 0.1) -> None:
+        """Initialize the GCN model.
+
+        :param num_node_features: Number of features per node
+        :param num_edge_features: Number of edge features per node
+        :param n_classes:  Number of classes to predict
+        """
         super().__init__()
         self.hidden_dim = hidden_dim
 
         # Define edge networks
-        self.edge_net1 = nn.Sequential(
+        edge_net1 = nn.Sequential(
             nn.Linear(num_edge_features, hidden_dim * num_node_features),
             nn.ReLU(),
             nn.Linear(hidden_dim * num_node_features, hidden_dim * num_node_features),
         )
 
-        self.edge_net2 = nn.Sequential(
+        edge_net2 = nn.Sequential(
             nn.Linear(num_edge_features, hidden_dim * hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim * hidden_dim, hidden_dim * hidden_dim * 2),
         )
 
-        self.conv1 = NNConv(num_node_features, hidden_dim, self.edge_net1, aggr="mean")
-        self.conv2 = NNConv(hidden_dim, hidden_dim * 2, self.edge_net2, aggr="mean")
+        self.conv1 = NNConv(num_node_features, hidden_dim, edge_net1, aggr="mean")
+        self.conv2 = NNConv(hidden_dim, hidden_dim * 2, edge_net2, aggr="mean")
         self.pool = global_mean_pool
 
-        self.fc1 = nn.Linear(hidden_dim * 2, 512)
-        self.dropout1 = nn.Dropout(0.1)
-        self.fc2 = nn.Linear(512, 512)
-        self.dropout2 = nn.Dropout(0.1)
-        self.fc3 = nn.Linear(512, 256)
-        self.dropout3 = nn.Dropout(0.1)
-        self.fc4 = nn.Linear(256, n_classes)
+        self.fc1 = nn.Linear(hidden_dim * 2, out_features)
+        self.dropout1 = nn.Dropout(dropout)
+        self.fc2 = nn.Linear(out_features, out_features)
+        self.dropout2 = nn.Dropout(dropout)
+        self.fc3 = nn.Linear(out_features, out_features // 2)
+        self.dropout3 = nn.Dropout(dropout)
+        self.fc4 = nn.Linear(out_features // 2, n_classes)
 
         # Define activation function
         self.relu = nn.ReLU()
 
     def forward(self, data: Data) -> torch.Tensor:
-        """Forward pass of the GCN model."""
+        """Forward pass of the GCN model.
+
+        :param data: Input data
+        :return Output data
+        """
         x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
 
         # Unpack Node and Edge Attributes

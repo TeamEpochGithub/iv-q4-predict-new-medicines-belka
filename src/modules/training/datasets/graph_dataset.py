@@ -79,8 +79,8 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         if self.indices is not None:
             indices = self.indices[indices]
 
-        self.X.retrieval = self._retrieval_enum  # type: ignore[union-attr]
-        X = [self.X[i] for i in indices]
+        self.X.retrieval = self._retrieval_enum
+        X = self.X[indices]
         y = self.y[indices] if self.y is not None else None
 
         X, y = self._pipeline.train(X, y)
@@ -106,7 +106,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         if self.indices is not None:
             idx = self.indices[idx]
 
-        self.X.retrieval = self._retrieval_enum  # type: ignore[union-attr]
+        self.X.retrieval = self._retrieval_enum
         X = np.expand_dims(self.X[idx], axis=0)
         y = np.expand_dims(self.y[idx], axis=0) if self.y is not None else None
 

@@ -1,7 +1,7 @@
 defaults:
   - base_submit
   - hydra/logging
-  - model: _pounded-commit
+  - model: graphs/golden-bee-2007
 
 submission_start_id: 295246830
 data_path: data/shrunken
