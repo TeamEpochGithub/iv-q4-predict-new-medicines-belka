@@ -6,14 +6,14 @@ method: bayes
 project: detect-medicine
 entity: team-epoch-iv
 program: train.py
-name: LazyXGB Validation 1M (Updater)
+name: LazyXGB Validation 10M (Updater)
 metric:
   name: Validation Score
   goal: maximize
 parameters:
 
   model.train_sys.steps.0.num_boost_round:
-    min: 500
+    min: 250
     max: 1000
 
   model.train_sys.steps.0.chunk_size:
@@ -22,6 +22,7 @@ parameters:
       - 25000
       - 50000
       - 100000
+      - 500000
 
   model.train_sys.steps.0.eta:
     min: 0.0
@@ -31,9 +32,18 @@ parameters:
     min: 3
     max: 8
 
-  model.train_sys.steps.0.steps.0.fingerprint.fp_size:
-    min: 512
-    max: 2048
+  model.train_sys.steps.0.steps.0.bits:
+    values:
+      - 64
+      - 128
+      - 256
+      - 512
+      - 1024
+      - 2048
+
+  model.train_sys.steps.0.steps.0.radius:
+    min: 1
+    max: 3
 
   model.train_sys.steps.0.objective:
     values:
@@ -48,10 +58,15 @@ parameters:
       - "mlogloss"
       - "mape"
       - "auc"
+      - "aucpr"
 
   model.train_sys.steps.0.max_bin:
     min: 10
     max: 1000
+
+  model.train_sys.steps.0.scale_pos_weight:
+    min: 1
+    max: 100
 
   # model.train_sys.steps.0.update:
   #   values:

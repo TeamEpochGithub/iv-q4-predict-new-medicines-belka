@@ -43,6 +43,7 @@ class LazyXGB(VerboseTrainingBlock):
     num_boost_round: int = 100
     device: str = "cuda"
     update: bool = False
+    scale_pos_weight: int = 1
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train a xgboost model in batches.
@@ -83,6 +84,7 @@ class LazyXGB(VerboseTrainingBlock):
             "device": self.device,
             "tree_method": self.tree_method,
             "max_bin": self.max_bin,
+            "scale_pos_weight": self.scale_pos_weight,
         }
         chunk_index = 0
         model = None
@@ -140,6 +142,7 @@ class LazyXGB(VerboseTrainingBlock):
         for data in iterator:
             self.log_to_terminal(f"Predicting chunk {chunk_index}")
             predictions.append(self.model.predict(data))
+            chunk_index += 1
 
         # Stop prefetch
         lazy_xgb_dataset.stop_prefetching()
