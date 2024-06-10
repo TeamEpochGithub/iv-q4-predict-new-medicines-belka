@@ -10,12 +10,12 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.graph_trainer.GraphTrainer
-      model_name: GCNTransformer
+      model_name: GCNEdges
       model:
         _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
         n_classes: 3
-        num_node_features: 22
-        num_edge_features: 2
+        num_node_features: 4
+        num_edge_features: 8
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -31,10 +31,7 @@ train_sys:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
         retrieval: [ "SMILES_MOL" ]
         steps:
-          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
-            use_atom_chem_features: true
-            use_atom_pharmacophore_features: true
-            use_bond_features: true
+          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_chem_graph.SmilesToChemGraph
           - _target_: src.modules.training.dataset_steps.graphs.graph_augmentations.GraphAugmentationBlock
             p_node_drop: 0.10721099697085149
             p_edge_drop: 0.2144036138680076
@@ -50,11 +47,11 @@ train_sys:
         cycle_decay: 1
         cycle_limit: 1
         warmup_t: 5
-        warmup_lr_init: 9.704575951901676e-06
+        warmup_lr_init: 1e-5
       n_folds: 5
       dataloader_args:
         num_workers: 24
-        prefetch_factor: 4
+        prefetch_factor: 3
         persistent_workers: false
 
 pred_sys:
@@ -62,4 +59,5 @@ pred_sys:
     - _target_: src.modules.transformation.sigmoid.Sigmoid
 
 label_sys:
-  steps: []
+  steps: [ ]
+
