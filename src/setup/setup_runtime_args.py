@@ -106,6 +106,7 @@ def setup_train_args(
             "output_dir": output_dir,
         },
         "ImageTrainer": main_trainer,
+        "LazyXGB": main_trainer,
     }
 
     if save_model_preds:
