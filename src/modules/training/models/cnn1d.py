@@ -64,7 +64,7 @@ class CNN1D(nn.Module):
         :param x: Input data
         :return: Output data
         """
-        emb = self._embedding(x).transpose(2, 1)
+        emb = self._embedding(x.long()).transpose(2, 1)
 
         x = self.relu(self.conv1(emb))
         x = self.relu(self.conv2(x))
