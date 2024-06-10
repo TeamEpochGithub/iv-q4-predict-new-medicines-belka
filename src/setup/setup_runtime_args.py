@@ -91,7 +91,7 @@ def setup_train_args(
 
     main_trainer = {
         "train_indices": train_indices,
-        "test_indices": validation_indices,
+        "validation_indices": validation_indices,
         "save_model": save_model,
     }
 
