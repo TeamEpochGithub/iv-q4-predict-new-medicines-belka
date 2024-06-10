@@ -10,8 +10,8 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
-      model_name: cnn1d
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: CNN1D_ChemBERTa
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
