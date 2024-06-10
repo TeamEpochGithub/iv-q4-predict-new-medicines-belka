@@ -1,7 +1,7 @@
 """Module to convert the molecule smiles into a sequence of tokens."""
 from dataclasses import dataclass
 from typing import Any
-
+from pathlib import Path
 import joblib
 import numpy as np
 import numpy.typing as npt
@@ -22,7 +22,13 @@ class TokenizeMolecule(TrainingBlock):
         y: npt.NDArray[np.uint8],
         **train_args: Any,
     ) -> tuple[npt.NDArray[np.str_], npt.NDArray[np.uint8]]:
-        """Convert the molecule smiles into a sequence of tokens."""
+        """Convert the molecule smiles into a sequence of tokens.
+        """
+        # Check whether the tokenizer was trained or not
+        file_path = Path(f'tm/tokenizer_{self.tokenizer_name}')
+        if not file_path.exists():
+            raise FileNotFoundError("The chosen tokenizer was not yet trained.")
+
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])
         vocab = joblib.load(f"tm/tokenizer_{self.tokenizer_name}.pkl")

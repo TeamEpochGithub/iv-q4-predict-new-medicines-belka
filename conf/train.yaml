@@ -1,8 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: cnn1d_atom_mol_aug_1
-  - model: cnn1d_tokenize
+  - model: sweep_cnn1d_tokenize
   - wandb: train
 
 data_path: data/shrunken
