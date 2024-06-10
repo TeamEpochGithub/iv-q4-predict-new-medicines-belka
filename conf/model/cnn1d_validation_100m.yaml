@@ -56,6 +56,7 @@ train_sys:
         num_workers: 28
         prefetch_factor: 5
         persistent_workers: true
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:
