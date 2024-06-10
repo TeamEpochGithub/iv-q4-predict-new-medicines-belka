@@ -35,7 +35,6 @@ train_sys:
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.chemberta_tokenizer.ChembertaTokenizer
             padding_size: 120
-            embedding_layer: True
       scheduler:
         _target_: functools.partial
         _args_:
