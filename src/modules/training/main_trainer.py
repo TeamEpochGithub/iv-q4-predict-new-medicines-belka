@@ -2,7 +2,6 @@
 import gc
 from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -82,15 +81,11 @@ class MainTrainer(TorchTrainer, Logger):
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.
 
-        Overwritten to intercept the fold number and enable two-stage training.
-
         :param x: The input data.
         :param y: The target variable.
         :return The predictions and the labels.
         """
-        self._fold = train_args.get("fold", -1)
-        y_pred, y = super().custom_train(x, y, **train_args)
-        return y_pred, y
+        return super().custom_train(x, y, **train_args)
 
     def custom_predict(self, x: XData, **pred_args: Any) -> npt.NDArray[np.float64]:
         """Predict using the model.
@@ -105,7 +100,7 @@ class MainTrainer(TorchTrainer, Logger):
         """Save the model to external storage."""
         if wandb.run:
             model_artifact = wandb.Artifact(self.model_name, type="model")
-            model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
+            model_artifact.add_file(self.get_model_path())
             wandb.log_artifact(model_artifact)
 
     def _train_one_epoch(
@@ -145,29 +140,8 @@ class MainTrainer(TorchTrainer, Logger):
             losses.append(loss.item())
             pbar.set_postfix(loss=sum(losses) / len(losses))
 
-        # Step the scheduler
-        if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch + 1)
-
         # Collect garbage
         torch.cuda.empty_cache()
         gc.collect()
 
-        # Create Checkpoint and keep every 5th checkpoint
-        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
-        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
-        if epoch % 5 != 0 and old_checkpoint.exists():
-            old_checkpoint.unlink()
-        torch.save(self.model, new_checkpoint)
-
         return sum(losses) / len(losses)
-
-
-def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
-    """Collate function for the dataloader.
-
-    :param batch: The batch to collate.
-    :return: Collated batch.
-    """
-    X, y = batch
-    return X, y
