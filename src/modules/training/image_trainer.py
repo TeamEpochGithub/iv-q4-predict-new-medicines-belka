@@ -2,7 +2,6 @@
 import gc
 from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -21,7 +20,7 @@ from src.typing.xdata import XData
 
 
 @dataclass
-class MainTrainer(TorchTrainer, Logger):
+class ImageTrainer(TorchTrainer, Logger):
     """Main training block."""
 
     dataset: MainDataset | None = None  # type: ignore[type-arg]
@@ -31,14 +30,14 @@ class MainTrainer(TorchTrainer, Logger):
         X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
-        validation_indices: list[int],
+        test_indices: list[int],
     ) -> tuple[Dataset[tuple[Tensor, ...]], Dataset[tuple[Tensor, ...]]]:
         """Create the datasets for training and validation.
 
         :param x: The input data.
         :param y: The target variable.
         :param train_indices: The indices to train on.
-        :param validation_indices: The indices to validate on.
+        :param test_indices: The indices to test on.
         :return: The training and validation datasets.
         """
         if self.dataset is None:
@@ -47,20 +46,20 @@ class MainTrainer(TorchTrainer, Logger):
                 torch.from_numpy(x_array[train_indices]),
                 torch.from_numpy(y[train_indices]),
             )
-            validation_dataset_old = TensorDataset(
-                torch.from_numpy(x_array[validation_indices]),
-                torch.from_numpy(y[validation_indices]),
+            test_dataset_old = TensorDataset(
+                torch.from_numpy(x_array[test_indices]),
+                torch.from_numpy(y[test_indices]),
             )
-            return train_dataset_old, validation_dataset_old
+            return train_dataset_old, test_dataset_old
 
         train_dataset = deepcopy(self.dataset)
         train_dataset.initialize(X, y, train_indices)
         train_dataset.setup_pipeline(use_augmentations=True)
 
-        validation_dataset = deepcopy(self.dataset)
-        validation_dataset.initialize(X, y, validation_indices)
+        test_dataset = deepcopy(self.dataset)
+        test_dataset.initialize(X, y, test_indices)
 
-        return train_dataset, validation_dataset
+        return train_dataset, test_dataset
 
     def create_prediction_dataset(
         self,
@@ -120,6 +119,7 @@ class MainTrainer(TorchTrainer, Logger):
         :return: Average loss for the epoch.
         """
         losses = []
+        self.scaler = torch.cuda.amp.GradScaler()
         self.model.train()
         pbar = tqdm(
             dataloader,
@@ -128,18 +128,22 @@ class MainTrainer(TorchTrainer, Logger):
         )
         for batch in pbar:
             X_batch, y_batch = batch
-
             X_batch = batch_to_device(X_batch, self.x_tensor_type, self.device)
             y_batch = batch_to_device(y_batch, self.y_tensor_type, self.device)
 
-            # Forward pass
-            y_pred = self.model(X_batch).squeeze(1)
-            loss = self.criterion(y_pred, y_batch)
-
             # Backward pass
+            with torch.cuda.amp.autocast():
+                y_pred = self.model(X_batch).squeeze(1)
+                loss = self.criterion(y_pred, y_batch)
+
             self.initialized_optimizer.zero_grad()
-            loss.backward()
-            self.initialized_optimizer.step()
+
+            self.scaler.scale(loss).backward()
+            # self.scaler.unscale_(self.initialized_optimizer)
+            # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+
+            self.scaler.step(self.initialized_optimizer)
+            self.scaler.update()
 
             # Print tqdm
             losses.append(loss.item())
@@ -149,16 +153,9 @@ class MainTrainer(TorchTrainer, Logger):
         if self.initialized_scheduler is not None:
             self.initialized_scheduler.step(epoch=epoch + 1)
 
-        # Collect garbage
+        # Remove the cuda cache
         torch.cuda.empty_cache()
         gc.collect()
-
-        # Create Checkpoint and keep every 5th checkpoint
-        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
-        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
-        if epoch % 5 != 0 and old_checkpoint.exists():
-            old_checkpoint.unlink()
-        torch.save(self.model, new_checkpoint)
 
         return sum(losses) / len(losses)
 

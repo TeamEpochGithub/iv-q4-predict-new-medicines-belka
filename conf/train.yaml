@@ -19,5 +19,4 @@ splitter:
   # test_size: 0.2
 sample_size: 100_000_000
 sample_split: -1
-
 allow_multiple_instances: true

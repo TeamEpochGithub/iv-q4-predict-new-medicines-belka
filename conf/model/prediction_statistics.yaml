@@ -10,15 +10,15 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
-      model_name: TIMM
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: CNN1D
       model:
-        _target_: epochalyst.pipeline.model.training.models.timm.Timm
-        model_name: efficientnet_b0
-        in_channels: 3
-        out_channels: 3
+        _target_: src.modules.training.models.cnn1d.CNN1D
+        n_classes: 3
+        num_embeddings: 41
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
+        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
@@ -26,37 +26,36 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 256
-      patience: 10
+      batch_size: 4096
+      patience: 5
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.images.smiles_to_image.SmilesToImage
-            img_size: 100
-          - _target_: src.modules.training.dataset_steps.images.normalize_image.NormalizeImage
-          - _target_: src.modules.training.dataset_steps.images.image_augmentation.ImageAugmentation
-            degree: 50
-            p_vertical: 0.3
-            p_horizontal: 0.3
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+            p: 0.5
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+            max_enc_size_molecule: 146
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.25
       scheduler:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 100
+        t_initial: 40
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
-        warmup_t: 1
-        warmup_lr_init: 1e-5
+        warmup_t: 4
+        warmup_lr_init: 2e-07
       n_folds: 5
+      x_tensor_type: int
       dataloader_args:
-        num_workers: 24
-        prefetch_factor: 4
-        persistent_workers: false
+        num_workers: 28
+        prefetch_factor: 5
+        persistent_workers: true
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
-
 
 pred_sys:
   steps:

@@ -168,7 +168,7 @@ submission/dependencies
 outputs
 
 tm
-
+conf/model/_*
 data/processed
 data/
 

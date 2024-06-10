@@ -3,6 +3,8 @@ import gc
 import os
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -10,7 +12,7 @@ import torch
 import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torch_geometric.data import (
     Batch,
     Data,  # type: ignore[import-not-found]
@@ -29,7 +31,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 class GraphTrainer(TorchTrainer, Logger):
     """Graph training block."""
 
-    int_type: bool = False
     dataset: GraphDataset | None = None
 
     def create_datasets(
@@ -37,7 +38,7 @@ class GraphTrainer(TorchTrainer, Logger):
         X: XData,
         y: npt.NDArray[np.int8],
         train_indices: list[int],
-        test_indices: list[int],
+        validation_indices: list[int],
     ) -> tuple[list[Data], list[Data]] | tuple[GraphDataset, GraphDataset]:
         """Create datasets for graph training."""
         if self.dataset is None:
@@ -50,7 +51,7 @@ class GraphTrainer(TorchTrainer, Logger):
                 train_graphs.append(X.molecule_graph[i])
 
             test_graphs = []
-            for i in test_indices:
+            for i in validation_indices:
                 X.molecule_graph[i].y = torch.from_numpy(y[i])
                 test_graphs.append(X.molecule_graph[i])
 
@@ -60,10 +61,10 @@ class GraphTrainer(TorchTrainer, Logger):
         train_dataset.initialize(X, y, train_indices)
         train_dataset.setup_pipeline(use_augmentations=True)
 
-        test_dataset = deepcopy(self.dataset)
-        test_dataset.initialize(X, y, test_indices)
+        validation_dataset = deepcopy(self.dataset)
+        validation_dataset.initialize(X, y, validation_indices)
 
-        return train_dataset, test_dataset
+        return train_dataset, validation_dataset
 
     def create_prediction_dataset(self, X: XData) -> GraphDataset | list[Data]:
         """Create datasets for graph prediction.
@@ -74,12 +75,16 @@ class GraphTrainer(TorchTrainer, Logger):
         if self.dataset is None:
             if X.molecule_graph is None:
                 raise ValueError("x.molecule_graph cannot be None")
-
             return X.molecule_graph
 
         dataset = deepcopy(self.dataset)
         dataset.initialize(X)
         return dataset
+
+    def custom_train(self, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], **train_args: Any) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        """Train the model."""
+        self.log_to_terminal("Model Hash: " + self.get_hash())
+        return super().custom_train(x, y, **train_args)
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predicts graph prediction."""
@@ -87,13 +92,13 @@ class GraphTrainer(TorchTrainer, Logger):
 
     def create_dataloaders(
         self,
-        train_dataset: Dataset[tuple[Tensor, ...]],
-        test_dataset: Dataset[tuple[Tensor, ...]],
+        train_dataset: GraphDataset,
+        validation_dataset: GraphDataset,
     ) -> tuple[DataLoader[tuple[Tensor, ...]], DataLoader[tuple[Tensor, ...]]]:
         """Create the dataloaders for training and validation.
 
         :param train_dataset: The training dataset.
-        :param test_dataset: The validation dataset.
+        :param validation_dataset: The validation dataset.
         :return: The training and validation dataloaders.
         """
         train_loader = DataLoader(
@@ -103,14 +108,14 @@ class GraphTrainer(TorchTrainer, Logger):
             collate_fn=(collate_fn if hasattr(train_dataset, "__getitems__") else None),  # type: ignore[arg-type]
             **self.dataloader_args,
         )
-        test_loader = DataLoader(
-            test_dataset,
+        validation_loader = DataLoader(
+            validation_dataset,
             batch_size=self.batch_size,
             shuffle=False,
-            collate_fn=(collate_fn if hasattr(test_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            collate_fn=(collate_fn if hasattr(validation_dataset, "__getitems__") else None),  # type: ignore[arg-type]
             **self.dataloader_args,
         )
-        return train_loader, test_loader
+        return train_loader, validation_loader
 
     def predict_on_loader(
         self,
@@ -241,8 +246,17 @@ class GraphTrainer(TorchTrainer, Logger):
         if self.initialized_scheduler is not None:
             self.initialized_scheduler.step(epoch=epoch)
 
+        # Collect garbage
         torch.cuda.empty_cache()
         gc.collect()
+
+        # Create Checkpoint and keep every 5th checkpoint
+        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
+        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
+        if epoch % 5 != 0 and old_checkpoint.exists():
+            old_checkpoint.unlink()
+        torch.save(self.model, new_checkpoint)
+
         return sum(losses) / len(losses)
 
     def _val_one_epoch(self, dataloader: GeometricDataLoader, desc: str) -> float:
