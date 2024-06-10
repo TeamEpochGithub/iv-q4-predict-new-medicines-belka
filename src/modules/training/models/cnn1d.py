@@ -29,7 +29,6 @@ class CNN1D(nn.Module):
         :param verbose: Whether to print out the shape of the data at each step.
         """
         super(CNN1D, self).__init__()  # noqa: UP008
-        NUM_FILTERS = filters
         self.hidden_dim = hidden_dim
 
         # Embedding layer
@@ -39,15 +38,15 @@ class CNN1D(nn.Module):
             self._embedding = nn.Linear(4, hidden_dim)
 
         # Convolutional layers
-        self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=NUM_FILTERS, kernel_size=3, stride=1)
-        self.conv2 = nn.Conv1d(in_channels=NUM_FILTERS, out_channels=NUM_FILTERS * 2, kernel_size=3, stride=1)
-        self.conv3 = nn.Conv1d(in_channels=NUM_FILTERS * 2, out_channels=NUM_FILTERS * 3, kernel_size=3, stride=1)
+        self.conv1 = nn.Conv1d(in_channels=hidden_dim, out_channels=filters, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv1d(in_channels=filters, out_channels=filters * 2, kernel_size=3, stride=1)
+        self.conv3 = nn.Conv1d(in_channels=filters * 2, out_channels=filters * 3, kernel_size=3, stride=1)
 
         # Pooling layer
         self.pool = nn.AdaptiveMaxPool1d(1)
 
         # Dense and Dropout layers
-        self.fc1 = nn.Linear(NUM_FILTERS * 3, 1024)
+        self.fc1 = nn.Linear(filters * 3, 1024)
         self.dropout1 = nn.Dropout(0.1)
         self.fc2 = nn.Linear(1024, 1024)
         self.dropout2 = nn.Dropout(0.1)
