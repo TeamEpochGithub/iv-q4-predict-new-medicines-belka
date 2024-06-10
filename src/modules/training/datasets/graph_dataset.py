@@ -3,11 +3,10 @@ from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
-import torch
 from epochalyst.pipeline.model.training.training import TrainingPipeline
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 from torch.utils.data import Dataset
-from torch_geometric.data import Data
+from torch_geometric.data import Data  # , GeometricDataset
 
 from src.typing.xdata import DataRetrieval, XData
 
@@ -27,7 +26,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
     retrieval: list[str] | None = None
     steps: list[TrainingBlock] | None = None
 
-    X: XData | list[Data] | None = None
+    X: XData | None = None
     y: npt.NDArray[np.int8] | None = None
     indices: npt.NDArray[np.int32] | None = None
 
@@ -44,7 +43,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         # Setup Pipeline
         self.setup_pipeline(use_augmentations=False)
 
-    def initialize(self, X: XData | list[Data] | None, y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
+    def initialize(self, X: XData, y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
         """Set up the dataset for training."""
         self.X = X
         self.y = y
@@ -71,7 +70,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
             return len(self.X)
         return len(self.indices)
 
-    def __getitems__(self, indices: list[int] | npt.NDArray[np.int_]) -> tuple[list[Data], torch.Tensor | None]:
+    def __getitems__(self, indices: list[int] | npt.NDArray[np.int_]) -> list[Data]:
         """Get items from the dataset."""
         if self.X is None:
             raise ValueError("Dataset not initialized.")
@@ -83,18 +82,9 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         X = self.X[indices]
         y = self.y[indices] if self.y is not None else None
 
-        X, y = self._pipeline.train(X, y)
+        return self._pipeline.train(X, y)
 
-        if y is not None:
-            y_tensor = torch.tensor(y, dtype=torch.int64)
-        else:
-            y_tensor = None
-
-        X = list(X)
-
-        return X, y_tensor
-
-    def __getitem__(self, idx: int) -> tuple[Data, torch.Tensor | None]:
+    def __getitem__(self, idx: int) -> Data:
         """Get an item from the dataset.
 
         :param idx: The index to get.
@@ -110,9 +100,5 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         X = np.expand_dims(self.X[idx], axis=0)
         y = np.expand_dims(self.y[idx], axis=0) if self.y is not None else None
 
-        X, y = self._pipeline.train(X, y)
-
-        X = X[0]
-        y_tensor = torch.tensor(y[0], dtype=torch.int64) if y is not None else None
-
-        return X, y_tensor
+        graphs = self._pipeline.train(X, y)
+        return graphs[0]

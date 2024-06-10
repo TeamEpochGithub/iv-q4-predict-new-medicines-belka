@@ -1,11 +1,11 @@
 """GCN with Transformer Convolutions Module."""
 
-import numpy as np
 import torch
 from torch import nn
 from torch_geometric.data import Data
 from torch_geometric.nn import TransformerConv, global_mean_pool
-from src.utils.bit_packing import unpack_bits
+
+from src.modules.training.dataset_steps.graphs.smiles_to_graph import unpack_atom_features, unpack_edge_features
 
 
 class GNNTransformerModel(torch.nn.Module):
@@ -14,14 +14,18 @@ class GNNTransformerModel(torch.nn.Module):
     :param num_node_features: Number of features per node
     :param num_edge_features: Number of edge features per node
     :param n_classes:  Number of classes to predict
+    :param hidden_dim: Hidden Layer Dimension in Conv Layers
+    :param out_features: Number of features being passed in Linear layers
     """
 
-    def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32, out_features: int = 1024, dropout : float = 0.1) -> None:
+    def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32, out_features: int = 1024, dropout: float = 0.1) -> None:
         """Initialize the GCN model.
 
         :param num_node_features: Number of features per node
         :param num_edge_features: Number of edge features per node
         :param n_classes:  Number of classes to predict
+        :param hidden_dim: Hidden Layer Dimension in Conv Layers
+        :param out_features: Number of features being passed in Linear layers
         """
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -50,7 +54,8 @@ class GNNTransformerModel(torch.nn.Module):
         """
         x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
 
-        edge_attr = unpack_bits(edge_attr.to(torch.uint8)).float()
+        x = unpack_atom_features(x).to(torch.float)
+        edge_attr = unpack_edge_features(edge_attr).to(torch.float)
 
         x = self.relu(self.conv1(x, edge_index, edge_attr))
         x = self.relu(self.conv2(x, edge_index, edge_attr))
@@ -67,4 +72,3 @@ class GNNTransformerModel(torch.nn.Module):
         x = self.dropout3(x)
 
         return self.fc4(x)
-

@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gcn_edge_features
+  - model: graphs/gcn_transformer
   - wandb: train
 
 data_path: data/shrunken
@@ -17,7 +17,7 @@ splitter:
   # _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   # n_splits: 5
   # test_size: 0.2
-sample_size: 1_000_000
+sample_size: 10_000_000
 sample_split: 0.015
 
 allow_multiple_instances: true
