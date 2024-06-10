@@ -1,11 +1,11 @@
 """Module to augment atom encoding."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import numpy.typing as npt
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 
-from src.modules.chemistry_functions.ecfp_parallel import convert_smile_array_parallel
+from src.modules.chemistry_functions.ecfp_parallel import convert_smile_array_parallel, convert_smiles_array_single_process
 from src.modules.logging.logger import Logger
 
 
@@ -29,6 +29,43 @@ class ECFP(TrainingBlock, Logger):
         result = convert_smile_array_parallel(smiles_array=X, bits=self.bits, radius=self.radius, use_features=self.use_features, desc="Creating ECFP for molecules")
 
         return result, y
+
+    @property
+    def is_augmentation(self) -> bool:
+        """Return if block is augmentation block.
+
+        :return: is_block
+        """
+        return False
+
+
+@dataclass
+class ECFP_Label(TrainingBlock, Logger):
+    """Fingerprint generation in dataset for labels."""
+
+    bits: int = 128
+    radius: int = 2
+    use_features: bool = False
+    multi_processing: bool = field(default=False, init=True, repr=False, compare=False)
+    packbits: bool = field(default=True, init=True)
+
+    def train(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.int_]]:
+        """Replace some atoms with similar ones.
+
+        :param X: Input array
+        :param y: Labels
+        """
+        if X is None:
+            raise ValueError("There is no SMILE information for the molecules, can't convert to ECFP")
+        if self.multi_processing:
+            result = convert_smile_array_parallel(smiles_array=X, bits=self.bits, radius=self.radius, use_features=self.use_features, desc="Creating ECFP for molecules")
+        else:
+            result = convert_smiles_array_single_process(smiles_array=X, bits=self.bits, radius=self.radius, use_features=self.use_features, packbits=False)
+
+        # Make each value of y a tuple of result and original y: (4096, 3) + (4096, y) = (4096, 2, 3/y)
+        labels = np.concatenate((y, result), axis=-1)
+
+        return X, labels
 
     @property
     def is_augmentation(self) -> bool:

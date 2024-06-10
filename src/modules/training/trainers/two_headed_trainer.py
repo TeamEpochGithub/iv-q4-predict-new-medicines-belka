@@ -108,11 +108,12 @@ class MainTrainer(TorchTrainer, Logger):
             X_batch, y_batch = batch
 
             X_batch = batch_to_device(X_batch, self.x_tensor_type, self.device)
-            y_batch = batch_to_device(y_batch, self.y_tensor_type, self.device)
+            protein_labels = batch_to_device(y_batch[:, :3], self.y_tensor_type, self.device)
+            ecfp_labels = batch_to_device(y_batch[:, 3:], self.y_tensor_type, self.device)
 
             # Forward pass
-            y_pred = self.model(X_batch).squeeze(1)
-            loss = self.criterion(y_pred, y_batch)
+            y_pred = self.model(X_batch)
+            loss = self.criterion(y_pred[0], protein_labels) + self.criterion(y_pred[1], ecfp_labels)
 
             # Backward pass
             self.initialized_optimizer.zero_grad()
