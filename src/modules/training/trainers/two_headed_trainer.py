@@ -1,16 +1,13 @@
 """Module for example training block."""
 import gc
-from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_device
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.modules.training.main_trainer import MainTrainer

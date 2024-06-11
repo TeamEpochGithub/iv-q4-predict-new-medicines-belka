@@ -3,7 +3,7 @@ from torch import Tensor, nn
 
 
 class TwoHeadedCNN1D(nn.Module):
-    """CNN1D model for multi headed predictions
+    """CNN1D model for multi headed predictions.
 
     Input:
         X: (n_samples, n_channel, n_length)
@@ -66,7 +66,7 @@ class TwoHeadedCNN1D(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x: Tensor) -> tuple[Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         """Forward function of model.
 
         :param x: Input data

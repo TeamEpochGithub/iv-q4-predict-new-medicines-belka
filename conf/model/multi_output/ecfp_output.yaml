@@ -16,7 +16,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
         n_classes: 3
-        n_bits: 8 
+        n_bits: 32
         num_embeddings: 41
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -34,8 +34,8 @@ train_sys:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFP_Label
-            bits: 8 
+          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
+            bits: 32
           - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
             max_enc_size_molecule: 146
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation

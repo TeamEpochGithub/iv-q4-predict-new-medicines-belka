@@ -18,9 +18,8 @@ def convert_smiles_array_single_process(
     *,
     use_features: bool = False,
     progressbar_desc: str | None = None,
-    packbits: bool = True,
 ) -> npt.NDArray[np.uint8]:
-    """Worker function to process a batch of SMILES strings.
+    """Worker function to process a batch of SMILES strings into a packed array.
 
     :param smiles: A list of SMILES strings.
     :param radius: The radius of the ECFP.
@@ -29,18 +28,38 @@ def convert_smiles_array_single_process(
     :param progressbar_desc: Description for the progress bar.
     :return: A numpy array of fingerprints.
     """
-    if packbits:
-        result = np.empty((len(smiles_array), bits // 8), dtype=np.uint8)
-    else:
-        result = []
+    result = np.empty((len(smiles_array), bits // 8), dtype=np.uint8)
     iterator = tqdm(enumerate(smiles_array), desc=progressbar_desc) if progressbar_desc is not None else enumerate(smiles_array)
     for idx, smile in iterator:
         mol = Chem.MolFromSmiles(smile)
         fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features)
-        if packbits:
-            result[idx] = np.packbits(np.array(fingerprint))
-        else:
-            result.append(np.array(fingerprint))
+        result[idx] = np.packbits(np.array(fingerprint))
+    return result
+
+
+def convert_smiles_array_not_packed(
+    smiles_array: npt.NDArray[np.bytes_],
+    radius: int,
+    bits: int,
+    *,
+    use_features: bool = False,
+    progressbar_desc: str | None = None,
+) -> npt.NDArray[np.uint8]:
+    """Worker function to process a batch of SMILES strings into ECFP fingerprints without packing.
+
+    :param smiles: A list of SMILES strings.
+    :param radius: The radius of the ECFP.
+    :param bits: The number of bits in the ECFP.
+    :param use_features: Whether to use features in the ECFP.
+    :param progressbar_desc: Description for the progress bar.
+    :return: A numpy array of fingerprints.
+    """
+    result = []
+    iterator = tqdm(enumerate(smiles_array), desc=progressbar_desc) if progressbar_desc is not None else enumerate(smiles_array)
+    for _, smile in iterator:
+        mol = Chem.MolFromSmiles(smile)
+        fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features)
+        result.append(np.array(fingerprint))
     return np.array(result)
 
 
