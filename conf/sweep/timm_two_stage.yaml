@@ -1,0 +1,70 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+entity: team-epoch-iv
+metric:
+  goal: maximize
+  name: Validation Score
+name: TIMM Two Stage
+program: train.py
+project: detect-medicine
+parameters:
+
+  # First Stage (Sampled Data)
+  model.train_sys.steps.0.sample_size:
+    values:
+      - 50_000
+      - 100_000
+      - 150_000
+      - 200_000
+
+  model.train_sys.steps.0.epochs:
+    values:
+      - 10
+      - 15
+      - 20
+      - 25
+
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    max: 0.01
+    min: 1e-06
+
+  model.train_sys.steps.0.scheduler.t_initial:
+    distribution: int_uniform
+    max: 10
+    min: 2
+
+  model.train_sys.steps.0.scheduler.cycle_mul:
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+
+  model.train_sys.steps.0.scheduler.cycle_decay:
+    values:
+      - 1
+      - 0.8
+      - 0.6
+      - 0.4
+
+  model.train_sys.steps.0.scheduler.cycle_limit:
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+
+  # Second Stage (All Data)
+  model.train_sys.steps.1.optimizer.lr:
+    distribution: log_uniform_values
+    max: 0.01
+    min: 1e-06
+
+  model.train_sys.steps.1.scheduler.t_initial:
+    distribution: int_uniform
+    max: 50
+    min: 10
