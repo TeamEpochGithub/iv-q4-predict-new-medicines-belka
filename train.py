@@ -3,7 +3,7 @@ import os
 import warnings
 from contextlib import nullcontext
 from pathlib import Path
-
+import pandas as pd
 import coloredlogs
 import hydra
 import numpy as np
@@ -91,6 +91,11 @@ def run_train_cfg(cfg: DictConfig) -> None:
     # Setup cache arguments
     cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split)
     splitter_cache_path = cache_path / "splits.pkl"
+    if cfg.pseudo_label == 'local':
+        cache_path = Path(str(cache_path) + '_pl')
+    if cfg.pseudo_label == 'public':
+        cache_path = Path(str(cache_path) + '_pb')
+
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
     # Setup the data
@@ -99,6 +104,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     train_indices: npt.NDArray[np.int64]
     validation_indices: npt.NDArray[np.int64] | None = None
     test_indices: npt.NDArray[np.int64] | None = None
+    data_cached: bool = True
 
     # Check if the data is cached and load if not
     if (
@@ -107,6 +113,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         or (cfg.splitter is not None and not splitter_cache_path.exists())
     ):
         X, y = setup_xy(cfg)
+        data_cached = False
 
     # Split the data into train and test if required
     if cfg.splitter is None:
@@ -125,6 +132,28 @@ def run_train_cfg(cfg: DictConfig) -> None:
         else:
             logger.info("Splitting Data into train and validation sets.")
             train_indices, validation_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)[fold_idx]  # type: ignore[assignment, misc]
+
+    if cfg.pseudo_label != 'none':
+        if not data_cached:
+            if cfg.pseudo_label == 'local':
+                # Load the local test samples
+                smiles = X.molecule_smiles[test_indices]
+
+            if cfg.pseudo_label == 'kaggle':
+                # Load the kaggle test samples
+                smiles = pd.read_csv('data/raw/test.csv')
+                smiles = smiles['molecule_smiles'].tolist()
+
+            # Include the test samples into the XData
+            X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+
+            # Modify the train indices and labels
+            labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.99, 0.01])
+            y = np.concatenate((y, labels))
+
+            train_size = train_indices.shape[0]
+            new_indices = [train_size + idx for idx in range(len(smiles))]
+            train_indices = np.concatenate((train_indices, new_indices))
 
     # Run the pipeline and score the results
     print_section_separator("Train model pipeline")
