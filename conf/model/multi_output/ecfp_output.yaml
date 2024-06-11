@@ -10,12 +10,13 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.main_trainer.MainTrainer
+    - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
       model_name: TwoHeadedCNN1D
+      loss1_weight: 10
       model:
         _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
         n_classes: 3
-        n_bits: 64 
+        n_bits: 8 
         num_embeddings: 41
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -33,10 +34,8 @@ train_sys:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
-            p: 0.5
           - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFP_Label
-            bits: 64
+            bits: 8 
           - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
             max_enc_size_molecule: 146
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation

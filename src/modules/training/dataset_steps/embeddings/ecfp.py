@@ -63,7 +63,10 @@ class ECFP_Label(TrainingBlock, Logger):
             result = convert_smiles_array_single_process(smiles_array=X, bits=self.bits, radius=self.radius, use_features=self.use_features, packbits=False)
 
         # Make each value of y a tuple of result and original y: (4096, 3) + (4096, y) = (4096, 2, 3/y)
-        labels = np.concatenate((y, result), axis=-1)
+        if y is not None:
+            labels = np.concatenate((y, result), axis=-1)
+        else:
+            labels = None
 
         return X, labels
 

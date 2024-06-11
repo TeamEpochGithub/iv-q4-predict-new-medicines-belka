@@ -8,83 +8,19 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 import torch
-import wandb
-from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_device
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from src.modules.logging.logger import Logger
-from src.modules.training.datasets.main_dataset import MainDataset
-from src.typing.xdata import XData
+from src.modules.training.main_trainer import MainTrainer
 
 
 @dataclass
-class MainTrainer(TorchTrainer, Logger):
-    """Main training block."""
+class TwoHeadedTrainer(MainTrainer):
+    """Two headed training block."""
 
-    dataset: MainDataset | None = None  # type: ignore[type-arg]
-
-    def create_datasets(
-        self,
-        X: XData,
-        y: npt.NDArray[np.int8],
-        train_indices: list[int],
-        validation_indices: list[int],
-    ) -> tuple[Dataset[tuple[Tensor, ...]], Dataset[tuple[Tensor, ...]]]:
-        """Create the datasets for training and validation.
-
-        :param x: The input data.
-        :param y: The target variable.
-        :param train_indices: The indices to train on.
-        :param validation_indices: The indices to validate on.
-        :return: The training and validation datasets.
-        """
-        if self.dataset is None:
-            x_array = np.array(X.molecule_smiles)
-            train_dataset_old = TensorDataset(
-                torch.from_numpy(x_array[train_indices]),
-                torch.from_numpy(y[train_indices]),
-            )
-            validation_dataset_old = TensorDataset(
-                torch.from_numpy(x_array[validation_indices]),
-                torch.from_numpy(y[validation_indices]),
-            )
-            return train_dataset_old, validation_dataset_old
-
-        train_dataset = deepcopy(self.dataset)
-        train_dataset.initialize(X, y, train_indices)
-        train_dataset.setup_pipeline(use_augmentations=True)
-
-        validation_dataset = deepcopy(self.dataset)
-        validation_dataset.initialize(X, y, validation_indices)
-
-        return train_dataset, validation_dataset
-
-    def create_prediction_dataset(
-        self,
-        x: XData,
-    ) -> Dataset[tuple[Tensor, ...]]:
-        """Create the prediction dataset.
-
-        :param x: The input data.
-        :return: The prediction dataset.
-        """
-        if self.dataset is None:
-            x_arr = np.array(x.molecule_ecfp)
-            return TensorDataset(torch.from_numpy(x_arr))
-
-        dataset = deepcopy(self.dataset)
-        dataset.initialize(x)
-        return dataset
-
-    def save_model_to_external(self) -> None:
-        """Save the model to external storage."""
-        if wandb.run:
-            model_artifact = wandb.Artifact(self.model_name, type="model")
-            model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
-            wandb.log_artifact(model_artifact)
+    loss1_weight: float = 1.0
 
     def _train_one_epoch(
         self,
@@ -113,7 +49,7 @@ class MainTrainer(TorchTrainer, Logger):
 
             # Forward pass
             y_pred = self.model(X_batch)
-            loss = self.criterion(y_pred[0], protein_labels) + self.criterion(y_pred[1], ecfp_labels)
+            loss = self.criterion(y_pred[0], protein_labels) + self.criterion(y_pred[1], ecfp_labels) * (1 / self.loss1_weight)
 
             # Backward pass
             self.initialized_optimizer.zero_grad()
@@ -128,15 +64,73 @@ class MainTrainer(TorchTrainer, Logger):
         if self.initialized_scheduler is not None:
             self.initialized_scheduler.step(epoch=epoch + 1)
 
-        # Collect garbage
+        # Remove the cuda cache
         torch.cuda.empty_cache()
         gc.collect()
 
-        # Create Checkpoint and keep every 5th checkpoint
-        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
-        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
-        if epoch % 5 != 0 and old_checkpoint.exists():
-            old_checkpoint.unlink()
-        torch.save(self.model, new_checkpoint)
-
         return sum(losses) / len(losses)
+
+    def _val_one_epoch(
+        self,
+        dataloader: DataLoader[tuple[Tensor, ...]],
+        desc: str,
+    ) -> float:
+        """Compute validation loss of the model for one epoch.
+
+        :param dataloader: Dataloader for the validation data.
+        :param desc: Description for the tqdm progress bar.
+        :return: Average loss for the epoch.
+        """
+        losses = []
+        self.model.eval()
+        pbar = tqdm(dataloader, unit="batch")
+        with torch.no_grad():
+            for batch in pbar:
+                X_batch, y_batch = batch
+
+                X_batch = batch_to_device(X_batch, self.x_tensor_type, self.device)
+                protein_labels = batch_to_device(y_batch[:, :3], self.y_tensor_type, self.device)
+                ecfp_labels = batch_to_device(y_batch[:, 3:], self.y_tensor_type, self.device)
+
+                # Forward pass
+                y_pred = self.model(X_batch)
+                loss = self.criterion(y_pred[0], protein_labels) + self.criterion(y_pred[1], ecfp_labels)
+
+                # Print losses
+                losses.append(loss.item())
+                pbar.set_description(desc=desc)
+                pbar.set_postfix(loss=sum(losses) / len(losses))
+        return sum(losses) / len(losses)
+
+    def predict_on_loader(
+        self,
+        loader: DataLoader[tuple[Tensor, ...]],
+    ) -> npt.NDArray[np.float32]:
+        """Predict on the loader.
+
+        :param loader: The loader to predict on.
+        :return: The predictions.
+        """
+        self.log_to_terminal("Predicting on the validation data")
+        self.model.eval()
+        predictions = []
+        # Create a new dataloader from the dataset of the input dataloader with collate_fn
+        loader = DataLoader(
+            loader.dataset,
+            batch_size=loader.batch_size,
+            shuffle=False,
+            collate_fn=(
+                self.collate_fn if hasattr(loader.dataset, "__getitems__") else None  # type: ignore[arg-type]
+            ),
+            **self.dataloader_args,
+        )
+        with torch.no_grad(), tqdm(loader, unit="batch", disable=False) as tepoch:
+            for data in tepoch:
+                X_batch = batch_to_device(data[0], self.x_tensor_type, self.device)
+
+                y_pred = self.model(X_batch)
+
+                predictions.extend(y_pred[0].cpu().numpy())
+
+        self.log_to_terminal("Done predicting")
+        return np.array(predictions)
