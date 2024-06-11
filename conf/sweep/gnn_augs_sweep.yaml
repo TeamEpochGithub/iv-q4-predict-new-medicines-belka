@@ -6,7 +6,7 @@ method: bayes
 project: detect-medicine
 entity: team-epoch-iv
 program: train.py
-name: Graph Augmentation Probability Sweep
+name: Transformer GNN 100k Sweep
 metric:
   goal: maximize
   name: Validation Score
@@ -51,4 +51,3 @@ parameters:
     distribution: int_uniform
     max: 5
     min: 1
-
