@@ -14,7 +14,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
         n_classes: 3
-        num_node_features: 22
+        num_node_features: 0
         num_edge_features: 2
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -32,9 +32,10 @@ train_sys:
         retrieval: [ "SMILES_MOL" ]
         steps:
           - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
-            use_atom_chem_features: true
-            use_atom_pharmacophore_features: true
+            use_atom_chem_features: false
+            use_atom_pharmacophore_features: false
             use_bond_features: true
+            use_atom_deep_chem_features: true
       scheduler:
         _target_: functools.partial
         _args_:

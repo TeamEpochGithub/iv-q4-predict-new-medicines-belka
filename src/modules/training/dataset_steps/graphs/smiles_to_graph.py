@@ -15,6 +15,7 @@ from rdkit.Chem import AllChem, RDConfig  # type: ignore[import-not-found]
 from rdkit.Chem.rdchem import Mol  # type: ignore[import-not-found]
 from rdkit.Chem.rdMolChemicalFeatures import MolChemicalFeatureFactory  # type: ignore[import-not-found]
 from torch_geometric.data import Data
+import deepchem as dc
 
 PHARMA_DICT = {
     "Donor": 0,
@@ -52,11 +53,14 @@ class SmilesToGraph(TrainingBlock):
     use_atom_chem_features: bool = False
     use_atom_pharmacophore_features: bool = False
     use_bond_features: bool = False
+    use_atom_deep_chem_features: bool = False
 
     _atom_chem_features: list[Callable[[Mol], int]] = field(default_factory=list, repr=False, compare=False)
     _num_atom_chem_features: int = field(default=0, repr=False, compare=False)
     _atom_pharma_features: Callable[[Mol], npt.NDArray[np.uint8]] | None = field(default=None, repr=False, compare=False)
     _num_atom_pharma_features: int = field(default=0, repr=False, compare=False)
+    _atom_deepchem_features: Callable[[Mol], npt.NDArray[np.float32]] | None = field(default=None, repr=False,
+        compare=False)  # New field for DeepChem features
     _num_atom_features: int = field(default=0, repr=False, compare=False)
 
     _num_bond_features: int = field(default=0, repr=False, compare=False)
@@ -81,9 +85,16 @@ class SmilesToGraph(TrainingBlock):
             self._num_atom_pharma_features = 1
             self._num_atom_features += 1
 
+        # Adds DeepChem Features
+        if self.use_atom_deep_chem_features:
+            self._atom_deepchem_features = lambda x: _extract_deepchem_features(x)
+            self._num_atom_features += len(_extract_deepchem_features(Chem.MolFromSmiles("C")))
+
         # Add Bond Features
         if self.use_bond_features:
             self._num_bond_features += 2
+
+        print(f"Num Atom Features: {self._num_atom_features}")
 
     def train(
         self,
@@ -198,20 +209,37 @@ def _extract_atom_pharma_features_packed(fdef: MolChemicalFeatureFactory, mol: M
             del pharmafeature_list[idx]
     return features
 
+def _extract_deepchem_features(mol: Mol) -> npt.NDArray[np.float32]:
+    """Extract DeepChem features."""
+    # featurizer = dc.feat.MolGraphConvFeaturizer()
+    # feature_array = featurizer.featurize([mol])[0] NO FEATURES CURRENTLY!
+    ecfp_featurizer = dc.feat.CircularFingerprint(radius=2, size=2048)
+    feature_array = ecfp_featurizer.featurize([mol])[0]
+    print("Extracting features from deepchem: ", feature_array)
+    return feature_array.astype(np.float32)
+
 
 def unpack_atom_features(x: torch.Tensor) -> torch.Tensor:
     """Unpack the atom features."""
     # Only Pharmacophore Features
-    if x.shape[0] == 1:
+    if x.shape[1] == 1:
         unpacked_pharma = (x[:, 4].unsqueeze(1) >> torch.arange(8, device=x.device).unsqueeze(0)) & 1
         return unpacked_pharma.squeeze(0)
-
     # Only Chemical Features
-    if x.shape[0] == 4:
-        result = torch.empty(3 + ATOMIC_NUM_DICT_LEN)
+    if x.shape[1] == 4:
+        result = torch.empty(x.shape[0], 3 + ATOMIC_NUM_DICT_LEN, device=x.device, dtype=x.dtype)
         result[:, :3] = x[:, :3]
         result[:, 3:] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
         return result
+
+    if x.shape[1] == 0:
+        result = torch.empty(x.shape[0], x.shape[1], device=x.device, dtype=x.dtype)
+        result[:, :3] = x[:, :3]
+        return result
+    #Only DeepChem features (Check different sizes)
+    # dc.feat.MolGraphConvFeaturizer() 0 extracted features for some reason
+    # dc.feat.CircularFingerprint(radius=2, size=2048) array of 0s?
+
 
     # Both Chemical and Pharmacophore Features
     result = torch.empty((x.shape[0], 3 + ATOMIC_NUM_DICT_LEN + PHARMA_DICT_LEN), device=x.device, dtype=x.dtype)
@@ -225,3 +253,4 @@ def unpack_atom_features(x: torch.Tensor) -> torch.Tensor:
 def unpack_edge_features(edge_attr: torch.Tensor) -> torch.Tensor:
     """Unpack the edge features."""
     return edge_attr
+
