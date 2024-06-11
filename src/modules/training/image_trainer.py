@@ -81,15 +81,11 @@ class ImageTrainer(TorchTrainer, Logger):
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
         """Train the model.
 
-        Overwritten to intercept the fold number and enable two-stage training.
-
         :param x: The input data.
         :param y: The target variable.
         :return The predictions and the labels.
         """
-        self._fold = train_args.get("fold", -1)
-        y_pred, y = super().custom_train(x, y, **train_args)
-        return y_pred, y
+        return super().custom_train(x, y, **train_args)
 
     def custom_predict(self, x: XData, **pred_args: Any) -> npt.NDArray[np.float64]:
         """Predict using the model.
@@ -104,7 +100,7 @@ class ImageTrainer(TorchTrainer, Logger):
         """Save the model to external storage."""
         if wandb.run:
             model_artifact = wandb.Artifact(self.model_name, type="model")
-            model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
+            model_artifact.add_file(self.get_model_path())
             wandb.log_artifact(model_artifact)
 
     def _train_one_epoch(
@@ -124,24 +120,22 @@ class ImageTrainer(TorchTrainer, Logger):
         pbar = tqdm(
             dataloader,
             unit="batch",
-            desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']})",
+            desc=f"Epoch {epoch} Train ({self.initialized_optimizer.param_groups[0]['lr']:0.8f})",
         )
         for batch in pbar:
             X_batch, y_batch = batch
+
             X_batch = batch_to_device(X_batch, self.x_tensor_type, self.device)
             y_batch = batch_to_device(y_batch, self.y_tensor_type, self.device)
 
-            # Backward pass
+            # Forward pass
             with torch.cuda.amp.autocast():
                 y_pred = self.model(X_batch).squeeze(1)
                 loss = self.criterion(y_pred, y_batch)
 
+            # Backward pass
             self.initialized_optimizer.zero_grad()
-
             self.scaler.scale(loss).backward()
-            # self.scaler.unscale_(self.initialized_optimizer)
-            # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-
             self.scaler.step(self.initialized_optimizer)
             self.scaler.update()
 
@@ -149,22 +143,8 @@ class ImageTrainer(TorchTrainer, Logger):
             losses.append(loss.item())
             pbar.set_postfix(loss=sum(losses) / len(losses))
 
-        # Step the scheduler
-        if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch + 1)
-
         # Remove the cuda cache
         torch.cuda.empty_cache()
         gc.collect()
 
         return sum(losses) / len(losses)
-
-
-def collate_fn(batch: tuple[Tensor, ...]) -> tuple[Tensor, ...]:
-    """Collate function for the dataloader.
-
-    :param batch: The batch to collate.
-    :return: Collated batch.
-    """
-    X, y = batch
-    return X, y
