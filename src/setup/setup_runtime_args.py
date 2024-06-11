@@ -107,6 +107,7 @@ def setup_train_args(
         },
         "ImageTrainer": main_trainer,
         "LazyXGB": main_trainer,
+        "TwoHeadedTrainer": main_trainer,
     }
 
     if save_model_preds:
