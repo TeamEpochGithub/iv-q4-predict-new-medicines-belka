@@ -2,7 +2,6 @@
 import gc
 from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -79,11 +78,29 @@ class MainTrainer(TorchTrainer, Logger):
         dataset.initialize(x)
         return dataset
 
+    def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
+        """Train the model.
+
+        :param x: The input data.
+        :param y: The target variable.
+        :return The predictions and the labels.
+        """
+        return super().custom_train(x, y, **train_args)
+
+    def custom_predict(self, x: XData, **pred_args: Any) -> npt.NDArray[np.float64]:
+        """Predict using the model.
+
+        :param x: Input data
+        :param pred_args: Prediction arguments
+        :return: predictions
+        """
+        return super().custom_predict(x, **pred_args)
+
     def save_model_to_external(self) -> None:
         """Save the model to external storage."""
         if wandb.run:
             model_artifact = wandb.Artifact(self.model_name, type="model")
-            model_artifact.add_file(f"{self._model_directory}/{self.get_hash()}.pt")
+            model_artifact.add_file(self.get_model_path())
             wandb.log_artifact(model_artifact)
 
     def _train_one_epoch(
@@ -123,19 +140,8 @@ class MainTrainer(TorchTrainer, Logger):
             losses.append(loss.item())
             pbar.set_postfix(loss=sum(losses) / len(losses))
 
-        # Step the scheduler
-        if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch + 1)
-
         # Collect garbage
         torch.cuda.empty_cache()
         gc.collect()
-
-        # Create Checkpoint and keep every 5th checkpoint
-        old_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch-1}.pt")
-        new_checkpoint = Path(f"{self._model_directory}/{self.get_hash()}_checkpoint_{epoch}.pt")
-        if epoch % 5 != 0 and old_checkpoint.exists():
-            old_checkpoint.unlink()
-        torch.save(self.model, new_checkpoint)
 
         return sum(losses) / len(losses)
