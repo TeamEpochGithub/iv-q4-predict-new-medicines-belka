@@ -202,13 +202,13 @@ def _extract_atom_pharma_features_packed(fdef: MolChemicalFeatureFactory, mol: M
 def unpack_atom_features(x: torch.Tensor) -> torch.Tensor:
     """Unpack the atom features."""
     # Only Pharmacophore Features
-    if x.shape[0] == 1:
+    if x.shape[1] == 1:
         unpacked_pharma = (x[:, 4].unsqueeze(1) >> torch.arange(8, device=x.device).unsqueeze(0)) & 1
         return unpacked_pharma.squeeze(0)
 
     # Only Chemical Features
-    if x.shape[0] == 4:
-        result = torch.empty(3 + ATOMIC_NUM_DICT_LEN)
+    if x.shape[1] == 4:
+        result = torch.empty(x.shape[0], 3 + ATOMIC_NUM_DICT_LEN, device=x.device, dtype=x.dtype)
         result[:, :3] = x[:, :3]
         result[:, 3:] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
         return result

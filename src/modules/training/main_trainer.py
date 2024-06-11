@@ -11,10 +11,12 @@ import wandb
 from epochalyst.pipeline.model.training.torch_trainer import TorchTrainer
 from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_device
 from torch import Tensor
+from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
 from src.modules.logging.logger import Logger
+from src.modules.objects import TrainObj, TrainPredictObj
 from src.modules.training.datasets.main_dataset import MainDataset
 from src.typing.xdata import XData
 
@@ -24,13 +26,14 @@ class MainTrainer(TorchTrainer, Logger):
     """Main training block."""
 
     dataset: MainDataset | None = None  # type: ignore[type-arg]
+    sample_size: int | None = None
 
     def create_datasets(
         self,
         X: XData,
         y: npt.NDArray[np.int8],
-        train_indices: list[int],
-        validation_indices: list[int],
+        train_indices: npt.NDArray[np.int64],
+        validation_indices: npt.NDArray[np.int64],
     ) -> tuple[Dataset[tuple[Tensor, ...]], Dataset[tuple[Tensor, ...]]]:
         """Create the datasets for training and validation.
 
@@ -40,6 +43,10 @@ class MainTrainer(TorchTrainer, Logger):
         :param validation_indices: The indices to validate on.
         :return: The training and validation datasets.
         """
+        if self.sample_size is not None:
+            train_indices = np.random.default_rng().choice(train_indices, self.sample_size, replace=False)
+            validation_indices = np.random.default_rng().choice(validation_indices, self.sample_size, replace=False)
+
         if self.dataset is None:
             x_array = np.array(X.molecule_smiles)
             train_dataset_old = TensorDataset(
@@ -78,23 +85,36 @@ class MainTrainer(TorchTrainer, Logger):
         dataset.initialize(x)
         return dataset
 
-    def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
+    def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[TrainPredictObj, TrainObj]:
         """Train the model.
 
         :param x: The input data.
         :param y: The target variable.
         :return The predictions and the labels.
         """
-        return super().custom_train(x, y, **train_args)
+        if train_predict_obj.model is not None:
+            self.model = train_predict_obj.model
+            self.initialized_optimizer = self.optimizer(self.model.parameters())
+            self.initialized_scheduler: LRScheduler | None
+            if self.scheduler is not None:
+                self.initialized_scheduler = self.scheduler(self.initialized_optimizer)
 
-    def custom_predict(self, x: XData, **pred_args: Any) -> npt.NDArray[np.float64]:
+        y_predictions, y_labels_modified = super().custom_train(train_predict_obj.x_data, train_obj.y_labels_original, **train_args)
+        train_predict_obj.y_predictions = y_predictions
+        train_predict_obj.model = self.model
+        train_obj.y_labels_modified = y_labels_modified
+
+        return train_predict_obj, train_obj
+
+    def custom_predict(self, train_predict_obj: TrainPredictObj, **pred_args: Any) -> TrainPredictObj:
         """Predict using the model.
 
         :param x: Input data
         :param pred_args: Prediction arguments
         :return: predictions
         """
-        return super().custom_predict(x, **pred_args)
+        train_predict_obj.y_predictions = super().custom_predict(train_predict_obj.x_data, **pred_args)
+        return train_predict_obj
 
     def save_model_to_external(self) -> None:
         """Save the model to external storage."""
