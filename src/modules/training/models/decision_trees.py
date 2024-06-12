@@ -51,25 +51,25 @@ class DecisionTrees(VerboseTrainingBlock):
         :param x: x data
         :param y: labels
         :param train_indices: Train indices
-        :param test_indices: Test indices
+        :param validation_indices: Validation indices
         """
-        # Set the train and test indices
+        # Set the train and validation indices
         train_indices: list[int] | dict[str, Any] = train_args.get("train_indices", [])
-        test_indices: list[int] | dict[str, Any] = train_args.get("test_indices", [])
+        validation_indices: list[int] | dict[str, Any] = train_args.get("validation_indices", [])
 
-        if isinstance(train_indices, dict) or isinstance(test_indices, dict):
-            raise TypeError("Wrong input for train/test indices.")
+        if isinstance(train_indices, dict) or isinstance(validation_indices, dict):
+            raise TypeError("Wrong input for train/validation indices.")
 
-        self.log_to_terminal("Extracting train and test data.")
+        self.log_to_terminal("Extracting train and validation data.")
         x.retrieval = getattr(DataRetrieval, self.data[0])
 
         X_train = x[train_indices]
-        X_test = x[test_indices]
+        X_validation = x[validation_indices]
         y_train = y[train_indices]
 
         if self.data[0] == "ECFP_MOL":
             X_train = np.unpackbits(X_train, axis=1)
-            X_test = np.unpackbits(X_test, axis=1)
+            X_validation = np.unpackbits(X_validation, axis=1)
 
         # Initialize the XGBoost model and fit it
         if self.model_name == "XGBClassifier":
@@ -91,10 +91,10 @@ class DecisionTrees(VerboseTrainingBlock):
         self.save_model(trained_model_path)
 
         # Get the predictions
-        y_pred_proba = self.model.predict_proba(X_test)
+        y_pred_proba = self.model.predict_proba(X_validation)
         if self.multi_output:
-            return y_pred_proba, y[test_indices]
-        return y_pred_proba[:, 1], y[test_indices]
+            return y_pred_proba, y[validation_indices]
+        return y_pred_proba[:, 1], y[validation_indices]
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predict using an XGBoost classifier.

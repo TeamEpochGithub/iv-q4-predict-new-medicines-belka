@@ -1,0 +1,61 @@
+_target_: epochalyst.pipeline.model.model.ModelPipeline
+_convert_: partial
+x_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Preprocessing pipeline
+  steps: []
+y_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Label processing pipeline
+  steps: []
+train_sys:
+  _target_: src.modules.training.verbose_training_pipeline.VerboseTrainingPipeline
+  steps:
+  - _target_: src.modules.training.graph_trainer.GraphTrainer
+    model_name: GCNEdges
+    model:
+      _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
+      n_classes: 3
+      num_node_features: 4
+      num_edge_features: 8
+    criterion:
+      _target_: torch.nn.BCEWithLogitsLoss
+    optimizer:
+      _target_: functools.partial
+      _args_:
+      - _target_: hydra.utils.get_class
+        path: torch.optim.AdamW
+      lr: 0.001
+    epochs: 10
+    batch_size: 1024
+    patience: 3
+    dataset:
+      _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+      retrieval:
+      - SMILES_MOL
+      steps:
+      - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
+    scheduler:
+      _target_: functools.partial
+      _args_:
+      - _target_: hydra.utils.get_class
+        path: timm.scheduler.cosine_lr.CosineLRScheduler
+      t_initial: 29
+      cycle_mul: 1
+      cycle_decay: 1
+      cycle_limit: 1
+      warmup_t: 5
+      warmup_lr_init: 1.0e-05
+    n_folds: 5
+    dataloader_args:
+      num_workers: 24
+      prefetch_factor: 3
+      persistent_workers: false
+pred_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Postprocessing pipeline
+  steps:
+  - _target_: src.modules.transformation.sigmoid.Sigmoid
+label_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  steps: []
