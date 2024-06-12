@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from sklearn.neighbors import KNeighborsClassifier
 from typing import Any
 import joblib
 from sklearn.metrics import accuracy_score
@@ -20,8 +21,9 @@ class XgboostPseudo(VerboseTrainingBlock):
     :param threshold: Convert the probabilities to the classes
     """
 
-    n_estimators: int = 5
+    n_estimators: int = 50
     threshold: float = 0.1
+    n_samples: int = 500000
 
     def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[XData, npt.NDArray[np.int8]]:
         """Train the Boosted Decision Tree and apply on the test molecules.
@@ -40,15 +42,20 @@ class XgboostPseudo(VerboseTrainingBlock):
         self.log_to_terminal("Extracting train and validation data.")
         x.retrieval = getattr(DataRetrieval, "ECFP_MOL")
 
-        # Load the labels and compute the train and test indices
-        y_train = y[train_indices]
-        train_indices = np.unique(np.where(y_train >= -0.5)[0])
-        test_indices = np.array([i for i in range(len(x)) if i not in train_indices])
+        # Extract the indices of the test and train samples
+        test_indices = np.unique(np.where(y == [-1, -1, -1])[0])
+        mask = np.isin(train_indices, test_indices, invert=True)
+        train_indices = train_indices[mask][:self.n_samples]
+        print(len(test_indices))
 
         # Extract the train and test molecules
         X_train = np.unpackbits(x[train_indices], axis=1)
         X_test = np.unpackbits(x[test_indices], axis=1)
+        X_val = np.unpackbits(x[validation_indices], axis=1)
+
         y_train = y[train_indices]
+        y_val = y[validation_indices]
+        self.log_to_terminal(f"The number of samples in the train: {len(test_indices)}")
 
         # Initialize the XGBoost model and fit it
         self.model = XGBClassifier(n_estimators=self.n_estimators, random_state=42, n_jobs=-1)
@@ -60,11 +67,13 @@ class XgboostPseudo(VerboseTrainingBlock):
         # Predict the labels of the test samples
         y_pred = self.model.predict_proba(X_test)
         y[test_indices] = (y_pred >= self.threshold).astype(int)
+        print(np.mean(y[test_indices]))
 
-        y_pred = self.model.predict_proba(X_train)
+        # Compute the accuracy of the model on validation
+        y_pred = self.model.predict_proba(X_val)
         y_pred = (y_pred >= self.threshold).astype(int)
 
-        accuracy = accuracy_score(y_pred, y_train)
+        accuracy = accuracy_score(y_pred, y_val)
         print(f"Accuracy: {accuracy * 100:.2f}%")
 
         return x, y
@@ -74,5 +83,3 @@ class XgboostPseudo(VerboseTrainingBlock):
         :param x: XData containing the molecule fingerprint"""
 
         return x
-
-

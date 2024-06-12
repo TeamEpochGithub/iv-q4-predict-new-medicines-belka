@@ -22,7 +22,7 @@ splitter:
   test_size: 0.2
 
 pseudo_label: 'local'
-sample_size: 500_000
+sample_size: 5_000_000
 sample_split: 0.015
 
 allow_multiple_instances: true
