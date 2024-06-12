@@ -43,7 +43,7 @@ class GraphDataset(Dataset):  # type: ignore[type-arg]
         # Setup Pipeline
         self.setup_pipeline(use_augmentations=False)
 
-    def initialize(self, X: XData, y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int32] | None = None) -> None:
+    def initialize(self, X: XData, y: npt.NDArray[np.int8] | None = None, indices: list[int] | npt.NDArray[np.int_] | None = None) -> None:
         """Set up the dataset for training."""
         self.X = X
         self.y = y

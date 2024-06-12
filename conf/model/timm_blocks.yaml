@@ -34,9 +34,9 @@ train_sys:
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["EMBEDDING_BB"]
-        steps:
-          - _target_: src.modules.training.dataset_steps.images.blocks_to_image.BlocksToImage
-            img_size: 90
+        steps: []
+          # - _target_: src.modules.training.dataset_steps.images.blocks_to_image.BlocksToImage
+          #   img_size: 90
       scheduler:
         _target_: functools.partial
         _args_:
