@@ -14,7 +14,7 @@ from torchnlp.encoders.text import StaticTokenizerEncoder  # type: ignore[import
 class TokenizeMolecule(TrainingBlock):
     """Module to convert the molecule smiles into a sequence of tokens."""
 
-    tokenizer_name: str = "samples=10M_window=6"
+    tokenizer_name: str = "samples_10M_window_6"
     padding_size: int = 150
 
     def train(
@@ -30,8 +30,8 @@ class TokenizeMolecule(TrainingBlock):
         """
         # Check whether the tokenizer was trained or not
         file_path = Path(f"tm/tokenizer_{self.tokenizer_name}")
-        if not file_path.exists():
-            raise FileNotFoundError("The chosen tokenizer was not yet trained.")
+        # if not file_path.exists():
+        #     raise FileNotFoundError("The chosen tokenizer was not yet trained.")
 
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])

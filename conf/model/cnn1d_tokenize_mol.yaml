@@ -10,13 +10,13 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
+    - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: cnn1d
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 15000
-        hidden_dim: 256
+        num_embeddings: 23000
+        hidden_dim: 128
         filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -35,7 +35,7 @@ train_sys:
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples=10M_window=6"
+            tokenizer_name: "samples_5M_window_7"
             padding_size: 150
       scheduler:
         _target_: functools.partial
