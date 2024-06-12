@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: multi_output/ecfp_output
+  - model: transformers/transformer_encoder
   - wandb: train
 
 
