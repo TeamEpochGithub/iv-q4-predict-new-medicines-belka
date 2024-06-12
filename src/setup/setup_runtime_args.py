@@ -102,6 +102,7 @@ def setup_train_args(
         "MainTrainer": main_trainer,
         "DecisionTrees": main_trainer,
         "GraphTrainer": main_trainer,
+        "XgboostPseudo": main_trainer,
         "PredictionStatistics": {
             "output_dir": output_dir,
         },

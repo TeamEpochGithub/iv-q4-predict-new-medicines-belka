@@ -151,8 +151,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
                 smiles = X.molecule_smiles[test_indices]
 
             # Modify the train indices and labels
-            # labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.95, 0.05])
-            labels = [[0, 0, 0] for _ in range(test_size)]
+            # labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.995, 0.005])
+            labels = [[-1, -1, -1] for _ in range(test_size)]
             y = np.concatenate((y, labels))
 
             # Include the test samples into the XData

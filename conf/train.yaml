@@ -1,32 +1,22 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: multi_output/ecfp_output
+  - model: pseudo_cnn1d
   - wandb: train
-
 
 # Paths
 data_path: data/shrunken
 cache_path: data/cache
-
 
 # Scoring
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
 
-
-# Sampling
-sample_size: 10_000_000
-sample_split: 0.015
-
-
 # Splitting
 splitter:
-
   # _target_: src.splitter.stratified_splitter.StratifiedSplitter
   # n_splits: 5
-
   _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
   n_splits: 5
   test_size: 0.2
