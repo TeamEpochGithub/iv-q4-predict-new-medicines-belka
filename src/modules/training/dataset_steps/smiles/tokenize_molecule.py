@@ -30,8 +30,8 @@ class TokenizeMolecule(TrainingBlock):
         """
         # Check whether the tokenizer was trained or not
         file_path = Path(f"tm/tokenizer_{self.tokenizer_name}")
-        if not file_path.exists():
-            raise FileNotFoundError("The chosen tokenizer was not yet trained.")
+        # if not file_path.exists():
+        #     raise FileNotFoundError("The chosen tokenizer was not yet trained.")
 
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])

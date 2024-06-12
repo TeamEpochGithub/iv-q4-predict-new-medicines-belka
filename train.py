@@ -14,6 +14,8 @@ from hydra.core.config_store import ConfigStore
 from hydra.utils import instantiate
 from matplotlib import pyplot as plt
 from omegaconf import DictConfig
+from rdkit import Chem
+from rdkit.Chem import AllChem, DataStructs
 
 from src.config.train_config import TrainConfig
 from src.setup.setup_data import GetXCache, GetYCache, setup_xy
@@ -90,11 +92,11 @@ def run_train_cfg(cfg: DictConfig) -> None:
 
     # Setup cache arguments
     cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split)
-    splitter_cache_path = cache_path / "splits.pkl"
     if cfg.pseudo_label == 'local':
         cache_path = Path(str(cache_path) + '_pl')
     if cfg.pseudo_label == 'public':
         cache_path = Path(str(cache_path) + '_pb')
+    splitter_cache_path = cache_path / "splits.pkl"
 
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
@@ -133,27 +135,31 @@ def run_train_cfg(cfg: DictConfig) -> None:
             logger.info("Splitting Data into train and validation sets.")
             train_indices, validation_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)[fold_idx]  # type: ignore[assignment, misc]
 
-    if cfg.pseudo_label != 'none':
-        if not data_cached:
-            if cfg.pseudo_label == 'local':
-                # Load the local test samples
-                smiles = X.molecule_smiles[test_indices]
 
+    if cfg.pseudo_label != 'none':
+        test_size = "whatever value in kaggle"
+        if cfg.pseudo_label == 'local':
+            test_size = len(test_indices)
+
+        if not data_cached:
             if cfg.pseudo_label == 'kaggle':
                 # Load the kaggle test samples
                 smiles = pd.read_csv('data/raw/test.csv')
                 smiles = smiles['molecule_smiles'].tolist()
+            else:
+                # Copy test data and append it to the end of X
+                smiles = X.molecule_smiles[test_indices]
+
+            # Modify the train indices and labels
+            # labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.95, 0.05])
+            labels = [[0, 0, 0] for _ in range(test_size)]
+            y = np.concatenate((y, labels))
 
             # Include the test samples into the XData
             X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
 
-            # Modify the train indices and labels
-            labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.99, 0.01])
-            y = np.concatenate((y, labels))
-
-            train_size = train_indices.shape[0]
-            new_indices = [train_size + idx for idx in range(len(smiles))]
-            train_indices = np.concatenate((train_indices, new_indices))
+        new_indices = [cfg.sample_size + idx for idx in range(test_size)]
+        train_indices = np.concatenate((train_indices, new_indices))
 
     # Run the pipeline and score the results
     print_section_separator("Train model pipeline")

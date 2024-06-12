@@ -11,7 +11,7 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.image_trainer.ImageTrainer
-      model_name: cnn1d
+      model_name: CNN1D_MOL_TOK
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
@@ -28,14 +28,14 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 3000
+      batch_size: 1017
       patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples=10M_window=6"
+            tokenizer_name: "samples_5M_window_6"
             padding_size: 150
       scheduler:
         _target_: functools.partial
@@ -54,6 +54,7 @@ train_sys:
         num_workers: 8
         prefetch_factor: 5
         persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:
