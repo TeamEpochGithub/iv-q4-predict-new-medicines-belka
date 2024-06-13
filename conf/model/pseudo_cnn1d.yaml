@@ -17,7 +17,7 @@ train_sys:
     - _target_: src.modules.training.xgboost_pseudo.XgboostPseudo
       threshold: 0.03
       n_estimators: 50
-      n_samples: 500001
+      n_samples: 500003
 
     - _target_: src.modules.training.image_trainer.ImageTrainer
       model_name: CNN1D_MOL_TOK
@@ -37,7 +37,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 1010
+      batch_size: 1006
       patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset

@@ -139,19 +139,19 @@ def run_train_cfg(cfg: DictConfig) -> None:
     if cfg.pseudo_label != 'none':
         test_size = "whatever value in kaggle"
         if cfg.pseudo_label == 'local':
-            test_size = len(test_indices)
+            test_size = 9 * len(test_indices)
 
         if not data_cached:
             if cfg.pseudo_label == 'kaggle':
                 # Load the kaggle test samples
                 smiles = pd.read_csv('data/raw/test.csv')
-                smiles = smiles['molecule_smiles'].tolist()
+                smiles = 9 * list(smiles['molecule_smiles'])
             else:
                 # Copy test data and append it to the end of X
-                smiles = X.molecule_smiles[test_indices]
+                smiles = 9 * list(X.molecule_smiles[test_indices])
 
             # Modify the train indices and labels
-            # labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.995, 0.005])
+            # labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.99, 0.01])
             labels = [[-1, -1, -1] for _ in range(test_size)]
             y = np.concatenate((y, labels))
 
