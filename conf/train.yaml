@@ -18,7 +18,7 @@ scorer:
 
 
 # Sampling
-sample_size: 5_000_000
+sample_size: 10_000_000
 sample_split: 0.015
 
 
