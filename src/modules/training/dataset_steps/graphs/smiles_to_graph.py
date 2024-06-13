@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+import deepchem as dc  # type: ignore[import-not-found]
 import numpy as np
 import numpy.typing as npt
 import torch
@@ -15,7 +16,6 @@ from rdkit.Chem import AllChem, RDConfig  # type: ignore[import-not-found]
 from rdkit.Chem.rdchem import Mol  # type: ignore[import-not-found]
 from rdkit.Chem.rdMolChemicalFeatures import MolChemicalFeatureFactory  # type: ignore[import-not-found]
 from torch_geometric.data import Data
-import deepchem as dc
 
 PHARMA_DICT = {
     "Donor": 0,
@@ -59,8 +59,7 @@ class SmilesToGraph(TrainingBlock):
     _num_atom_chem_features: int = field(default=0, repr=False, compare=False)
     _atom_pharma_features: Callable[[Mol], npt.NDArray[np.uint8]] | None = field(default=None, repr=False, compare=False)
     _num_atom_pharma_features: int = field(default=0, repr=False, compare=False)
-    _atom_deepchem_features: Callable[[Mol], npt.NDArray[np.float32]] | None = field(default=None, repr=False,
-        compare=False)  # New field for DeepChem features
+    _atom_deepchem_features: Callable[[Mol], npt.NDArray[np.float32]] | None = field(default=None, repr=False, compare=False)  # New field for DeepChem features
     _num_atom_features: int = field(default=0, repr=False, compare=False)
 
     _num_bond_features: int = field(default=0, repr=False, compare=False)
@@ -88,13 +87,11 @@ class SmilesToGraph(TrainingBlock):
         # Adds DeepChem Features
         if self.use_atom_deep_chem_features:
             self._atom_deepchem_features = lambda x: _extract_deepchem_features(x)
-            self._num_atom_features += len(_extract_deepchem_features(Chem.MolFromSmiles("C")))
+            self._num_atom_features += 10
 
         # Add Bond Features
         if self.use_bond_features:
             self._num_bond_features += 2
-
-        print(f"Num Atom Features: {self._num_atom_features}")
 
     def train(
         self,
@@ -209,6 +206,7 @@ def _extract_atom_pharma_features_packed(fdef: MolChemicalFeatureFactory, mol: M
             del pharmafeature_list[idx]
     return features
 
+
 def _extract_deepchem_features(mol: Mol) -> npt.NDArray[np.float32]:
     """Extract DeepChem features.
 
@@ -216,7 +214,7 @@ def _extract_deepchem_features(mol: Mol) -> npt.NDArray[np.float32]:
     :return: The extracted features.
     """
     featurizer = dc.feat.CoulombMatrixEig(max_atoms=10)
-    feature_array = featurizer.featurize([mol])[0] # Eigen-decomposition of Coulomb Matrix
+    feature_array = featurizer.featurize([mol])[0]  # Eigen-decomposition of Coulomb Matrix
     return feature_array.astype(np.float32)
 
 
@@ -238,17 +236,17 @@ def unpack_atom_features(x: torch.Tensor) -> torch.Tensor:
         result[:, :3] = x[:, :3]
         return result
 
-    #Only DeepChem features
-    if x.shape[1] == 10: # Dimension of Coulomb Matrix
+    # Only DeepChem features
+    if x.shape[1] == 10:  # Dimension of Coulomb Matrix
         result = torch.empty(x.shape[0], x.shape[1], device=x.device, dtype=x.dtype)
         result[:, :3] = x[:, :3]
         return result
 
-    #Both Chemical and DeepChem
-    if x.shape[1] == 24: # 10 (DeepChem) + 14 (Chem)
+    # Both Chemical and DeepChem
+    if x.shape[1] == 24:  # 10 (DeepChem) + 14 (Chem)
         result = torch.empty((x.shape[0], 3 + ATOMIC_NUM_DICT_LEN + 10), device=x.device, dtype=x.dtype)
         result[:, :3] = x[:, :3]
-        result[:, 3: 3 + ATOMIC_NUM_DICT_LEN] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
+        result[:, 3 : 3 + ATOMIC_NUM_DICT_LEN] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
         return result
 
     # Both Chemical and Pharmacophore Features
@@ -263,4 +261,3 @@ def unpack_atom_features(x: torch.Tensor) -> torch.Tensor:
 def unpack_edge_features(edge_attr: torch.Tensor) -> torch.Tensor:
     """Unpack the edge features."""
     return edge_attr
-

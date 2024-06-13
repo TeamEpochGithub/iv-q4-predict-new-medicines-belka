@@ -26,10 +26,8 @@ class GNNTransformerModel(torch.nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
 
-        self.conv1 = TransformerConv(in_channels=num_node_features, out_channels=hidden_dim, heads=4, concat=False,
-                                     edge_dim=num_edge_features, dropout=dropout)
-        self.conv2 = TransformerConv(in_channels=hidden_dim, out_channels=hidden_dim * 2, heads=4, concat=False,
-                                     edge_dim=num_edge_features, dropout=dropout)
+        self.conv1 = TransformerConv(in_channels=num_node_features, out_channels=hidden_dim, heads=4, concat=False, edge_dim=num_edge_features, dropout=dropout)
+        self.conv2 = TransformerConv(in_channels=hidden_dim, out_channels=hidden_dim * 2, heads=4, concat=False, edge_dim=num_edge_features, dropout=dropout)
 
         self.pool = global_mean_pool
 
