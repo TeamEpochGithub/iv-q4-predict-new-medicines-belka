@@ -215,8 +215,8 @@ def _extract_deepchem_features(mol: Mol) -> npt.NDArray[np.float32]:
     :param mol: The molecule to extract features from.
     :return: The extracted features.
     """
-    featurizer = dc.feat.CoulombMatrixEig(max_atoms=10) # Defines size of Coulomb Matrix
-    feature_array = featurizer.featurize([mol])[0]
+    featurizer = dc.feat.CoulombMatrixEig(max_atoms=10)
+    feature_array = featurizer.featurize([mol])[0] # Eigen-decomposition of Coulomb Matrix
     return feature_array.astype(np.float32)
 
 
@@ -244,19 +244,21 @@ def unpack_atom_features(x: torch.Tensor) -> torch.Tensor:
         result[:, :3] = x[:, :3]
         return result
 
-    # Both Chemical and Pharmacophore Features
-    # result = torch.empty((x.shape[0], 3 + ATOMIC_NUM_DICT_LEN + PHARMA_DICT_LEN), device=x.device, dtype=x.dtype)
-    # result[:, :3] = x[:, :3]
-    # result[:, 3 : 3 + ATOMIC_NUM_DICT_LEN] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
-    # unpacked_pharma = (x[:, 4].unsqueeze(1) >> torch.arange(8, device=x.device).unsqueeze(0)) & 1
-    # result[:, 3 + ATOMIC_NUM_DICT_LEN :] = unpacked_pharma.squeeze(0)
-    # return result
+    #Both Chemical and DeepChem
+    if x.shape[1] == 24: # 10 (DeepChem) + 14 (Chem)
+        result = torch.empty((x.shape[0], 3 + ATOMIC_NUM_DICT_LEN + 10), device=x.device, dtype=x.dtype)
+        result[:, :3] = x[:, :3]
+        result[:, 3: 3 + ATOMIC_NUM_DICT_LEN] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
+        return result
 
-    # Both Chemical and DeepChem
-    result = torch.empty((x.shape[0], 3 + ATOMIC_NUM_DICT_LEN + 10), device=x.device, dtype=x.dtype)
+    # Both Chemical and Pharmacophore Features
+    result = torch.empty((x.shape[0], 3 + ATOMIC_NUM_DICT_LEN + PHARMA_DICT_LEN), device=x.device, dtype=x.dtype)
     result[:, :3] = x[:, :3]
-    result[:, 3: 3 + ATOMIC_NUM_DICT_LEN] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
+    result[:, 3 : 3 + ATOMIC_NUM_DICT_LEN] = torch.nn.functional.one_hot(x[:, 3].long(), ATOMIC_NUM_DICT_LEN)
+    unpacked_pharma = (x[:, 4].unsqueeze(1) >> torch.arange(8, device=x.device).unsqueeze(0)) & 1
+    result[:, 3 + ATOMIC_NUM_DICT_LEN :] = unpacked_pharma.squeeze(0)
     return result
+
 
 def unpack_edge_features(edge_attr: torch.Tensor) -> torch.Tensor:
     """Unpack the edge features."""

@@ -14,8 +14,6 @@ class GNNTransformerModel(torch.nn.Module):
     :param num_node_features: Number of features per node
     :param num_edge_features: Number of edge features per node
     :param n_classes:  Number of classes to predict
-    :param hidden_dim: Hidden Layer Dimension in Conv Layers
-    :param out_features: Number of features being passed in Linear layers
     """
 
     def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32, out_features: int = 1024, dropout: float = 0.2) -> None:
@@ -24,8 +22,6 @@ class GNNTransformerModel(torch.nn.Module):
         :param num_node_features: Number of features per node
         :param num_edge_features: Number of edge features per node
         :param n_classes:  Number of classes to predict
-        :param hidden_dim: Hidden Layer Dimension in Conv Layers
-        :param out_features: Number of features being passed in Linear layers
         """
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -33,18 +29,16 @@ class GNNTransformerModel(torch.nn.Module):
         self.conv1 = TransformerConv(in_channels=num_node_features, out_channels=hidden_dim, heads=4, concat=False,
                                      edge_dim=num_edge_features, dropout=dropout)
         self.conv2 = TransformerConv(in_channels=hidden_dim, out_channels=hidden_dim * 2, heads=4, concat=False,
-                                     edge_dim=num_edge_features, dropout=dropout * 2)
-        self.conv3 = TransformerConv(in_channels=hidden_dim * 2, out_channels=hidden_dim * 4, heads=4, concat=False,
-                                     edge_dim=num_edge_features, dropout=dropout * 2.5)
+                                     edge_dim=num_edge_features, dropout=dropout)
 
         self.pool = global_mean_pool
 
         self.fc1 = nn.Linear(hidden_dim * 2, out_features)
         self.dropout1 = nn.Dropout(dropout)
         self.fc2 = nn.Linear(out_features, out_features)
-        self.dropout2 = nn.Dropout(dropout * 2)
+        self.dropout2 = nn.Dropout(dropout)
         self.fc3 = nn.Linear(out_features, out_features // 2)
-        self.dropout3 = nn.Dropout(dropout * 2.5)
+        self.dropout3 = nn.Dropout(dropout)
         self.fc4 = nn.Linear(out_features // 2, n_classes)
 
         # Define activation function
@@ -58,6 +52,7 @@ class GNNTransformerModel(torch.nn.Module):
         """
         x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
 
+        # Unpack Node and Edge Attributes
         x = unpack_atom_features(x).to(torch.float)
         edge_attr = unpack_edge_features(edge_attr).to(torch.float)
 
