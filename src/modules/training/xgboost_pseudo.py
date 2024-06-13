@@ -1,17 +1,16 @@
 """Module containing Pseudo Boosted Decision Tree Models."""
 
-from dataclasses import dataclass, field
-from pathlib import Path
-from sklearn.neighbors import KNeighborsClassifier
+from dataclasses import dataclass
 from typing import Any
-import joblib
-from sklearn.metrics import accuracy_score
+
 import numpy as np
 import numpy.typing as npt
+from sklearn.metrics import average_precision_score
 from xgboost import XGBClassifier
 
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
 from src.typing.xdata import DataRetrieval, XData
+
 
 @dataclass
 class XgboostPseudo(VerboseTrainingBlock):
@@ -31,22 +30,20 @@ class XgboostPseudo(VerboseTrainingBlock):
         :param x: XData containing the molecule fingerprints
         :param y: array containing the protein labels
         """
-
         # Set the train and validation indices
-        train_indices: list[int] | dict[str, Any] = train_args.get("train_indices", [])
-        validation_indices: list[int] | dict[str, Any] = train_args.get("validation_indices", [])
+        train_indices: npt.NDArray[np.int_] | dict[str, Any] = train_args.get("train_indices", np.array([]))
+        validation_indices: npt.NDArray[np.int_] | dict[str, Any] = train_args.get("validation_indices", np.array([]))
 
         if isinstance(train_indices, dict) or isinstance(validation_indices, dict):
             raise TypeError("Wrong input for train/validation indices.")
 
         self.log_to_terminal("Extracting train and validation data.")
-        x.retrieval = getattr(DataRetrieval, "ECFP_MOL")
+        x.retrieval = DataRetrieval.ECFP_MOL
 
         # Extract the indices of the test and train samples
         test_indices = np.unique(np.where(y == [-1, -1, -1])[0])
         mask = np.isin(train_indices, test_indices, invert=True)
-        train_indices = train_indices[mask][:self.n_samples]
-        print(len(test_indices))
+        train_indices = train_indices[mask][: self.n_samples]
 
         # Extract the train and test molecules
         X_train = np.unpackbits(x[train_indices], axis=1)
@@ -67,19 +64,17 @@ class XgboostPseudo(VerboseTrainingBlock):
         # Predict the labels of the test samples
         y_pred = self.model.predict_proba(X_test)
         y[test_indices] = (y_pred >= self.threshold).astype(int)
-        print(np.mean(y[test_indices]))
 
         # Compute the accuracy of the model on validation
-        y_pred = self.model.predict_proba(X_val)
-        y_pred = (y_pred >= self.threshold).astype(int)
-
-        accuracy = accuracy_score(y_pred, y_val)
-        print(f"Accuracy: {accuracy * 100:.2f}%")
+        y_pred = self.model.predict_proba(X_val).flatten()
+        accuracy = average_precision_score(y_pred, y_val.flatten())
+        self.log_to_terminal(f"the mean average precision of XGBoost: {accuracy}")
 
         return x, y
 
     def custom_predict(self, x: XData, **train_args: dict[str, Any]) -> XData:
         """Predict using an XGBoost classifier.
-        :param x: XData containing the molecule fingerprint"""
 
+        :param x: XData containing the molecule fingerprint
+        """
         return x
