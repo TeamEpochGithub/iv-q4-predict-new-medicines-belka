@@ -10,9 +10,9 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.graph_trainer.GraphTrainer
-      model_name: GCNEdges
+      model_name: GCNTransformer
       model:
-        _target_: src.modules.training.models.gcn_edge_features.GCNWithEdgeFeatures
+        _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
         n_classes: 3
         num_node_features: 22
         num_edge_features: 2
@@ -25,7 +25,7 @@ train_sys:
             path: torch.optim.AdamW
         lr: 0.001
       epochs: 10
-      batch_size: 512
+      batch_size: 1024
       patience: 3
       dataset:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
@@ -40,17 +40,17 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 40
+        t_initial: 29
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
-        warmup_t: 1
+        warmup_t: 5
         warmup_lr_init: 1e-5
       n_folds: 5
       dataloader_args:
-        num_workers: 26
-        prefetch_factor: 4
-        persistent_workers: true
+        num_workers: 24
+        prefetch_factor: 3
+        persistent_workers: false
 
 pred_sys:
   steps:

@@ -3,57 +3,54 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.blocks_to_image.BlocksToImage
-      img_width: 80
-      img_heigth: 80
-
+  steps: []
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
-      model_name: TIMM
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: GCNEdges
       model:
-        _target_: epochalyst.pipeline.model.training.models.timm.Timm
-        model_name: efficientnet_b0
-        in_channels: 3
-        out_channels: 3
+        _target_: src.modules.training.models.gcn_edge_features.GCNWithEdgeFeatures
+        n_classes: 3
+        num_node_features: 22
+        num_edge_features: 2
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.Adam
-        lr: 0.001
+            path: torch.optim.AdamW
+        lr: 0.0004105
       epochs: 10
-      batch_size: 256
-      patience: 10
+      batch_size: 1024
+      patience: 3
       dataset:
-        _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["EMBEDDING_BB"]
-        steps: []
-          # - _target_: src.modules.training.dataset_steps.images.blocks_to_image.BlocksToImage
-          #   img_size: 90
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
+            use_atom_chem_features: true
+            use_atom_pharmacophore_features: true
+            use_bond_features: true
       scheduler:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 100
+        t_initial: 29
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
-        warmup_t: 1
+        warmup_t: 5
         warmup_lr_init: 1e-5
       n_folds: 5
       dataloader_args:
-        num_workers: 24
+        num_workers: 26
         prefetch_factor: 4
-        persistent_workers: false
-
+        persistent_workers: true
 
 pred_sys:
   steps:
