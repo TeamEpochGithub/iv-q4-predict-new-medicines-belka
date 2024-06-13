@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: timm_two_stage
+  - model: graphs/tgnn_two_stage
   - wandb: train
 
 

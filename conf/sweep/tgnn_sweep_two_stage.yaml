@@ -1,0 +1,123 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+entity: team-epoch-iv
+metric:
+  goal: maximize
+  name: Validation Score
+name: TGNN Two Stage (10M BBStratified)
+program: train.py
+project: detect-medicine
+parameters:
+
+  # First Stage (Sampled Data)
+  model.train_sys.steps.0.sample_size:
+    values:
+      - 100_000
+      - 250_000
+      - 500_000
+      - 1_000_000
+
+  model.train_sys.steps.0.epochs:
+    values:
+      - 10
+      - 15
+      - 20
+      - 25
+
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    max: 0.01
+    min: 1e-04
+
+  model.train_sys.steps.0.scheduler.t_initial:
+    distribution: int_uniform
+    max: 8
+    min: 2
+
+  model.train_sys.steps.0.scheduler.cycle_mul:
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+
+  model.train_sys.steps.0.scheduler.cycle_decay:
+    values:
+      - 1
+      - 0.8
+      - 0.6
+      - 0.4
+
+  model.train_sys.steps.0.scheduler.cycle_limit:
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+
+  model.train_sys.steps.0.batch_size:
+    values:
+      - 512
+      - 1024
+      - 2048
+      - 4096
+
+  # model.train_sys.steps.0.model.dropout:
+  #   distribution: uniform
+  #   max: 0.5
+  #   min: 0.05
+  # model.train_sys.steps.0.model.hidden_dim:
+  #   values:
+  #     - 16
+  #     - 32
+  #     - 64
+  #     - 128
+  # model.train_sys.steps.0.model.out_features:
+  #   values:
+  #     - 256
+  #     - 512
+  #     - 1024
+  #     - 2048
+
+  # Second Stage (All Data)
+  # model.train_sys.steps.1.model.dropout:
+  #   distribution: uniform
+  #   max: 0.5
+  #   min: 0.05
+  # model.train_sys.steps.1.model.hidden_dim:
+  #   values:
+  #     - 16
+  #     - 32
+  #     - 64
+  #     - 128
+  # model.train_sys.steps.1.model.out_features:
+  #   values:
+  #     - 256
+  #     - 512
+  #     - 1024
+  #     - 2048
+  model.train_sys.steps.1.optimizer.lr:
+    distribution: log_uniform_values
+    max: 0.01
+    min: 1e-05
+  model.train_sys.steps.1.scheduler.t_initial:
+    distribution: int_uniform
+    max: 100
+    min: 2
+
+  model.train_sys.steps.1.epochs:
+    values:
+      - 2
+      - 3
+      - 4
+      - 5
+
+  model.train_sys.steps.1.batch_size:
+    values:
+      - 512
+      - 1024
+      - 2048
+      - 4096
