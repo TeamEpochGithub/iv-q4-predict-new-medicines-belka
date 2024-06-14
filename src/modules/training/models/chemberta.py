@@ -1,6 +1,6 @@
 """Module containing chemberta class copied from a  public notebook."""
 from torch import Tensor, nn
-from transformers import AutoConfig, AutoModel  # type: ignore[import-not-found]
+from transformers import AutoConfig, AutoModel
 
 
 class Chemberta(nn.Module):
@@ -13,8 +13,8 @@ class Chemberta(nn.Module):
         :param n_classes: the number of classes
         """
         super(Chemberta, self).__init__()  # noqa: UP008
-        self.config = AutoConfig.from_pretrained(model_name, num_labels=n_classes)
-        self.lm = AutoModel.from_pretrained(model_name, add_pooling_layer=False)
+        self.config = AutoConfig.from_pretrained(model_name, num_labels=n_classes, resume_download=None)
+        self.lm = AutoModel.from_pretrained(model_name, add_pooling_layer=False, resume_download=None)
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.classifier = nn.Linear(self.config.hidden_size, self.config.num_labels)
 

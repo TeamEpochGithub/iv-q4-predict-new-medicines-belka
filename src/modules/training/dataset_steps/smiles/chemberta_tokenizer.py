@@ -33,7 +33,7 @@ class ChembertaTokenizer(TrainingBlock):
         :param x: array containing the molecule smiles
         :param y: array containing the protein labels
         """
-        tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        tokenizer = AutoTokenizer.from_pretrained(self.model_name, resume_download=None)
         output = tokenizer(list(x), truncation=True, padding="max_length", max_length=self.padding_size)
 
         return np.array(output["input_ids"]), y
