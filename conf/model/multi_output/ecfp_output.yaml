@@ -12,7 +12,7 @@ train_sys:
   steps:
     - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
       model_name: TwoHeadedCNN1D
-      loss1_weight: 10
+      loss1_weight: 2
       model:
         _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
         n_classes: 3
