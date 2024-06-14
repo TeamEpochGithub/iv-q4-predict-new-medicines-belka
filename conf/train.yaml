@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: chemberta_cnn1d
+  - model: transformers/transformer_encoder
   - wandb: train
 
 # Paths
