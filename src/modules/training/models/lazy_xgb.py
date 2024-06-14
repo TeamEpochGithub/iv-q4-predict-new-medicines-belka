@@ -52,24 +52,24 @@ class LazyXGB(VerboseTrainingBlock):
         :param y: Labels
         :return: Predictions and labels
         """
-        # Set the train and test indices
+        # Set the train and validation indices
         train_indices: list[int] | dict[str, Any] = train_args.get("train_indices", [])
-        test_indices: list[int] | dict[str, Any] = train_args.get("test_indices", [])
+        validation_indices: list[int] | dict[str, Any] = train_args.get("validation_indices", [])
 
         # Create the model path
         trained_model_path = Path(f"tm/{self.get_hash()}")
         trained_model_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if isinstance(train_indices, dict) or isinstance(test_indices, dict):
-            raise TypeError("Wrong input for train/test indices.")
+        if isinstance(train_indices, dict) or isinstance(validation_indices, dict):
+            raise TypeError("Wrong input for train/validation indices.")
 
-        self.log_to_terminal("Extracting train and test data.")
+        self.log_to_terminal("Extracting train and validation data.")
         x.retrieval = self.retrieval
 
         X_train = x[train_indices]
-        X_test = x[test_indices]
+        X_validation = x[validation_indices]
         y_train = y[train_indices]
-        y_test = y[test_indices]
+        y_validation = y[validation_indices]
 
         lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size, max_queue_size=self.queue_size)
         iterator = lazy_xgb_dataset.get_iterator(X_train, y_train)
@@ -113,13 +113,13 @@ class LazyXGB(VerboseTrainingBlock):
         self.save_model(trained_model_path)
 
         # Get the predictions
-        test_iterator = lazy_xgb_dataset.get_iterator(X_test, y_test)
-        predictions = [self.model.predict(test_data) for test_data in test_iterator]
+        validation_iterator = lazy_xgb_dataset.get_iterator(X_validation, y_validation)
+        predictions = [self.model.predict(validation_data) for validation_data in validation_iterator]
 
         # Stop prefetch
         lazy_xgb_dataset.stop_prefetching()
 
-        return np.concatenate(predictions), y_test
+        return np.concatenate(predictions), y_validation
 
     def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
         """Predict using an XGBoost classifier.
