@@ -3,21 +3,25 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.segment_molecule.SegmentMolecule
+      window_size: 10
+      padding_size: 60
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
-      model_name: CNN1D_MOL_TOK
+    - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: cnn1d
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 15000
+        num_embeddings: 9000
         hidden_dim: 256
-        filters: 64
+        filters: 128
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -28,15 +32,12 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 2798
+      batch_size: 1000
       patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_MOL"]
-        steps:
-          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples_5M_window_6"
-            padding_size: 150
+        retrieval: ["ECFP_BB"]
+        steps: []
       scheduler:
         _target_: functools.partial
         _args_:
@@ -52,7 +53,7 @@ train_sys:
       x_tensor_type: int
       dataloader_args:
         num_workers: 8
-        prefetch_factor: 5
+        prefetch_factor: 2
         persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
