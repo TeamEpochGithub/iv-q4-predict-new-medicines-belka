@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: pseudo_cnn1d
+  - model: chemberta_cnn1d
   - wandb: train
 
 # Paths
@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 10_000_000
+sample_size: 100_000
 sample_split: 0.015
 
 # Splitting
