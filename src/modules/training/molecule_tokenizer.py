@@ -18,6 +18,18 @@ class MoleculeTokenizer(VerboseTrainingBlock):
     training: str = "10M"
     window_size: int = 6
 
+    def split_molecule(self, smile: str) -> list[str]:
+        split_string = smile.split('(')
+        split_string = [s.split(')') for s in split_string]
+
+        # Flatten the resulting list of lists
+        split_string = [item for sublist in split_string for item in sublist]
+
+        # split_string = [self.segment_molecule(smile) for smile in split_string]
+        # split_string = [item for sublist in split_string for item in sublist]
+
+        return split_string
+
     def segment_molecule(self, smile: str) -> list[str]:
         """Transform the molecule smile for the tokenizer.
 
@@ -26,7 +38,10 @@ class MoleculeTokenizer(VerboseTrainingBlock):
         """
         # Extract n-grams from the sequence
         length = len(smile) - self.window_size + 1
-        return [" ".join(smile[i : i + self.window_size]) for i in range(length)]
+        aa = [" ".join(smile[i : i + self.window_size]) for i in range(length)]
+        length = len(smile) - 3 + 1
+        aa += [" ".join(smile[i : i + 3]) for i in range(length)]
+        return aa
 
     def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[TrainPredictObj, TrainObj]:
         """Train the torch tokenizer on the molecule smiles.

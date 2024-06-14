@@ -9,6 +9,7 @@ import numpy.typing as npt
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 from torchnlp.encoders.text import StaticTokenizerEncoder  # type: ignore[import-not-found]
 
+from transformers import AutoTokenizer  # type: ignore[import-not-found]
 
 @dataclass
 class TokenizeMolecule(TrainingBlock):
@@ -30,8 +31,8 @@ class TokenizeMolecule(TrainingBlock):
         """
         # Check whether the tokenizer was trained or not
         file_path = Path(f"tm/tokenizer_{self.tokenizer_name}")
-        if not file_path.exists():
-            raise FileNotFoundError("The chosen tokenizer was not yet trained.")
+        # if not file_path.exists():
+        #     raise FileNotFoundError("The chosen tokenizer was not yet trained.")
 
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])
@@ -43,7 +44,14 @@ class TokenizeMolecule(TrainingBlock):
         encoder.index_to_token = vocab.copy()
 
         # Apply the tokenizer on the molecule smiles
-        return np.array([encoder.encode(smile) for smile in x]), y
+        first = np.array([encoder.encode(smile) for smile in x])
+        # tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-10M-MTR")
+        # second = tokenizer(list(x), truncation=True, padding="max_length", max_length=self.padding_size)
+        # second = np.array(second["input_ids"])
+
+        return first, y
+
+
 
     @property
     def is_augmentation(self) -> bool:
@@ -62,3 +70,4 @@ class TokenizeMolecule(TrainingBlock):
 
         # Pad the sequence with special token
         return sequence + ["PAD"] * (self.padding_size - len(sequence))
+
