@@ -1,8 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d_tokenize_mol
-  # - model: tokenize_mol
+  - model: gbdms/xgb_optimization
   - wandb: train
 
 # Paths
