@@ -3,19 +3,18 @@ import os
 import warnings
 from contextlib import nullcontext
 from pathlib import Path
-import pandas as pd
+
 import coloredlogs
 import hydra
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
 from hydra.utils import instantiate
 from matplotlib import pyplot as plt
 from omegaconf import DictConfig
-from rdkit import Chem
-from rdkit.Chem import AllChem, DataStructs
 
 from src.config.train_config import TrainConfig
 from src.setup.setup_data import GetXCache, GetYCache, setup_xy
@@ -91,11 +90,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split)
-    if cfg.pseudo_label == 'local':
-        cache_path = Path(str(cache_path) + '_pl')
-    if cfg.pseudo_label == 'public':
-        cache_path = Path(str(cache_path) + '_pb')
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
     splitter_cache_path = cache_path / "splits.pkl"
 
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
@@ -135,31 +130,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
             logger.info("Splitting Data into train and validation sets.")
             train_indices, validation_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)[fold_idx]  # type: ignore[assignment, misc]
 
-
-    if cfg.pseudo_label != 'none':
-        test_size = "whatever value in kaggle"
-        if cfg.pseudo_label == 'local':
-            test_size = 9 * len(test_indices)
-
-        if not data_cached:
-            if cfg.pseudo_label == 'kaggle':
-                # Load the kaggle test samples
-                smiles = pd.read_csv('data/raw/test.csv')
-                smiles = 9 * list(smiles['molecule_smiles'])
-            else:
-                # Copy test data and append it to the end of X
-                smiles = 9 * list(X.molecule_smiles[test_indices])
-
-            # Modify the train indices and labels
-            # labels = np.random.choice([0, 1], size=(len(smiles), 3), p=[0.99, 0.01])
-            labels = [[-1, -1, -1] for _ in range(test_size)]
-            y = np.concatenate((y, labels))
-
-            # Include the test samples into the XData
-            X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
-
-        new_indices = [cfg.sample_size + idx for idx in range(test_size)]
-        train_indices = np.concatenate((train_indices, new_indices))
+    X, y, train_indices, test_indices = create_pseudo_labels(X=X, y=y, train_indices=train_indices, test_indices=test_indices, cfg=cfg, data_cached=data_cached)
 
     # Run the pipeline and score the results
     print_section_separator("Train model pipeline")
@@ -292,6 +263,55 @@ def scoring(
                 "Combined Score": combined_score,
             },
         )
+
+
+def create_pseudo_labels(
+    X: XData | None,
+    y: npt.NDArray[np.int_] | None,
+    train_indices: npt.NDArray[np.int_],
+    test_indices: npt.NDArray[np.int_] | None,
+    cfg: DictConfig,
+    *,
+    data_cached: bool,
+) -> tuple[XData | None, npt.NDArray[np.int_] | None, npt.NDArray[np.int_], npt.NDArray[np.int_] | None]:
+    """Include the test molecule smiles into the training test.
+
+    :param X: XData containing the molecule smiles
+    :param y: array containing the protein labels
+    """
+    if cfg.pseudo_label != "none":
+        # Check whether the indices are not empty
+        if test_indices is None:
+            raise ValueError("The test indices are empty.")
+
+        test_size = 1674896
+        if cfg.pseudo_label == "local":
+            test_size = test_indices.shape[0]
+
+        if not data_cached:
+            # Check whether the indices are not empty
+            if X is None or y is None or X.molecule_smiles is None:
+                raise ValueError("The features or the labels are empty.")
+
+            if cfg.pseudo_label == "kaggle":
+                # Load the kaggle test samples
+                smiles = pd.read_csv("data/raw/test.csv")
+                smiles = np.array(smiles["molecule_smiles"])
+            else:
+                # Copy test data and append it to the end of X
+                smiles = X.molecule_smiles[test_indices]
+
+            # Modify the train indices and labels and -1 for xgboost_pseudo
+            labels = np.zeros((test_size, 3), dtype=np.int_)
+            y = np.concatenate((y, labels), dtype=np.int_)
+
+            # Include the test samples into the XData
+            X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+
+        indices = np.array([cfg.sample_size + idx for idx in range(test_size)], dtype=np.int_)
+        train_indices = np.concatenate((train_indices, indices), dtype=np.int_)
+
+    return X, y, train_indices, test_indices
 
 
 if __name__ == "__main__":
