@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
-from src.setup.setup_data import GetXCache, GetYCache, setup_xy
+from src.setup.setup_data import GetXCache, GetYCache, setup_submission_pseudo_label_data, setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
@@ -47,30 +47,6 @@ def run_train(cfg: DictConfig) -> None:
 
     with optional_lock():
         run_train_cfg(cfg)
-        """
-        #try:
-        #    run_train_cfg(cfg)
-        #except hydra.errors.InstantiationException as e:
-        #    logger.error("Training failed to instantiate.")
-        #    if wandb.run:
-        #        wandb.log(
-                    {
-                        "Validation Score": -0.1,
-                        "Test Score": -0.1,
-                        "Combined Score": -0.1,
-                    },
-                )
-            logger.error(e)
-        except ValueError as e:
-            logger.error(e)
-            if wandb.run:
-                wandb.log(
-                    {
-                        "Validation Score": -0.1,
-                        "Test Score": -0.1,
-                        "Combined Score": -0.1,
-                    },
-                )"""
 
 
 def run_train_cfg(cfg: DictConfig) -> None:
@@ -280,12 +256,12 @@ def create_pseudo_labels(
     :param y: array containing the protein labels
     """
     if cfg.pseudo_label != "none":
-        # Check whether the indices are not empty
-        if test_indices is None:
-            raise ValueError("The test indices are empty.")
-
-        test_size = 1674896
+        test_size = 878022
         if cfg.pseudo_label == "local":
+            # Check whether the indices are not empty
+            if test_indices is None:
+                raise ValueError("The test indices are empty.")
+
             test_size = test_indices.shape[0]
 
         if not data_cached:
@@ -293,16 +269,22 @@ def create_pseudo_labels(
             if X is None or y is None or X.molecule_smiles is None:
                 raise ValueError("The features or the labels are empty.")
 
-            if cfg.pseudo_label == "kaggle":
+            if cfg.pseudo_label in ("kaggle", "submission"):
                 # Load the kaggle test samples
-                smiles = pd.read_csv("data/raw/test.csv")
-                smiles = np.array(smiles["molecule_smiles"])
+                shrunken_test = pd.read_csv("data/shrunken/test.csv")
+                smiles = np.array(shrunken_test["molecule_smiles"])
             else:
                 # Copy test data and append it to the end of X
                 smiles = X.molecule_smiles[test_indices]
 
             # Modify the train indices and labels and -1 for xgboost_pseudo
-            labels = np.zeros((test_size, 3), dtype=np.int_)
+            if cfg.pseudo_label == "submission":
+                if cfg.submission_path is None:
+                    raise ValueError("Submission path needs to be specified if you want to pseudo label with submission data")
+                submission_path = Path(cfg.submission_path)
+                labels = setup_submission_pseudo_label_data(submission_path, shrunken_test, cfg.pseudo_binding_threshold)
+            else:
+                labels = np.zeros((test_size, 3), dtype=np.int_)
             y = np.concatenate((y, labels), dtype=np.int_)
 
             # Include the test samples into the XData
