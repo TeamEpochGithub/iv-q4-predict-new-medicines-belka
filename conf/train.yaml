@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 100_000
+sample_size: 25_000_000
 sample_split: 0.015
 
 # Splitting
@@ -26,8 +26,8 @@ splitter:
   test_size: 0.2
 
 # Data additions
-pseudo_label: 'submission'
-submission_path: 'data/submissions/submission_443.csv'
-pseudo_binding_threshold: 0.5
+# pseudo_label: 'submission'
+# submission_path: 'data/submissions/submission_443.csv'
+# pseudo_binding_threshold: 0.5
 
 allow_multiple_instances: true
