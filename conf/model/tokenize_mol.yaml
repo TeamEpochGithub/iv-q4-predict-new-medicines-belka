@@ -12,7 +12,7 @@ train_sys:
   steps:
     - _target_: src.modules.training.molecule_tokenizer.MoleculeTokenizer
       training: "10_M"
-      window_size: 6
+      window_size: 4
 
 
 pred_sys:

@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 from torchnlp.encoders.text import StaticTokenizerEncoder  # type: ignore[import-not-found]
-
+import selfies as sf
 from transformers import AutoTokenizer  # type: ignore[import-not-found]
 
 @dataclass
@@ -39,7 +39,7 @@ class TokenizeMolecule(TrainingBlock):
         vocab = joblib.load(f"tm/tokenizer_{self.tokenizer_name}.pkl")
 
         # Initialize the tokenizer with the existing vocab
-        encoder = StaticTokenizerEncoder("AAAA", tokenize=self.segment_molecule)
+        encoder = StaticTokenizerEncoder(["C#CCOc1ccc(CN)cc1.Cl"], tokenize=self.segment_molecule)
         encoder.token_to_index = {token: index for index, token in enumerate(vocab)}
         encoder.index_to_token = vocab.copy()
 
@@ -51,12 +51,23 @@ class TokenizeMolecule(TrainingBlock):
 
         return first, y
 
-
-
     @property
     def is_augmentation(self) -> bool:
         """Return whether the block is an augmentation."""
         return False
+
+    def segment_molecules(self, smile: str) -> list[str]:
+        """Transform the molecule smile for the tokenizer.
+
+        :param smile: string representing the molecule smile
+        :return: list containing the substructures
+        """
+        # Extract n-grams from the sequence
+        length = len(smile) - self.window_size + 1
+        sequence = [" ".join(smile[i: i + self.window_size]) for i in range(length)]
+
+        # Pad the sequence with special token
+        return sequence + ["PAD"] * (self.padding_size - len(sequence))
 
     def segment_molecule(self, smile: str) -> list[str]:
         """Transform the molecule smile for the tokenizer.
@@ -65,9 +76,16 @@ class TokenizeMolecule(TrainingBlock):
         :return: list containing the substructures
         """
         # Extract n-grams from the sequence
-        length = len(smile) - self.window_size + 1
-        sequence = [" ".join(smile[i : i + self.window_size]) for i in range(length)]
+        # length = len(smile) - self.window_size + 1
+        # aa = [" ".join(smile[i: i + self.window_size]) for i in range(length)]
+
+        selfie = sf.encoder(smile)
+        tokenize = list(sf.split_selfies(selfie))
+
+        length = len(tokenize) - self.window_size + 1
+        sequence = ["".join(tokenize[i:i + self.window_size]) for i in range(length)]
 
         # Pad the sequence with special token
         return sequence + ["PAD"] * (self.padding_size - len(sequence))
+
 

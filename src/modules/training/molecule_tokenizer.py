@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from src.modules.objects import TrainObj, TrainPredictObj
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
-
+from rdkit import Chem
+import selfies as sf
 
 @dataclass
 class MoleculeTokenizer(VerboseTrainingBlock):
@@ -25,8 +26,8 @@ class MoleculeTokenizer(VerboseTrainingBlock):
         # Flatten the resulting list of lists
         split_string = [item for sublist in split_string for item in sublist]
 
-        # split_string = [self.segment_molecule(smile) for smile in split_string]
-        # split_string = [item for sublist in split_string for item in sublist]
+        split_string = [self.segment_molecule(smile) for smile in split_string]
+        split_string = [item for sublist in split_string for item in sublist]
 
         return split_string
 
@@ -37,11 +38,15 @@ class MoleculeTokenizer(VerboseTrainingBlock):
         :return: list containing the substructures
         """
         # Extract n-grams from the sequence
-        length = len(smile) - self.window_size + 1
-        aa = [" ".join(smile[i : i + self.window_size]) for i in range(length)]
-        length = len(smile) - 3 + 1
-        aa += [" ".join(smile[i : i + 3]) for i in range(length)]
-        return aa
+        # length = len(smile) - self.window_size + 1
+        # aa = [" ".join(smile[i: i + self.window_size]) for i in range(length)]
+
+        selfie = sf.encoder(smile)
+        tokenize = list(sf.split_selfies(selfie))
+
+        length = len(tokenize) - self.window_size + 1
+        return ["".join(tokenize[i:i + self.window_size]) for i in range(length)]
+
 
     def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[TrainPredictObj, TrainObj]:
         """Train the torch tokenizer on the molecule smiles.

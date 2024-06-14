@@ -15,7 +15,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 16000
+        num_embeddings: 9001
         hidden_dim: 128
         filters: 64
       criterion:
@@ -28,14 +28,14 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 3000
+      batch_size: 3001
       patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples=10_M_window=6"
+            tokenizer_name: "samples=10_M_window=4"
             padding_size: 150
       scheduler:
         _target_: functools.partial
