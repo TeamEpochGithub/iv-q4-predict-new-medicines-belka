@@ -35,6 +35,9 @@ os.environ["HYDRA_FULL_ERROR"] = "1"  # Makes hydra give full error messages
 cs = ConfigStore.instance()
 cs.store(name="base_train", node=TrainConfig)
 
+FULL_DATA_SIZE = 98415610
+KAGGLE_DATA_SIZE = 878022
+
 
 @hydra.main(version_base=None, config_path="conf", config_name="train")
 def run_train(cfg: DictConfig) -> None:
@@ -256,7 +259,7 @@ def create_pseudo_labels(
     :param y: array containing the protein labels
     """
     if cfg.pseudo_label != "none":
-        test_size = 878022
+        test_size = KAGGLE_DATA_SIZE
         if cfg.pseudo_label == "local":
             # Check whether the indices are not empty
             if test_indices is None:
@@ -290,7 +293,7 @@ def create_pseudo_labels(
             # Include the test samples into the XData
             X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
 
-        indices = np.array([cfg.sample_size + idx for idx in range(test_size)], dtype=np.int_)
+        indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
         train_indices = np.concatenate((train_indices, indices), dtype=np.int_)
 
     return X, y, train_indices, test_indices
