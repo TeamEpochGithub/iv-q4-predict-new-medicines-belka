@@ -72,6 +72,7 @@ class Net(nn.Module):
             nn.Linear(hidden_dim, n_classes),
         )
 
+
     def forward(self, x: Tensor) -> Tensor:
         """Forward function of net.
 
