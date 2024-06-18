@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: transformers/transformer_encoder
+  - model: smiles/mamba_tokenize_mol
   - wandb: train
 
 # Paths
@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 100_000
+sample_size: 1_000_000
 sample_split: 0.015
 
 # Splitting
@@ -26,6 +26,6 @@ splitter:
   test_size: 0.2
 
 # Data additions
-pseudo_label: 'local'
+pseudo_label: 'none'
 
 allow_multiple_instances: true
