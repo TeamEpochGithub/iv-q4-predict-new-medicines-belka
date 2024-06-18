@@ -1,0 +1,44 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.trainers.single_output_xgb.XGB
+      model_name: "SingleXGB"
+      # Training parameters
+      num_boost_round: 500
+      device: cpu
+      update: False
+      scale_pos_weight: 5
+      # Model parameters
+      eval_metric: mape
+      booster: gbtree
+      eta: 0.15
+      max_depth: 8
+      objective: "binary:logistic"
+      max_bin: 500
+      tree_method: hist
+
+      steps:
+        # - _target_: src.modules.training.dataset_steps.fingerprints.Fingerprints
+        #   fingerprint:
+        #     _target_: skfp.fingerprints.ECFPFingerprint
+        #     fp_size: 1200
+        - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFP
+          bits: 2048
+          radius: 3
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []

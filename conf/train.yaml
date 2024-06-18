@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/morning-sweep-5
+  - model: gbdms/single_output_xgb
   - wandb: train
 
 # Paths
@@ -14,8 +14,8 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 100_000_000
-sample_split: -1
+sample_size: 10_000_000
+sample_split: 0.015 
 
 # Splitting
 splitter:

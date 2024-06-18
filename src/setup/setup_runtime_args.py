@@ -115,6 +115,7 @@ def setup_train_args(
         },
         "ImageTrainer": main_trainer,
         "LazyXGB": main_trainer,
+        "XGB": main_trainer,
         "TwoHeadedTrainer": main_trainer,
     }
 
