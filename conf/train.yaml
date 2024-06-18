@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/divine-sweep-20
+  - model: cnn1d/morning-sweep-5
   - wandb: train
 
 # Paths
@@ -15,7 +15,7 @@ scorer:
 
 # Sampling
 sample_size: 100_000_000
-sample_split: -1 
+sample_split: -1
 
 # Splitting
 splitter:
