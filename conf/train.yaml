@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: transformers/transformer_encoder
+  - model: cnn1d/morning-sweep-5
   - wandb: train
 
 # Paths
@@ -14,18 +14,20 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 100_000
-sample_split: 0.015
+sample_size: 100_000_000
+sample_split: -1
 
 # Splitting
 splitter:
-  # _target_: src.splitter.stratified_splitter.StratifiedSplitter
-  # n_splits: 5
-  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+  _target_: src.splitter.stratified_splitter.StratifiedSplitter
   n_splits: 5
-  test_size: 0.2
+  # _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+  # n_splits: 5
+  # test_size: 0.2
 
 # Data additions
-pseudo_label: 'local'
+pseudo_label: 'submission'
+submission_path: 'data/submissions/submission_443.csv'
+pseudo_binding_threshold: 0.5
 
 allow_multiple_instances: true

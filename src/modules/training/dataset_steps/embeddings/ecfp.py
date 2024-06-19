@@ -17,7 +17,7 @@ class ECFP(TrainingBlock, Logger):
     radius: int = 2
     use_features: bool = False
 
-    def train(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.int_]]:
+    def train(self, X: npt.NDArray[np.str_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.int_]]:
         """Replace some atoms with similar ones.
 
         :param X: Input array
@@ -48,7 +48,7 @@ class ECFPLabel(TrainingBlock, Logger):
     use_features: bool = False
     multi_processing: bool = field(default=False, init=True, repr=False, compare=False)
 
-    def train(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.string_], npt.NDArray[np.int_]]:
+    def train(self, X: npt.NDArray[np.str_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.str_], npt.NDArray[np.int_]]:
         """Replace some atoms with similar ones.
 
         :param X: Input array

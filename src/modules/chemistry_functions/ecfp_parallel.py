@@ -12,7 +12,7 @@ MIN_CHUNK_SIZE = 1000
 
 
 def convert_smiles_array_single_process(
-    smiles_array: npt.NDArray[np.bytes_],
+    smiles_array: npt.NDArray[np.str_],
     radius: int,
     bits: int,
     *,
@@ -38,7 +38,7 @@ def convert_smiles_array_single_process(
 
 
 def convert_smiles_array_not_packed(
-    smiles_array: npt.NDArray[np.bytes_],
+    smiles_array: npt.NDArray[np.str_],
     radius: int,
     bits: int,
     *,
@@ -63,7 +63,7 @@ def convert_smiles_array_not_packed(
     return np.array(result)
 
 
-def convert_smile_array_parallel(smiles_array: npt.NDArray[np.bytes_], radius: int, bits: int, *, use_features: bool, desc: str) -> npt.NDArray[np.uint8]:
+def convert_smile_array_parallel(smiles_array: npt.NDArray[np.str_], radius: int, bits: int, *, use_features: bool, desc: str) -> npt.NDArray[np.uint8]:
     """Convert a list of SMILES strings into their ECFP fingerprints using multiprocessing.
 
     :param smile_array: A list of SMILES strings.

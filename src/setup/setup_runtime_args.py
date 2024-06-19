@@ -28,6 +28,8 @@ def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_siz
         cache_path = Path(str(cache_path) + "_pl")
     if pseudo_label == "public":
         cache_path = Path(str(cache_path) + "_pb")
+    if pseudo_label == "submission":
+        cache_path = Path(str(cache_path) + "_sb")
 
     cache_path.mkdir(parents=True, exist_ok=True)
     return cache_path

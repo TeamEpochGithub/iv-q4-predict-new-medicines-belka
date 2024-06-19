@@ -5,13 +5,13 @@ from typing import Any
 
 import joblib
 import numpy as np
-import numpy.typing as npt
 import xgboost as xgb
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 
+from src.modules.objects import TrainObj, TrainPredictObj
 from src.modules.training.datasets.lazy_xgb_dataset import LazyXGBDataset
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
-from src.typing.xdata import DataRetrieval, XData
+from src.typing.xdata import DataRetrieval
 
 
 @dataclass
@@ -45,13 +45,16 @@ class LazyXGB(VerboseTrainingBlock):
     update: bool = False
     scale_pos_weight: int = 1
 
-    def custom_train(self, x: XData, y: npt.NDArray[np.int8], **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
+    def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[TrainPredictObj, TrainObj]:
         """Train a xgboost model in batches.
 
         :param x: Input data
         :param y: Labels
         :return: Predictions and labels
         """
+        x = train_predict_obj.x_data
+        y = train_obj.y_labels_original
+
         # Set the train and validation indices
         train_indices: list[int] | dict[str, Any] = train_args.get("train_indices", [])
         validation_indices: list[int] | dict[str, Any] = train_args.get("validation_indices", [])
@@ -114,19 +117,24 @@ class LazyXGB(VerboseTrainingBlock):
 
         # Get the predictions
         validation_iterator = lazy_xgb_dataset.get_iterator(X_validation, y_validation)
-        predictions = [self.model.predict(validation_data) for validation_data in validation_iterator]
+        predictions = np.array([self.model.predict(validation_data) for validation_data in validation_iterator])
 
         # Stop prefetch
         lazy_xgb_dataset.stop_prefetching()
 
-        return np.concatenate(predictions), y_validation
+        # Return the predictions and labels
+        train_predict_obj.y_predictions = np.concatenate(predictions)
+        train_obj.y_labels_modified = y_validation
 
-    def custom_predict(self, x: XData) -> npt.NDArray[np.float64]:
+        return train_predict_obj, train_obj
+
+    def custom_predict(self, train_predict_obj: TrainPredictObj) -> TrainPredictObj:
         """Predict using an XGBoost classifier.
 
         :param x: XData
         :return: Predictions
         """
+        x = train_predict_obj.x_data
         lazy_xgb_dataset = LazyXGBDataset(steps=self.steps, chunk_size=self.chunk_size, max_queue_size=self.queue_size)
         x.retrieval = self.retrieval
         if not hasattr(self, "model"):
@@ -147,7 +155,10 @@ class LazyXGB(VerboseTrainingBlock):
         # Stop prefetch
         lazy_xgb_dataset.stop_prefetching()
 
-        return np.concatenate(predictions)
+        # Return the predictions
+        train_predict_obj.y_predictions = np.concatenate(predictions)
+
+        return train_predict_obj
 
     def save_model(self, path: Path) -> None:
         """Save the model.
