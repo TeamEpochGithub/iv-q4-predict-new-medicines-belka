@@ -11,7 +11,7 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.trainers.single_output_xgb.XGB
+    - _target_: src.modules.training.trainers.xgb.SingleXGB
       model_name: "SingleXGB"
       # Training parameters
       num_boost_round: 500

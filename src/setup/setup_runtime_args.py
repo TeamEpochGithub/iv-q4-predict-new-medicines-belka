@@ -114,8 +114,10 @@ def setup_train_args(
             "output_dir": output_dir,
         },
         "ImageTrainer": main_trainer,
-        "LazyXGB": main_trainer,
-        "XGB": main_trainer,
+        "MultiXGB": main_trainer,
+        "SingleXGB": main_trainer,
+        "LazyMultiXGB": main_trainer,
+        "LazySingleXGB": main_trainer,
         "TwoHeadedTrainer": main_trainer,
     }
 

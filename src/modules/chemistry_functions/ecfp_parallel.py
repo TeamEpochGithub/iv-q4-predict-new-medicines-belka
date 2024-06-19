@@ -72,7 +72,7 @@ def convert_smile_array_parallel(smiles_array: npt.NDArray[np.str_], radius: int
     """
     chunk_size = len(smiles_array) // NUM_FUTURES
     chunk_size = max(chunk_size, MIN_CHUNK_SIZE)
-    chunks = [smiles_array[i: i + chunk_size] for i in range(0, len(smiles_array), chunk_size)]
+    chunks = [smiles_array[i : i + chunk_size] for i in range(0, len(smiles_array), chunk_size)]
 
     result = np.empty((len(smiles_array), bits // 8), dtype=np.uint8)
     with ProcessPoolExecutor() as executor:
@@ -81,7 +81,7 @@ def convert_smile_array_parallel(smiles_array: npt.NDArray[np.str_], radius: int
         last_idx = 0
         for future in tqdm(futures, total=len(futures), desc=desc):
             partial_result = future.result()
-            result[last_idx: last_idx + len(partial_result)] = partial_result
+            result[last_idx : last_idx + len(partial_result)] = partial_result
             last_idx += len(partial_result)
 
     return result
