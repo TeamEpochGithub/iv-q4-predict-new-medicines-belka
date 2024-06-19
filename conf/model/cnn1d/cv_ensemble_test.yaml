@@ -10,7 +10,7 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
+    - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
       model_name: CNN1D_MOL_TOK
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
