@@ -11,9 +11,9 @@ name: CNN1D TOKENIZE MOL
 parameters:
   model.train_sys.steps.0.dataset.steps.0.tokenizer_name:
     values:
-      - "samples_5M_window_7"
-      - "samples_5M_window_6"
-      - "samples_5M_window_5"
+      - "samples_20M_window_7"
+      - "samples_20M_window_6"
+      - "samples_100M_window_5"
 
   model.train_sys.steps.0.model.hidden_dim:
     values:

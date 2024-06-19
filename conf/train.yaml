@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/morning-sweep-5
+  - model: cnn1d_tokenize_mol
   - wandb: train
 
 # Paths
@@ -26,7 +26,7 @@ splitter:
   # test_size: 0.2
 
 # Data additions
-pseudo_label: 'submission'
+pseudo_label: 'none'
 submission_path: 'data/submissions/submission_443.csv'
 pseudo_binding_threshold: 0.5
 

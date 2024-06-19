@@ -15,7 +15,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 28000
+        num_embeddings: 25000
         hidden_dim: 256
         filters: 64
       criterion:
@@ -35,7 +35,7 @@ train_sys:
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples=5M_window=6"
+            tokenizer_name: "samples_20M_window_7"
             padding_size: 150
       scheduler:
         _target_: functools.partial
