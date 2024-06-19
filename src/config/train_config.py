@@ -32,4 +32,8 @@ class TrainConfig:
     sample_size: int = 10000
     sample_split: float = 0.5
     allow_multiple_instances: bool = False
+
+    # Data additions
     pseudo_label: str = "none"
+    submission_path: str | None = None
+    pseudo_binding_threshold: float = 0.5
