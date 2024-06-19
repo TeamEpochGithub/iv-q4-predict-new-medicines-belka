@@ -1,6 +1,5 @@
-import torch
+"""Module containing Mamba encoder class."""
 from torch import Tensor, nn
-from src.modules.training.models.transformer import PositionalEncoding, Conv1dBnRelu
 from transformers import MambaConfig, MambaModel
 
 
@@ -8,11 +7,11 @@ class Net(nn.Module):
     """Mamba encoder network with convolutional layer."""
 
     def __init__(
-            self,
-            n_classes: int,
-            num_embeddings: int = 64,
-            hidden_dim: int = 16,
-            vocab_size: int = 41,
+        self,
+        n_classes: int,
+        num_embeddings: int = 64,
+        hidden_dim: int = 16,
+        vocab_size: int = 41,
     ) -> None:
         """Initialize Net for using a mamba encoder.
 
@@ -43,10 +42,9 @@ class Net(nn.Module):
         :param x: Input tensor
         :param: Resulting tensor
         """
-
-        x = self.mamba_model(x)
-        x = x.last_hidden_state
-        z = x.transpose(1, 2)
+        z = self.mamba_model(x)
+        z = z.last_hidden_state
+        z = z.transpose(1, 2)
 
         pool = self.pool(z).squeeze(2)
         return self.bind(pool)

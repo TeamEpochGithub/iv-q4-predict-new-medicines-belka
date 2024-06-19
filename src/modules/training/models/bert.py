@@ -1,16 +1,19 @@
 """Module containing the CNN1D and a pre-trained BERT model."""
 from torch import Tensor, nn
+from transformers import AutoModelForSequenceClassification
+
 from src.modules.training.models.cnn1d import CNN1D
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+
 class Net(nn.Module):
     """Pre-trained Bert network with convolutional layers."""
 
     def __init__(
-            self,
-            n_classes: int,
-            vocab_size: int,
-            hidden_dim: int,
-            filters: int,
+        self,
+        n_classes: int,
+        vocab_size: int,
+        hidden_dim: int,
+        filters: int,
     ) -> None:
         """Initialize the pre-trained Bert network.
 
@@ -25,7 +28,6 @@ class Net(nn.Module):
 
         self._embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=312, padding_idx=0)
         self.BERT.bert.embeddings.word_embeddings = self._embedding
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward function of model.
@@ -33,7 +35,6 @@ class Net(nn.Module):
         :param x: Input data
         :return: Output data
         """
-
         y = self.CNN1D(x)
         z = self.BERT(x)
-        return z['logits'] + y
+        return z["logits"] + y
