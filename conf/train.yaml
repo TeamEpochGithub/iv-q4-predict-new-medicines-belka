@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: smiles/bert_tokenize_mol
+  - model: multi_output/cnn1d_tokenize_mol
   - wandb: train
 
 # Paths
