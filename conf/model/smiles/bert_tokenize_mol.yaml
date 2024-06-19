@@ -13,10 +13,10 @@ train_sys:
     - _target_: src.modules.training.image_trainer.ImageTrainer
       model_name: CNN1D_MOL_TOK
       model:
-        _target_: src.modules.training.models.cnn1d.CNN1D
+        _target_: src.modules.training.models.bert.Net
         n_classes: 3
-        num_embeddings: 15000
-        hidden_dim: 256
+        vocab_size: 5000
+        hidden_dim: 128
         filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -28,7 +28,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 2798
+      batch_size: 32
       patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
@@ -50,10 +50,10 @@ train_sys:
         warmup_lr_init: 1e-5
       n_folds: 5
       x_tensor_type: int
-#      dataloader_args:
-#        num_workers: 8
-#        prefetch_factor: 5
-#        persistent_workers: false
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 5
+        persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:

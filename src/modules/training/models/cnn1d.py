@@ -68,8 +68,8 @@ class CNN1D(nn.Module):
 
         x = self.relu(self.conv1(emb))
         x = self.relu(self.conv2(x))
-        x = self.relu(self.conv3(x))
-        x = self.pool(x).squeeze(2)
+        z = self.relu(self.conv3(x))
+        x = self.pool(z).squeeze(2)
         x = self.relu(self.fc1(x))
         x = self.dropout1(x)
         x = self.relu(self.fc2(x))
