@@ -11,8 +11,8 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.molecule_tokenizer.MoleculeTokenizer
-      training: "100M"
-      window_size: 4
+      training: "5M"
+      window_size: 6
 
 
 pred_sys:

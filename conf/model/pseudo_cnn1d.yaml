@@ -3,21 +3,30 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.ecfp.ECFP
+      convert_molecules: True
+      bits: 1024
+      radius: 2
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
-      model_name: TwoHeadedCNN1D
-      loss1_weight: 2
+    - _target_: src.modules.training.xgboost_pseudo.XgboostPseudo
+      threshold: 0.03
+      n_estimators: 50
+      n_samples: 500003
+
+    - _target_: src.modules.training.image_trainer.ImageTrainer
+      model_name: CNN1D_MOL_TOK
       model:
-        _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
+        _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        n_bits: 32
-        num_embeddings: 41
+        num_embeddings: 5000
+        hidden_dim: 256
+        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -28,18 +37,15 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 4096
-      patience: 5
+      batch_size: 1006
+      patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
-            bits: 32
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
-            max_enc_size_molecule: 146
-          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.25
+          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+            tokenizer_name: "samples_5M_window_4"
+            padding_size: 150
       scheduler:
         _target_: functools.partial
         _args_:
@@ -49,14 +55,14 @@ train_sys:
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
-        warmup_t: 4
-        warmup_lr_init: 2e-07
+        warmup_t: 1
+        warmup_lr_init: 1e-5
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 28
+        num_workers: 8
         prefetch_factor: 5
-        persistent_workers: true
+        persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:

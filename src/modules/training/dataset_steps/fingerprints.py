@@ -17,7 +17,7 @@ class Fingerprints(TrainingBlock, Logger):
     MIN_CHUNK_SIZE: int = 10000
     fingerprint: Any = None
 
-    def train(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]]:
+    def train(self, X: npt.NDArray[np.str_], y: npt.NDArray[np.int_]) -> tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]]:
         """Replace some atoms with similar ones.
 
         :param X: Input array
