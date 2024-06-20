@@ -4,14 +4,13 @@ command:
   - ${args_no_hyphens}
 method: bayes
 project: detect-medicine
-program: train.py
-name: TGNN Mask Augmentation Sweep (10M)
 entity: team-epoch-iv
+program: train.py
+name: Transformer GNN 10M Sweep
 metric:
-  name: Validation Score
   goal: maximize
+  name: Validation Score
 parameters:
-
   model.train_sys.steps.0.dataset.steps.1.p_node_mask:
     max: 0.7
     min: 0.1
@@ -25,51 +24,22 @@ parameters:
       - torch.optim.Adam
       - torch.optim.AdamW
 
-
-  model.train_sys.steps.0.epochs:
-    values:
-      - 10
-      - 20
-      - 30
-      - 40
-      - 50
-
   model.train_sys.steps.0.optimizer.lr:
     distribution: log_uniform_values
-    min: 1e-04
     max: 0.01
+    min: 1e-06
 
   model.train_sys.steps.0.scheduler.t_initial:
-    min: 2
-    max: 30
-
-  model.train_sys.steps.0.scheduler.warmup_t:
-    min: 1
-    max: 5
-
-  model.train_sys.steps.0.scheduler.cycle_limit:
-    min: 1
-    max: 2
+    distribution: int_uniform
+    max: 100
+    min: 10
 
   model.train_sys.steps.0.scheduler.warmup_lr_init:
     distribution: log_uniform_values
     max: 1e-05
     min: 1e-09
 
-  model.train_sys.steps.0.model.hidden_dim:
-    values:
-      - 16
-      - 32
-      - 64
-      - 128
-
-  model.train_sys.steps.0.model.dropout:
-    min: 0.05
-    max: 0.5
-
-  model.train_sys.steps.0.model.out_features:
-    values:
-      - 256
-      - 512
-      - 1024
-      - 2048
+  model.train_sys.steps.0.scheduler.warmup_t:
+    distribution: int_uniform
+    max: 5
+    min: 1

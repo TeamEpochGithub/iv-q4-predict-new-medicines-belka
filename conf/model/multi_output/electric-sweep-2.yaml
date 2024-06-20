@@ -11,46 +11,56 @@ y_sys:
 train_sys:
   _target_: src.modules.training.verbose_training_pipeline.VerboseTrainingPipeline
   steps:
-  - _target_: src.modules.training.graph_trainer.GraphTrainer
-    model_name: GCNEdges
+  - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
+    model_name: TwoHeadedCNN1D
+    loss1_weight: 1
     model:
-      _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
+      _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
       n_classes: 3
-      num_node_features: 4
-      num_edge_features: 8
+      n_bits: 64
+      filters: 89
+      hidden_dim: 512
+      num_embeddings: 41
     criterion:
       _target_: torch.nn.BCEWithLogitsLoss
     optimizer:
       _target_: functools.partial
       _args_:
       - _target_: hydra.utils.get_class
-        path: torch.optim.AdamW
-      lr: 0.001
+        path: torch.optim.Adam
+      lr: 0.00010227640128954494
     epochs: 10
-    batch_size: 1024
-    patience: 3
+    batch_size: 4096
+    patience: 5
     dataset:
-      _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+      _target_: src.modules.training.datasets.main_dataset.MainDataset
       retrieval:
       - SMILES_MOL
       steps:
-      - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
+      - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
+        bits: 64
+      - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+        max_enc_size_molecule: 146
+      - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+        p: 0.47627136068281106
     scheduler:
       _target_: functools.partial
       _args_:
       - _target_: hydra.utils.get_class
         path: timm.scheduler.cosine_lr.CosineLRScheduler
-      t_initial: 29
+      t_initial: 148
       cycle_mul: 1
       cycle_decay: 1
       cycle_limit: 1
       warmup_t: 5
-      warmup_lr_init: 1.0e-05
+      warmup_lr_init: 3.8125320387791267e-07
     n_folds: 5
+    x_tensor_type: int
     dataloader_args:
-      num_workers: 24
-      prefetch_factor: 3
-      persistent_workers: false
+      num_workers: 28
+      prefetch_factor: 5
+      persistent_workers: true
+  - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 pred_sys:
   _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
   title: Postprocessing pipeline

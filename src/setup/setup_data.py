@@ -194,3 +194,53 @@ def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any: 
         bb2_smiles=bb2,
         bb3_smiles=bb3,
     )
+
+
+def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data: pd.DataFrame, pseudo_binding_threshold: float = 0.5) -> npt.NDArray[np.int_]:
+    """Create pseudo label data from submission.
+
+    :param submission_path: Path
+    :param shrunken_test_data: The test molecules
+    :param pseudo_binding_threshold: The threshold to make bind go to 1
+    :return: Pseudo labels
+    """
+    # Load the data
+    submission = pd.read_csv(submission_path)
+    raw_data = pd.read_parquet("data/raw/test.parquet")
+
+    # Merge submission data with raw data on 'id'
+    raw_data = raw_data.merge(submission[["id", "binds"]], on="id", how="left")
+
+    # Round the binds column to 0 or 1
+    raw_data["binds"] = (raw_data["binds"] >= pseudo_binding_threshold).astype(int)
+
+    # Create a pivot table to spread the binds values across the protein types
+    pivot_df = raw_data.pivot_table(index="molecule_smiles", columns="protein_name", values="binds", fill_value=0).reset_index()
+
+    # Ensure the pivot table has the necessary columns
+    pivot_df = pivot_df.rename(
+        columns={
+            "BRD4": "binds_BRD4",
+            "HSA": "binds_HSA",
+            "sEH": "binds_sEH",
+        },
+    )
+
+    # Initialize columns in shrunken_test_data to ensure they exist before assignment
+    shrunken_test_data["binds_BRD4"] = 0
+    shrunken_test_data["binds_HSA"] = 0
+    shrunken_test_data["binds_sEH"] = 0
+
+    # Merge the pivot table with shrunken_test_data on 'molecule_smiles'
+    shrunken_test_data = shrunken_test_data.merge(pivot_df, on="molecule_smiles", how="left", suffixes=("", "_new"))
+
+    # Update the columns with the new values and drop the temporary columns
+    shrunken_test_data["binds_BRD4"] = shrunken_test_data["binds_BRD4_new"].fillna(0).astype(int)
+    shrunken_test_data["binds_HSA"] = shrunken_test_data["binds_HSA_new"].fillna(0).astype(int)
+    shrunken_test_data["binds_sEH"] = shrunken_test_data["binds_sEH_new"].fillna(0).astype(int)
+
+    # Drop the temporary '_new' columns
+    shrunken_test_data = shrunken_test_data.drop(columns=["binds_BRD4_new", "binds_HSA_new", "binds_sEH_new"])
+
+    # Return the pseudo labels
+    return shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int8)

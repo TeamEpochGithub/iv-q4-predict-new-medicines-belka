@@ -10,12 +10,15 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.graph_trainer.GraphTrainer
-      model_name: GCNTransformer
+      model_name: GNNTransformer
       model:
         _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
         n_classes: 3
-        num_node_features: 22
+        num_node_features: 14
         num_edge_features: 2
+        hidden_dim: 128
+        out_features: 256
+        dropout: 0.07894918666221065
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -23,9 +26,9 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
-        lr: 0.001
-      epochs: 10
-      batch_size: 1024
+        lr: 0.0029833301437342395
+      epochs: 40
+      batch_size: 512
       patience: 3
       dataset:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
@@ -33,8 +36,12 @@ train_sys:
         steps:
           - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
             use_atom_chem_features: true
-            use_atom_pharmacophore_features: true
+            use_atom_pharmacophore_features: false
             use_bond_features: true
+            use_atom_deep_chem_features: false
+          - _target_: src.modules.training.dataset_steps.graphs.graph_augmentations.GraphAugmentationBlock
+            p_node_mask: 0.1
+            p_edge_mask: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
@@ -45,7 +52,7 @@ train_sys:
         cycle_decay: 1
         cycle_limit: 1
         warmup_t: 5
-        warmup_lr_init: 1e-5
+        warmup_lr_init: 5.5719519290517545e-08
       n_folds: 5
       dataloader_args:
         num_workers: 24
