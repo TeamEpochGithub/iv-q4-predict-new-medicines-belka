@@ -12,12 +12,14 @@ import numpy.typing as npt
 import randomname
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
+from epochalyst.pipeline.ensemble import EnsemblePipeline
+from epochalyst.pipeline.model.model import ModelPipeline
 from hydra.core.config_store import ConfigStore
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from src.config.cv_config import CVConfig
-from src.setup.setup_data import GetXCache, GetYCache, setup_xy
+from src.setup.setup_data import GetXCache, GetYCache, create_pseudo_labels, setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
@@ -66,7 +68,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label="none")
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
     splitter_cache_path = cache_path / "splits.pkl"
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
@@ -75,6 +77,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     y: npt.NDArray[np.int_] | None = None
     splits: list[tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]]
     test_indices: npt.NDArray[np.int64] | None = None
+    data_cached: bool = True
 
     # Check if the data is cached and load if not
     if (
@@ -83,6 +86,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
         or (cfg.splitter is not None and not splitter_cache_path.exists())
     ):
         X, y = setup_xy(cfg)
+        data_cached = False
 
     # Split the data into train and, optionally, test
     if cfg.splitter is None:
@@ -116,18 +120,46 @@ def run_cv_cfg(cfg: DictConfig) -> None:
             cache_args_x,
             cache_args_y,
             cache_args_train,
+            data_cached=data_cached,
         )
         validation_scores.append(validation_score)
         test_scores.append(test_score)
         combined_scores.append((test_score + validation_score) / 2)
         oof_predictions[validation_indices] = predictions
 
+    scoring(cfg, model_pipeline, cache_args_y, y, validation_scores, test_scores, combined_scores, test_indices, train_validation_indices, oof_predictions)
+
+    wandb.finish()
+
+
+def scoring(
+    cfg: DictConfig,
+    model_pipeline: ModelPipeline | EnsemblePipeline,
+    cache_args_y: dict[str, Any],
+    y: npt.NDArray[np.int_],
+    validation_scores: list[float],
+    test_scores: list[float],
+    combined_scores: list[float],
+    test_indices: npt.NDArray[np.int64] | None,
+    train_validation_indices: npt.NDArray[np.int64] | None | tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]],
+    oof_predictions: npt.NDArray[np.float64],
+) -> None:
+    """Calculate final scores.
+
+    :param cfg: Configuration
+    :param model_pipeline: The model pipeline
+    :param cache_args_y: Cache arguments for y.
+    :param y: Y values
+    """
     # Average Scores
     with GetYCache(model_pipeline, cache_args_y, y) as y:
         avg_val_score = np.average(np.array(validation_scores))
         avg_test_score = np.average(np.array(test_scores))
         avg_combined_score = np.average(np.array(combined_scores))
-        oof_score = instantiate(cfg.scorer)(y[train_validation_indices], oof_predictions[train_validation_indices])
+        if test_indices is not None:
+            oof_score = instantiate(cfg.scorer)(y[train_validation_indices], oof_predictions[train_validation_indices])
+        else:
+            oof_score = instantiate(cfg.scorer)(y, oof_predictions)
 
     # Report Scores
     print_section_separator("CV - Results")
@@ -144,7 +176,6 @@ def run_cv_cfg(cfg: DictConfig) -> None:
                 "OOF Score": oof_score,
             },
         )
-    wandb.finish()
 
 
 def run_fold(
@@ -159,6 +190,8 @@ def run_fold(
     cache_args_x: dict[str, Any],
     cache_args_y: dict[str, Any],
     cache_args_train: dict[str, Any],
+    *,
+    data_cached: bool = False,
 ) -> tuple[float, float, npt.NDArray[np.int_]]:
     """Run a single fold of the cross validation.
 
@@ -173,11 +206,11 @@ def run_fold(
     :param processed_y: The processed labels.
     :return: The score of the fold and the predictions.
     """
-    # Print section separator
     print_section_separator(f"CV - Fold {fold_no}")
 
-    # Train Model
-    logger.info(f"Train/Test size: {len(train_indices)}/{len(validation_indices)}")
+    X, y, train_indices, test_indices = create_pseudo_labels(X=X, y=y, train_indices=train_indices, test_indices=test_indices, cfg=cfg, data_cached=data_cached)
+
+    logger.info(f"Train/Validation size: {len(train_indices)}/{len(validation_indices)}")
     logger.info("Creating clean pipeline for this fold")
     model_pipeline = setup_pipeline(cfg)
     train_args = setup_train_args(
