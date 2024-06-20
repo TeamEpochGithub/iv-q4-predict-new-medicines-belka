@@ -23,7 +23,7 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
-        lr: 0.001
+        lr: 0.0029833301437342395
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       scheduler:
