@@ -10,7 +10,6 @@ y_sys:
 
 train_sys:
   steps:
-
     # Fist Stage (Sampled Data)
     - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
       model_name: ChembertaFreeze
@@ -69,7 +68,7 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
         lr: 0.001
-      epochs: 3
+      epochs: 5
       batch_size: 256
       # patience: 10
       dataset:
