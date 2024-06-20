@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: multi_output/cnn1d_tokenize_mol
+  - model: smiles/chemberta
   - wandb: train
 
 # Paths
@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 10_000_000
+sample_size: 1_000_000
 sample_split: 0.015
 
 # Splitting

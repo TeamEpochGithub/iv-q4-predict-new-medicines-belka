@@ -16,6 +16,7 @@ train_sys:
         _target_: src.modules.training.models.chemberta.Chemberta
         n_classes: 3
         model_name: "DeepChem/ChemBERTa-10M-MTR"
+        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -24,9 +25,8 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-        weight_decay: 0.001
       epochs: 10
-      batch_size: 516
+      batch_size: 515
       patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
@@ -47,8 +47,8 @@ train_sys:
         warmup_lr_init: 1e-5
       n_folds: 5
       dataloader_args:
-        num_workers: 24
-        prefetch_factor: 4
+        num_workers: 16
+        prefetch_factor: 2
         persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
