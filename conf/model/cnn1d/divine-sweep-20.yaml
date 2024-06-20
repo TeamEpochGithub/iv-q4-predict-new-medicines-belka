@@ -11,7 +11,7 @@ y_sys:
 train_sys:
   _target_: src.modules.training.verbose_training_pipeline.VerboseTrainingPipeline
   steps:
-  - _target_: src.modules.training.main_trainer.MainTrainer
+  - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
     model_name: CNN1D_TOK_MOL
     model:
       _target_: src.modules.training.models.cnn1d.CNN1D

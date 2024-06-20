@@ -8,7 +8,6 @@ import coloredlogs
 import hydra
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
 from hydra.core.config_store import ConfigStore
@@ -17,7 +16,7 @@ from matplotlib import pyplot as plt
 from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
-from src.setup.setup_data import GetXCache, GetYCache, setup_submission_pseudo_label_data, setup_xy
+from src.setup.setup_data import GetXCache, GetYCache, create_pseudo_labels, setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
@@ -34,9 +33,6 @@ os.environ["HYDRA_FULL_ERROR"] = "1"  # Makes hydra give full error messages
 # Set up the config store, necessary for type checking of config yaml
 cs = ConfigStore.instance()
 cs.store(name="base_train", node=TrainConfig)
-
-FULL_DATA_SIZE = 98415610
-KAGGLE_DATA_SIZE = 878022
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="train")
@@ -244,66 +240,6 @@ def scoring(
                 "Combined Score": combined_score,
             },
         )
-
-
-def create_pseudo_labels(
-    X: XData | None,
-    y: npt.NDArray[np.int_] | None,
-    train_indices: npt.NDArray[np.int_],
-    test_indices: npt.NDArray[np.int_] | None,
-    cfg: DictConfig,
-    *,
-    data_cached: bool,
-) -> tuple[XData | None, npt.NDArray[np.int_] | None, npt.NDArray[np.int_], npt.NDArray[np.int_] | None]:
-    """Include the test molecule smiles into the training test.
-
-    :param X: XData containing the molecule smiles
-    :param y: array containing the protein labels
-    """
-    if cfg.pseudo_label != "none":
-        test_size = KAGGLE_DATA_SIZE
-        if cfg.pseudo_label == "local":
-            # Check whether the indices are not empty
-            if test_indices is None:
-                raise ValueError("The test indices are empty.")
-
-            test_size = test_indices.shape[0]
-
-        if not data_cached:
-            # Check whether the indices are not empty
-            if X is None or y is None or X.molecule_smiles is None:
-                raise ValueError("The features or the labels are empty.")
-
-            if cfg.pseudo_label in ("kaggle", "submission"):
-                # Load the kaggle test samples
-                shrunken_test = pd.read_csv("data/shrunken/test.csv")
-                smiles = np.array(shrunken_test["molecule_smiles"])
-            else:
-                # Copy test data and append it to the end of X
-                smiles = X.molecule_smiles[test_indices]
-
-            # Modify the train indices and labels and -1 for xgboost_pseudo
-            if cfg.pseudo_label == "submission":
-                if cfg.submission_path is None:
-                    raise ValueError("Submission path needs to be specified if you want to pseudo label with submission data")
-                submission_path = Path(cfg.submission_path)
-                smiles, labels = setup_submission_pseudo_label_data(submission_path, shrunken_test, cfg.pseudo_binding_ratio, cfg.pseudo_confidence_threshold)
-                test_size = labels.shape[0]
-            else:
-                labels = np.zeros((test_size, 3), dtype=np.int_)
-            y = np.concatenate((y, labels), dtype=np.int_)
-
-            # Include the test samples into the XData
-            X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
-
-        # Include the test samples into the training set
-        if wandb.run:
-            wandb.log({"Pseudo Label Size": test_size})
-        indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
-        train_indices = np.concatenate((train_indices, indices), dtype=np.int_)
-
-    return X, y, train_indices, test_indices
-
 
 if __name__ == "__main__":
     # Run the train function
