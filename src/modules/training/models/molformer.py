@@ -3,7 +3,7 @@ from torch import Tensor, nn
 from transformers import AutoConfig, AutoModel
 
 
-class Chemberta(nn.Module):
+class MolFormer(nn.Module):
     """Pre-trained Hugging Face model for molecule tokenizers."""
 
     def __init__(self, n_classes: int, model_name: str) -> None:
@@ -12,26 +12,26 @@ class Chemberta(nn.Module):
         :param model_name: the name of the Hugging Face model
         :param n_classes: the number of classes
         """
-        super(Chemberta, self).__init__()  # noqa: UP008
-        self.config = AutoConfig.from_pretrained(model_name, num_labels=n_classes, resume_download=None)
-        self.model = AutoModel.from_pretrained(model_name, add_pooling_layer=False, resume_download=None)
+        super(MolFormer, self).__init__()  # noqa: UP008
+        self.config = AutoConfig.from_pretrained(model_name, num_labels=n_classes, trust_remote_code=True)
+        self.model = AutoModel.from_pretrained(model_name, deterministic_eval=True, trust_remote_code=True)
 
-        self.embedding = self.model.embeddings
-        self.roberta_1 = self.model.encoder.layer[0]
-        self.roberta_2 = self.model.encoder.layer[1]
-        self.roberta_3 = self.model.encoder.layer[2]
+        embeddings = self.model.embeddings
+        first_layers = self.model.encoder.layer[:10]
 
-        # # Freeze the parameters in the embedding layer
-        for param in self.embedding.parameters():
+        # Freeze the parameters in the embedding layer
+        for param in embeddings.parameters():
             param.requires_grad = False
 
-        # Freeze the parameters in the first two roberta
-        for param in self.roberta_1.parameters():
+        # Freeze the parameters in the first layers
+        for param in first_layers.parameters():
             param.requires_grad = False
+
+        self.model.embeddings = embeddings
+        self.model.encoder.layer[:10] = first_layers
 
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.classifier = nn.Linear(self.config.hidden_size, self.config.num_labels)
-
 
     def forward(self, x: Tensor) -> Tensor:
         """Perform forward propagation of the model.
@@ -39,10 +39,8 @@ class Chemberta(nn.Module):
         :param x: the input data
         :return: the output data
         """
-        x = self.embedding(x.long())
-        x = self.roberta_1(x)
-        x = self.roberta_2(x[0])
-        x = self.roberta_3(x[0])
+        x = self.model(x.long())
+        aa = 1
 
         x = self.dropout(x[0][:, 0])
         x = self.classifier(x)

@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: smiles/chemberta
+  - model: smiles/two_stage_chemberta
   - wandb: train
 
 # Paths
@@ -14,16 +14,16 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 10_000_000
+sample_size: 100_000
 sample_split: 0.015
 
 # Splitting
 splitter:
-  # _target_: src.splitter.stratified_splitter.StratifiedSplitter
-  # n_splits: 5
-  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
-  n_splits: 5
-  test_size: 0.2
+   _target_: src.splitter.stratified_splitter.StratifiedSplitter
+   n_splits: 5
+#  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+#  n_splits: 5
+#  test_size: 0.2
 
 # Data additions
 pseudo_label: 'none'
