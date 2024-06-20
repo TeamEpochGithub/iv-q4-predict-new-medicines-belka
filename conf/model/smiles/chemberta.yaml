@@ -16,7 +16,6 @@ train_sys:
         _target_: src.modules.training.models.chemberta.Chemberta
         n_classes: 3
         model_name: "DeepChem/ChemBERTa-10M-MTR"
-        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -26,7 +25,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 515
+      batch_size: 513
       patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
@@ -34,6 +33,7 @@ train_sys:
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.chemberta_tokenizer.ChembertaTokenizer
             padding_size: 120
+            model_name:
       scheduler:
         _target_: functools.partial
         _args_:

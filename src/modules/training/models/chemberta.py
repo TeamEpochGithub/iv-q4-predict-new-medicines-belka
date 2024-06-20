@@ -6,7 +6,7 @@ from transformers import AutoConfig, AutoModel
 class Chemberta(nn.Module):
     """Pre-trained Hugging Face model for molecule tokenizers."""
 
-    def __init__(self, n_classes: int, model_name: str, filters: int) -> None:
+    def __init__(self, n_classes: int, model_name: str) -> None:
         """Initialize the Hugging Face Model.
 
         :param model_name: the name of the Hugging Face model
@@ -21,7 +21,7 @@ class Chemberta(nn.Module):
         self.roberta_2 = self.model.encoder.layer[1]
         self.roberta_3 = self.model.encoder.layer[2]
 
-        # Freeze the parameters in the embedding layer
+        # # Freeze the parameters in the embedding layer
         for param in self.embedding.parameters():
             param.requires_grad = False
 
@@ -29,8 +29,8 @@ class Chemberta(nn.Module):
         for param in self.roberta_1.parameters():
             param.requires_grad = False
 
-        for param in self.roberta_2.parameters():
-            param.requires_grad = False
+        # for param in self.roberta_2.parameters():
+        #     param.requires_grad = False
 
 
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
@@ -53,8 +53,8 @@ class Chemberta(nn.Module):
 
         return x
 
-# model_name = "DeepChem/ChemBERTa-10M-MTR"
-# model = AutoModel.from_pretrained(model_name, add_pooling_layer=False, resume_download=None)
-# roberta = model.encoder.layer[2]
-# #print(model)
-# print(roberta)
+model_name = "DeepChem/ChemBERTa-10M-MTR"
+model_name = "ncfrey/ChemGPT-4.7M"
+model = AutoModel.from_pretrained(model_name)
+print(model)
+
