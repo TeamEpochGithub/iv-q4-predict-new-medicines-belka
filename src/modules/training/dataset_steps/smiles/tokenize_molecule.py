@@ -1,6 +1,5 @@
 """Module to convert the molecule smiles into a sequence of tokens."""
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import joblib
