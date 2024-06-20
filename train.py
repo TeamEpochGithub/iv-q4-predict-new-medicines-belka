@@ -69,7 +69,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label, pseudo_confidence_threshold=cfg.pseudo_confidence_threshold)
     splitter_cache_path = cache_path / "splits.pkl"
 
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
@@ -87,6 +87,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         not model_pipeline.get_x_cache_exists(cache_args_x)
         or not model_pipeline.get_y_cache_exists(cache_args_y)
         or (cfg.splitter is not None and not splitter_cache_path.exists())
+        or cfg.pseudo_label == "submission"
     ):
         X, y = setup_xy(cfg)
         data_cached = False
@@ -126,6 +127,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     )
 
     # Train Model and make predictions on the validation set
+    model_pipeline._set_hash(str(cfg.pseudo_confidence_threshold) if cfg.pseudo_label == "submission" else None)
     validation_predictions, _ = model_pipeline.train(X, y, **train_args)
 
     # Make predictions on the test set if it exists
@@ -285,7 +287,8 @@ def create_pseudo_labels(
                 if cfg.submission_path is None:
                     raise ValueError("Submission path needs to be specified if you want to pseudo label with submission data")
                 submission_path = Path(cfg.submission_path)
-                labels = setup_submission_pseudo_label_data(submission_path, shrunken_test, cfg.pseudo_binding_threshold)
+                smiles, labels = setup_submission_pseudo_label_data(submission_path, shrunken_test, cfg.pseudo_binding_ratio, cfg.pseudo_confidence_threshold)
+                test_size = labels.shape[0]
             else:
                 labels = np.zeros((test_size, 3), dtype=np.int_)
             y = np.concatenate((y, labels), dtype=np.int_)
@@ -293,6 +296,9 @@ def create_pseudo_labels(
             # Include the test samples into the XData
             X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
 
+        # Include the test samples into the training set
+        if wandb.run:
+            wandb.log({"Pseudo Label Size": test_size})
         indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
         train_indices = np.concatenate((train_indices, indices), dtype=np.int_)
 
