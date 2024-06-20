@@ -27,7 +27,7 @@ train_sys:
             path: torch.optim.AdamW
         lr: 0.001
       epochs: 8
-      batch_size: 255
+      batch_size: 256
       patience: 8
       sample_size: 10_000_000
       dataset:
