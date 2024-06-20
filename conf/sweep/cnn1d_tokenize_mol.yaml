@@ -11,7 +11,6 @@ name: CNN1D TOKENIZE MOL
 parameters:
   model.train_sys.steps.0.dataset.steps.0.tokenizer_name:
     values:
-      - "samples_20M_window_7"
       - "samples_20M_window_6"
       - "samples_100M_window_5"
 
@@ -19,15 +18,15 @@ parameters:
     values:
       - 128
       - 256
-      - 512
   model.train_sys.steps.0.model.filters:
     values:
       - 64
-      - 128
+      - 80
   model.train_sys.steps.0.batch_size:
     values:
-      - 1048
-      - 2096
+      - 512
+      - 256
+      - 128
   model.train_sys.steps.0.optimizer._args_.0.path:
     values:
       - torch.optim.Adam
