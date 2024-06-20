@@ -12,7 +12,7 @@ train_sys:
   steps:
     # Fist Stage (Sampled Data)
     - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
-      model_name: Two Stage CNN1D_TOK_MOL
+      model_name: Two_Stage_CNN1D_TOK_MOL
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
@@ -57,7 +57,7 @@ train_sys:
 
     # Second Stage (All Data)
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: Two Stage CNN1D_TOK_MOL
+      model_name: Two_Stage_CNN1D_TOK_MOL
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
