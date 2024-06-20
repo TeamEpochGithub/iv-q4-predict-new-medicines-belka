@@ -1,0 +1,106 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    # Fist Stage (Sampled Data)
+    - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
+      model_name: Two Stage CNN1D_TOK_MOL
+      model:
+        _target_: src.modules.training.models.cnn1d.CNN1D
+        n_classes: 3
+        num_embeddings: 16000
+        hidden_dim: 128
+        filters: 64
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      optimizer:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 0.001
+      epochs: 13
+      batch_size: 256
+      patience: 8
+      sample_size: 10_000_000
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+            tokenizer_name: "samples_20M_window_6"
+            padding_size: 150
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 100
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        # warmup_t: 1
+        # warmup_lr_init: 1e-5
+      n_folds: 5
+      dataloader_args:
+        num_workers: 16
+        prefetch_factor: 2
+        persistent_workers: true
+
+    # Second Stage (All Data)
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: Two Stage CNN1D_TOK_MOL
+      model:
+        _target_: src.modules.training.models.cnn1d.CNN1D
+        n_classes: 3
+        num_embeddings: 16000
+        hidden_dim: 128
+        filters: 64
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      optimizer:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 0.001
+      epochs: 4
+      batch_size: 256
+      # patience: 10
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+            tokenizer_name: "samples_20M_window_6"
+            padding_size: 150
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 100
+      n_folds: 5
+      dataloader_args:
+        num_workers: 16
+        prefetch_factor: 2
+        persistent_workers: true
+
+    # Prediction Statistics
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []

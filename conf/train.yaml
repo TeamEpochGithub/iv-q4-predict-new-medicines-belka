@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: smiles/two_stage_chemberta
+  - model: smiles/cnn1d_tokenize_mol
   - wandb: train
 
 # Paths
@@ -27,5 +27,6 @@ splitter:
 
 # Data additions
 pseudo_label: 'none'
+pseudo_binding_threshold: 0.5
 
 allow_multiple_instances: true
