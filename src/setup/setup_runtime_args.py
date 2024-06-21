@@ -10,7 +10,14 @@ from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
 
 
-def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_size: int, sample_split: float, pseudo_label: str) -> Path:
+def create_cache_path(
+    root_cache_path: str,
+    splitter_cfg: DictConfig,
+    sample_size: int,
+    sample_split: float,
+    pseudo_label: str,
+    pseudo_confidence_threshold: float = 0.5,
+) -> Path:
     """Create cache path for processed data.
 
     :param splitter_cfg: Splitter configuration
@@ -29,7 +36,7 @@ def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_siz
     if pseudo_label == "public":
         cache_path = Path(str(cache_path) + "_pb")
     if pseudo_label == "submission":
-        cache_path = Path(str(cache_path) + "_sb")
+        cache_path = Path(str(cache_path) + "_sb_" + str(pseudo_confidence_threshold))
 
     cache_path.mkdir(parents=True, exist_ok=True)
     return cache_path
@@ -113,8 +120,11 @@ def setup_train_args(
         "PredictionStatistics": {
             "output_dir": output_dir,
         },
-        "ImageTrainer": main_trainer,
-        "LazyXGB": main_trainer,
+        "MultiXGB": main_trainer,
+        "SingleXGB": main_trainer,
+        "LazyMultiXGB": main_trainer,
+        "LazySingleXGB": main_trainer,
+        "MixedPrecisionTrainer": main_trainer,
         "TwoHeadedTrainer": main_trainer,
     }
 

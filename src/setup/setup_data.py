@@ -12,11 +12,15 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import polars as pl
+import wandb
 from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
 
 from src.typing.xdata import XData
 from src.utils.logger import logger
+
+FULL_DATA_SIZE = 98415610
+KAGGLE_DATA_SIZE = 878022
 
 
 def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float) -> pd.DataFrame:
@@ -196,12 +200,17 @@ def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any: 
     )
 
 
-def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data: pd.DataFrame, pseudo_binding_threshold: float = 0.5) -> npt.NDArray[np.int_]:
+def setup_submission_pseudo_label_data(
+    submission_path: Path,
+    shrunken_test_data: pd.DataFrame,
+    pseudo_binding_ratio: float = 0.05,
+    pseudo_confidence_threshold: float = 0.5,
+) -> tuple[npt.NDArray[np.str_], npt.NDArray[np.int_]]:
     """Create pseudo label data from submission.
 
     :param submission_path: Path
     :param shrunken_test_data: The test molecules
-    :param pseudo_binding_threshold: The threshold to make bind go to 1
+    :param pseudo_binding_ratio: The threshold to make bind go to 1
     :return: Pseudo labels
     """
     # Load the data
@@ -210,9 +219,6 @@ def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data
 
     # Merge submission data with raw data on 'id'
     raw_data = raw_data.merge(submission[["id", "binds"]], on="id", how="left")
-
-    # Round the binds column to 0 or 1
-    raw_data["binds"] = (raw_data["binds"] >= pseudo_binding_threshold).astype(int)
 
     # Create a pivot table to spread the binds values across the protein types
     pivot_df = raw_data.pivot_table(index="molecule_smiles", columns="protein_name", values="binds", fill_value=0).reset_index()
@@ -235,12 +241,129 @@ def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data
     shrunken_test_data = shrunken_test_data.merge(pivot_df, on="molecule_smiles", how="left", suffixes=("", "_new"))
 
     # Update the columns with the new values and drop the temporary columns
-    shrunken_test_data["binds_BRD4"] = shrunken_test_data["binds_BRD4_new"].fillna(0).astype(int)
-    shrunken_test_data["binds_HSA"] = shrunken_test_data["binds_HSA_new"].fillna(0).astype(int)
-    shrunken_test_data["binds_sEH"] = shrunken_test_data["binds_sEH_new"].fillna(0).astype(int)
+    shrunken_test_data["binds_BRD4"] = shrunken_test_data["binds_BRD4_new"].fillna(0.0)
+    shrunken_test_data["binds_HSA"] = shrunken_test_data["binds_HSA_new"].fillna(0.0)
+    shrunken_test_data["binds_sEH"] = shrunken_test_data["binds_sEH_new"].fillna(0.0)
 
     # Drop the temporary '_new' columns
     shrunken_test_data = shrunken_test_data.drop(columns=["binds_BRD4_new", "binds_HSA_new", "binds_sEH_new"])
 
+    # Select top and bottom confidence thresholds if pseudo_confidence_threshold is less than 0.5
+    top_confidence_threshold = {
+        "binds_BRD4": 0.5,
+        "binds_HSA": 0.5,
+        "binds_sEH": 0.5,
+    }
+    bottom_confidence_threshold = {
+        "binds_BRD4": 0.5,
+        "binds_HSA": 0.5,
+        "binds_sEH": 0.5,
+    }
+
+    # Find binding thresholds
+    top_confidence_threshold = shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].quantile(1 - pseudo_confidence_threshold * pseudo_binding_ratio)
+    bottom_confidence_threshold = shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].quantile(pseudo_confidence_threshold)
+
+    # Set the binds columns to NaN if the confidence is between the thresholds
+    shrunken_test_data.loc[
+        (shrunken_test_data["binds_BRD4"] > bottom_confidence_threshold["binds_BRD4"]) & (shrunken_test_data["binds_BRD4"] < top_confidence_threshold["binds_BRD4"]),
+        "binds_BRD4",
+    ] = np.nan
+
+    shrunken_test_data.loc[
+        (shrunken_test_data["binds_HSA"] > bottom_confidence_threshold["binds_HSA"]) & (shrunken_test_data["binds_HSA"] < top_confidence_threshold["binds_HSA"]),
+        "binds_HSA",
+    ] = np.nan
+
+    shrunken_test_data.loc[
+        (shrunken_test_data["binds_sEH"] > bottom_confidence_threshold["binds_sEH"]) & (shrunken_test_data["binds_sEH"] < top_confidence_threshold["binds_sEH"]),
+        "binds_sEH",
+    ] = np.nan
+
+    # Drop the rows with NaN values in the 'binds' column
+    shrunken_test_data = shrunken_test_data.dropna(subset=["binds_BRD4", "binds_HSA", "binds_sEH"])
+
+    # If greater than pseudo_binding_threshold set binds to 1 else 0
+    shrunken_test_data.loc[shrunken_test_data["binds_BRD4"] >= top_confidence_threshold["binds_BRD4"], "binds_BRD4"] = 1
+    shrunken_test_data.loc[shrunken_test_data["binds_HSA"] >= top_confidence_threshold["binds_HSA"], "binds_HSA"] = 1
+    shrunken_test_data.loc[shrunken_test_data["binds_sEH"] >= top_confidence_threshold["binds_sEH"], "binds_sEH"] = 1
+    shrunken_test_data.loc[shrunken_test_data["binds_BRD4"] <= bottom_confidence_threshold["binds_BRD4"], "binds_BRD4"] = 0
+    shrunken_test_data.loc[shrunken_test_data["binds_HSA"] <= bottom_confidence_threshold["binds_HSA"], "binds_HSA"] = 0
+    shrunken_test_data.loc[shrunken_test_data["binds_sEH"] <= bottom_confidence_threshold["binds_sEH"], "binds_sEH"] = 0
+
+    molecule_smiles = shrunken_test_data["molecule_smiles"].to_numpy()
+
+    # Log confidences
+    if wandb.run:
+        wandb.log(
+            {
+                "BRD4 Confidence Top": top_confidence_threshold["binds_BRD4"],
+                "HSA Confidence Top": top_confidence_threshold["binds_HSA"],
+                "sEH Confidence Top": top_confidence_threshold["binds_sEH"],
+                "BRD4 Confidence Bottom": bottom_confidence_threshold["binds_BRD4"],
+                "HSA Confidence Bottom": bottom_confidence_threshold["binds_HSA"],
+                "sEH Confidence Bottom": bottom_confidence_threshold["binds_sEH"],
+            },
+        )
+
     # Return the pseudo labels
-    return shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int8)
+    return molecule_smiles, shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int8)
+
+
+def create_pseudo_labels(
+    X: XData | None,
+    y: npt.NDArray[np.int_] | None,
+    train_indices: npt.NDArray[np.int_],
+    test_indices: npt.NDArray[np.int_] | None,
+    cfg: DictConfig,
+    *,
+    data_cached: bool,
+) -> tuple[XData | None, npt.NDArray[np.int_] | None, npt.NDArray[np.int_], npt.NDArray[np.int_] | None]:
+    """Include the test molecule smiles into the training test.
+
+    :param X: XData containing the molecule smiles
+    :param y: array containing the protein labels
+    """
+    if cfg.pseudo_label != "none":
+        test_size = KAGGLE_DATA_SIZE
+        if cfg.pseudo_label == "local":
+            # Check whether the indices are not empty
+            if test_indices is None:
+                raise ValueError("The test indices are empty.")
+
+            test_size = test_indices.shape[0]
+
+        if not data_cached:
+            # Check whether the indices are not empty
+            if X is None or y is None or X.molecule_smiles is None:
+                raise ValueError("The features or the labels are empty.")
+
+            if cfg.pseudo_label in ("kaggle", "submission"):
+                # Load the kaggle test samples
+                shrunken_test = pd.read_csv("data/shrunken/test.csv")
+                smiles = np.array(shrunken_test["molecule_smiles"])
+            else:
+                # Copy test data and append it to the end of X
+                smiles = X.molecule_smiles[test_indices]
+
+            # Modify the train indices and labels and -1 for xgboost_pseudo
+            if cfg.pseudo_label == "submission":
+                if cfg.submission_path is None:
+                    raise ValueError("Submission path needs to be specified if you want to pseudo label with submission data")
+                submission_path = Path(cfg.submission_path)
+                smiles, labels = setup_submission_pseudo_label_data(submission_path, shrunken_test, cfg.pseudo_binding_ratio, cfg.pseudo_confidence_threshold)
+                test_size = labels.shape[0]
+            else:
+                labels = np.zeros((test_size, 3), dtype=np.int_)
+            y = np.concatenate((y, labels), dtype=np.int_)
+
+            # Include the test samples into the XData
+            X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+
+        # Include the test samples into the training set
+        if wandb.run:
+            wandb.log({"Pseudo Label Size": test_size})
+        indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
+        train_indices = np.concatenate((train_indices, indices), dtype=np.int_)
+
+    return X, y, train_indices, test_indices
