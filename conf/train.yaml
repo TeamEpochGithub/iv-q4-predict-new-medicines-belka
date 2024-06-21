@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: graphs/tgnn_two_stage
+  - model: graphs/tgnn_two_stage_augs
   - wandb: train
 
 # Paths
