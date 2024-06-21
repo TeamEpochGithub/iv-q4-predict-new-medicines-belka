@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/divine-sweep-20
+  - model: cnn1d/seh_dataset_test
   - wandb: train
 
 # Paths
@@ -26,9 +26,10 @@ splitter:
   test_size: 0.2
 
 # Data additions
-pseudo_label: 'submission'
+pseudo_label: 'none'
 submission_path: 'data/submissions/submission_443.csv'
 pseudo_binding_ratio: 0.005 # sweep
 pseudo_confidence_threshold: 0.895 # sweep
+sEH_binding_dataset: true
 
 allow_multiple_instances: true

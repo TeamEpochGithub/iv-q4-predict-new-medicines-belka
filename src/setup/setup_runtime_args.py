@@ -2,6 +2,7 @@
 import hashlib
 from pathlib import Path
 from typing import Any
+from joblib import hash
 
 import numpy as np
 import numpy.typing as npt
@@ -15,8 +16,7 @@ def create_cache_path(
     splitter_cfg: DictConfig,
     sample_size: int,
     sample_split: float,
-    pseudo_label: str,
-    pseudo_confidence_threshold: float = 0.5,
+    cfg: DictConfig,
 ) -> Path:
     """Create cache path for processed data.
 
@@ -31,12 +31,8 @@ def create_cache_path(
 
     cache_path = Path(root_cache_path) / f"{sample_size_pretty}{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
 
-    if pseudo_label == "local":
-        cache_path = Path(str(cache_path) + "_pl")
-    if pseudo_label == "public":
-        cache_path = Path(str(cache_path) + "_pb")
-    if pseudo_label == "submission":
-        cache_path = Path(str(cache_path) + "_sb_" + str(pseudo_confidence_threshold))
+    if cfg.pseudo_label != "local":
+        cache_path = Path(str(cache_path) + "_ps" + hash(str(cfg.pseudo_confidence_threshold) + cfg.pseudo_label + str(cfg.pseudo_binding_ratio) + str(cfg.sEH_binding_dataset))[:5])
 
     cache_path.mkdir(parents=True, exist_ok=True)
     return cache_path

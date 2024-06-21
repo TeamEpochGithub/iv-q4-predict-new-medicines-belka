@@ -324,8 +324,8 @@ def create_pseudo_labels(
     :param X: XData containing the molecule smiles
     :param y: array containing the protein labels
     """
+    test_size = 0
     if cfg.pseudo_label != "none":
-        test_size = KAGGLE_DATA_SIZE
         if cfg.pseudo_label == "local":
             # Check whether the indices are not empty
             if test_indices is None:
@@ -340,6 +340,7 @@ def create_pseudo_labels(
 
             if cfg.pseudo_label in ("kaggle", "submission"):
                 # Load the kaggle test samples
+                test_size = KAGGLE_DATA_SIZE
                 shrunken_test = pd.read_csv("data/shrunken/test.csv")
                 smiles = np.array(shrunken_test["molecule_smiles"])
             else:
@@ -360,6 +361,17 @@ def create_pseudo_labels(
             # Include the test samples into the XData
             X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
 
+    if cfg.sEH_binding_dataset:
+        # Load in sEH binding dataset data 
+        seh_binding_dataset = pd.read_csv("data/shrunken/seh_binding.csv")
+        smiles = seh_binding_dataset["molecule_smiles"].to_numpy()
+        labels = seh_binding_dataset[['binds_BRD4', 'binds_HSA', 'binds_sEH']].to_numpy(dtype=np.int_)
+        X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+        y = np.concatenate((y, labels), dtype=np.int_)
+        test_size += labels.shape[0]
+
+                
+ 
         # Include the test samples into the training set
         if wandb.run:
             wandb.log({"Pseudo Label Size": test_size})

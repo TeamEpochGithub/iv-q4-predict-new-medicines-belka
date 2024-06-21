@@ -70,8 +70,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         cfg.splitter,
         cfg.sample_size,
         cfg.sample_split,
-        pseudo_label=cfg.pseudo_label,
-        pseudo_confidence_threshold=cfg.pseudo_confidence_threshold,
+        cfg=cfg
     )
     splitter_cache_path = cache_path / "splits.pkl"
 
