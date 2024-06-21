@@ -42,6 +42,9 @@ train_sys:
             use_atom_pharmacophore_features: false
             use_bond_features: true
             use_atom_deep_chem_features: false
+          - _target_: src.modules.training.dataset_steps.graphs.graph_augmentations.GraphAugmentationBlock
+            p_node_mask: 0.1
+            p_edge_mask: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
@@ -90,6 +93,9 @@ train_sys:
             use_atom_pharmacophore_features: false
             use_bond_features: true
             use_atom_deep_chem_features: false
+          - _target_: src.modules.training.dataset_steps.graphs.graph_augmentations.GraphAugmentationBlock
+            p_node_mask: 0.1
+            p_edge_mask: 0.1
       scheduler:
         _target_: functools.partial
         _args_:
