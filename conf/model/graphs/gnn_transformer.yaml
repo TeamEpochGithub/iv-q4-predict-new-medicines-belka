@@ -14,11 +14,11 @@ train_sys:
       model:
         _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
         n_classes: 3
-        num_node_features: 14
+        num_node_features: 10
         num_edge_features: 2
         hidden_dim: 128
         out_features: 256
-        dropout: 0.07894918666221065
+        dropout: 0.1
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
@@ -26,10 +26,11 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.AdamW
-        lr: 0.0029833301437342395
-      epochs: 40
-      batch_size: 512
-      patience: 3
+        lr: 0.001596325999988428
+      epochs: 25
+      batch_size: 1024
+      patience: 5
+      sample_size: 1000000
       dataset:
         _target_: src.modules.training.datasets.graph_dataset.GraphDataset
         retrieval: [ "SMILES_MOL" ]
@@ -47,15 +48,15 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 29
-        cycle_mul: 1
-        cycle_decay: 1
-        cycle_limit: 1
+        t_initial: 8
+        cycle_mul: 3
+        cycle_decay: 0.6
+        cycle_limit: 4
         warmup_t: 5
         warmup_lr_init: 5.5719519290517545e-08
       n_folds: 5
       dataloader_args:
-        num_workers: 24
+        num_workers: 12
         prefetch_factor: 3
         persistent_workers: false
 

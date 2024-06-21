@@ -65,40 +65,40 @@ parameters:
       - 2048
       - 4096
 
-  # model.train_sys.steps.0.model.dropout:
-  #   distribution: uniform
-  #   max: 0.5
-  #   min: 0.05
-  # model.train_sys.steps.0.model.hidden_dim:
-  #   values:
-  #     - 16
-  #     - 32
-  #     - 64
-  #     - 128
-  # model.train_sys.steps.0.model.out_features:
-  #   values:
-  #     - 256
-  #     - 512
-  #     - 1024
-  #     - 2048
+  model.train_sys.steps.0.model.dropout:
+    distribution: uniform
+    max: 0.5
+    min: 0.05
+  model.train_sys.steps.0.model.hidden_dim:
+    values:
+      - 16
+      - 32
+      - 64
+      - 128
+  model.train_sys.steps.0.model.out_features:
+    values:
+      - 256
+      - 512
+      - 1024
+      - 2048
 
   # Second Stage (All Data)
-  # model.train_sys.steps.1.model.dropout:
-  #   distribution: uniform
-  #   max: 0.5
-  #   min: 0.05
-  # model.train_sys.steps.1.model.hidden_dim:
-  #   values:
-  #     - 16
-  #     - 32
-  #     - 64
-  #     - 128
-  # model.train_sys.steps.1.model.out_features:
-  #   values:
-  #     - 256
-  #     - 512
-  #     - 1024
-  #     - 2048
+  model.train_sys.steps.1.model.dropout:
+    distribution: uniform
+    max: 0.5
+    min: 0.05
+  model.train_sys.steps.1.model.hidden_dim:
+    values:
+      - 16
+      - 32
+      - 64
+      - 128
+  model.train_sys.steps.1.model.out_features:
+    values:
+      - 256
+      - 512
+      - 1024
+      - 2048
   model.train_sys.steps.1.optimizer.lr:
     distribution: log_uniform_values
     max: 0.01
@@ -114,6 +114,9 @@ parameters:
       - 3
       - 4
       - 5
+      - 8
+      - 10
+      - 15
 
   model.train_sys.steps.1.batch_size:
     values:
