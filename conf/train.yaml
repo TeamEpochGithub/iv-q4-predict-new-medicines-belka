@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: tgnn_two_stage
+  - model: graphs/tgnn_two_stage
   - wandb: train
 
 # Paths
@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 10_000_000
+sample_size: 100_000_000
 sample_split: -1
 
 # Splitting
@@ -29,5 +29,10 @@ splitter:
 #pseudo_label: 'submission'
 #submission_path: 'data/submissions/submission_443.csv'
 #pseudo_binding_threshold: 0.5
+
+pseudo_label: 'submission'
+submission_path: 'data/submissions/submission_443.csv'
+pseudo_binding_ratio: 0.005 # sweep
+pseudo_confidence_threshold: 0.895 # swe
 
 allow_multiple_instances: true
