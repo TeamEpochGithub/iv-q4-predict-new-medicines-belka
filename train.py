@@ -65,7 +65,14 @@ def run_train_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label, pseudo_confidence_threshold=cfg.pseudo_confidence_threshold)
+    cache_path = create_cache_path(
+        cfg.cache_path,
+        cfg.splitter,
+        cfg.sample_size,
+        cfg.sample_split,
+        pseudo_label=cfg.pseudo_label,
+        pseudo_confidence_threshold=cfg.pseudo_confidence_threshold,
+    )
     splitter_cache_path = cache_path / "splits.pkl"
 
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
@@ -123,7 +130,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     )
 
     # Train Model and make predictions on the validation set
-    model_pipeline._set_hash(str(cfg.pseudo_confidence_threshold) if cfg.pseudo_label == "submission" else None)
+    # If you need to sweep over parameters that don't change the model hash uncomment line below with cfg parameters
+    # model_pipeline._set_hash(str(cfg.pseudo_confidence_threshold) if cfg.pseudo_label == "submission" else None)
     validation_predictions, _ = model_pipeline.train(X, y, **train_args)
 
     # Make predictions on the test set if it exists
@@ -240,6 +248,7 @@ def scoring(
                 "Combined Score": combined_score,
             },
         )
+
 
 if __name__ == "__main__":
     # Run the train function

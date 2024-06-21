@@ -7,7 +7,7 @@ entity: team-epoch-iv
 metric:
   goal: maximize
   name: Combined Score
-name: Pseudo Confidence Threshold Sweep 
+name: Pseudo Confidence Threshold Sweep
 parameters:
   pseudo_binding_ratio:
     max: 0.5
@@ -17,6 +17,6 @@ parameters:
     max: 0.9
     min: 0.1
     distribution: uniform
-  
+
 program: train.py
 project: detect-medicine

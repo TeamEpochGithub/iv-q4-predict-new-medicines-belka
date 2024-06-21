@@ -10,7 +10,14 @@ from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
 
 
-def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_size: int, sample_split: float, pseudo_label: str, pseudo_confidence_threshold: float) -> Path:
+def create_cache_path(
+    root_cache_path: str,
+    splitter_cfg: DictConfig,
+    sample_size: int,
+    sample_split: float,
+    pseudo_label: str,
+    pseudo_confidence_threshold: float = 0.5,
+) -> Path:
     """Create cache path for processed data.
 
     :param splitter_cfg: Splitter configuration

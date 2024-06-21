@@ -12,9 +12,9 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import polars as pl
+import wandb
 from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
-import wandb
 
 from src.typing.xdata import XData
 from src.utils.logger import logger
@@ -200,7 +200,12 @@ def setup_inference_data(directory: Path, inference_data: pd.DataFrame) -> Any: 
     )
 
 
-def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data: pd.DataFrame, pseudo_binding_ratio: float = 0.05, pseudo_confidence_threshold: float = 0.5) -> tuple[npt.NDArray[np.str_],npt.NDArray[np.int_]]:
+def setup_submission_pseudo_label_data(
+    submission_path: Path,
+    shrunken_test_data: pd.DataFrame,
+    pseudo_binding_ratio: float = 0.05,
+    pseudo_confidence_threshold: float = 0.5,
+) -> tuple[npt.NDArray[np.str_], npt.NDArray[np.int_]]:
     """Create pseudo label data from submission.
 
     :param submission_path: Path
@@ -214,7 +219,6 @@ def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data
 
     # Merge submission data with raw data on 'id'
     raw_data = raw_data.merge(submission[["id", "binds"]], on="id", how="left")
-
 
     # Create a pivot table to spread the binds values across the protein types
     pivot_df = raw_data.pivot_table(index="molecule_smiles", columns="protein_name", values="binds", fill_value=0).reset_index()
@@ -245,29 +249,34 @@ def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data
     shrunken_test_data = shrunken_test_data.drop(columns=["binds_BRD4_new", "binds_HSA_new", "binds_sEH_new"])
 
     # Select top and bottom confidence thresholds if pseudo_confidence_threshold is less than 0.5
-    top_confidence_threshold = 0.5
-    bottom_confidence_threshold = 0.5
-    
+    top_confidence_threshold = {
+        "binds_BRD4": 0.5,
+        "binds_HSA": 0.5,
+        "binds_sEH": 0.5,
+    }
+    bottom_confidence_threshold = {
+        "binds_BRD4": 0.5,
+        "binds_HSA": 0.5,
+        "binds_sEH": 0.5,
+    }
+
     # Find binding thresholds
     top_confidence_threshold = shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].quantile(1 - pseudo_confidence_threshold * pseudo_binding_ratio)
     bottom_confidence_threshold = shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].quantile(pseudo_confidence_threshold)
 
     # Set the binds columns to NaN if the confidence is between the thresholds
     shrunken_test_data.loc[
-        (shrunken_test_data["binds_BRD4"] > bottom_confidence_threshold["binds_BRD4"])
-        & (shrunken_test_data["binds_BRD4"] < top_confidence_threshold["binds_BRD4"]),
+        (shrunken_test_data["binds_BRD4"] > bottom_confidence_threshold["binds_BRD4"]) & (shrunken_test_data["binds_BRD4"] < top_confidence_threshold["binds_BRD4"]),
         "binds_BRD4",
     ] = np.nan
 
     shrunken_test_data.loc[
-        (shrunken_test_data["binds_HSA"] > bottom_confidence_threshold["binds_HSA"])
-        & (shrunken_test_data["binds_HSA"] < top_confidence_threshold["binds_HSA"]),
+        (shrunken_test_data["binds_HSA"] > bottom_confidence_threshold["binds_HSA"]) & (shrunken_test_data["binds_HSA"] < top_confidence_threshold["binds_HSA"]),
         "binds_HSA",
     ] = np.nan
 
     shrunken_test_data.loc[
-        (shrunken_test_data["binds_sEH"] > bottom_confidence_threshold["binds_sEH"])
-        & (shrunken_test_data["binds_sEH"] < top_confidence_threshold["binds_sEH"]),
+        (shrunken_test_data["binds_sEH"] > bottom_confidence_threshold["binds_sEH"]) & (shrunken_test_data["binds_sEH"] < top_confidence_threshold["binds_sEH"]),
         "binds_sEH",
     ] = np.nan
 
@@ -276,16 +285,30 @@ def setup_submission_pseudo_label_data(submission_path: Path, shrunken_test_data
 
     # If greater than pseudo_binding_threshold set binds to 1 else 0
     shrunken_test_data.loc[shrunken_test_data["binds_BRD4"] >= top_confidence_threshold["binds_BRD4"], "binds_BRD4"] = 1
-    shrunken_test_data.loc[shrunken_test_data["binds_HSA"] >= top_confidence_threshold['binds_HSA'], "binds_HSA"] = 1
-    shrunken_test_data.loc[shrunken_test_data["binds_sEH"] >= top_confidence_threshold['binds_sEH'], "binds_sEH"] = 1
-    shrunken_test_data.loc[shrunken_test_data["binds_BRD4"] <= bottom_confidence_threshold['binds_BRD4'], "binds_BRD4"] = 0
+    shrunken_test_data.loc[shrunken_test_data["binds_HSA"] >= top_confidence_threshold["binds_HSA"], "binds_HSA"] = 1
+    shrunken_test_data.loc[shrunken_test_data["binds_sEH"] >= top_confidence_threshold["binds_sEH"], "binds_sEH"] = 1
+    shrunken_test_data.loc[shrunken_test_data["binds_BRD4"] <= bottom_confidence_threshold["binds_BRD4"], "binds_BRD4"] = 0
     shrunken_test_data.loc[shrunken_test_data["binds_HSA"] <= bottom_confidence_threshold["binds_HSA"], "binds_HSA"] = 0
     shrunken_test_data.loc[shrunken_test_data["binds_sEH"] <= bottom_confidence_threshold["binds_sEH"], "binds_sEH"] = 0
 
     molecule_smiles = shrunken_test_data["molecule_smiles"].to_numpy()
 
+    # Log confidences
+    if wandb.run:
+        wandb.log(
+            {
+                "BRD4 Confidence Top": top_confidence_threshold["binds_BRD4"],
+                "HSA Confidence Top": top_confidence_threshold["binds_HSA"],
+                "sEH Confidence Top": top_confidence_threshold["binds_sEH"],
+                "BRD4 Confidence Bottom": bottom_confidence_threshold["binds_BRD4"],
+                "HSA Confidence Bottom": bottom_confidence_threshold["binds_HSA"],
+                "sEH Confidence Bottom": bottom_confidence_threshold["binds_sEH"],
+            },
+        )
+
     # Return the pseudo labels
     return molecule_smiles, shrunken_test_data[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int8)
+
 
 def create_pseudo_labels(
     X: XData | None,
