@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: smiles/two_stage_chemberta
+  - model: smiles/cnn1d_tokenize_mol
   - wandb: train
 
 # Paths

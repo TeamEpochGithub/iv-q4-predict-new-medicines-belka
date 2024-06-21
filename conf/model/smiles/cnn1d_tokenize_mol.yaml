@@ -10,14 +10,14 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.image_trainer.ImageTrainer
+    - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D_MOL_TOK
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
         num_embeddings: 15000
         hidden_dim: 256
-        filters: 64
+        filters: 72
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -29,7 +29,7 @@ train_sys:
         lr: 0.001
       epochs: 10
       batch_size: 2798
-      patience: 2
+      patience: 6
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
@@ -50,10 +50,10 @@ train_sys:
         warmup_lr_init: 1e-5
       n_folds: 5
       x_tensor_type: int
-#      dataloader_args:
-#        num_workers: 8
-#        prefetch_factor: 5
-#        persistent_workers: false
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 5
+        persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
