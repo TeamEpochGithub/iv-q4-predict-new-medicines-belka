@@ -130,7 +130,10 @@ def run_cv_cfg(cfg: DictConfig) -> None:
         avg_val_score = np.average(np.array(validation_scores))
         avg_test_score = np.average(np.array(test_scores))
         avg_combined_score = np.average(np.array(combined_scores))
-        oof_score = instantiate(cfg.scorer)(y[train_validation_indices], oof_predictions[train_validation_indices])
+        if test_indices is None:
+            oof_score = instantiate(cfg.scorer)(y, oof_predictions)
+        else:
+            oof_score = instantiate(cfg.scorer)(y[train_validation_indices], oof_predictions[train_validation_indices])
 
     # Report Scores
     print_section_separator("CV - Results")
