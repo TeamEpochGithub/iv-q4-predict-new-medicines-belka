@@ -5,7 +5,7 @@ defaults:
 x_sys:
   steps:
     - _target_: src.modules.transformation.segment_molecule.SegmentMolecule
-      window_size: 4
+      window_size: 6
       padding_size: 60
 
 y_sys:
@@ -15,10 +15,9 @@ train_sys:
   steps:
     - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: transformer_encoder
+      model_name: cnn1d
       model:
-        _target_: src.modules.training.models.transformer_encoder.TransformerEncoder
-        in_features: 150
+        _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
         num_embeddings: 5000
       criterion:
@@ -31,7 +30,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 4000
+      batch_size: 4096
       patience: 1
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset

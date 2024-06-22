@@ -10,7 +10,7 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.main_trainer.MainTrainer
+    - _target_: src.modules.training.image_trainer.ImageTrainer
       model_name: TIMM
       model:
         _target_: epochalyst.pipeline.model.training.models.timm.Timm
@@ -23,16 +23,22 @@ train_sys:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.AdamW
+            path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 32
+      batch_size: 256
       patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.images.smiles_to_image.SmilesToImage
+            img_size: 100
+          - _target_: src.modules.training.dataset_steps.images.normalize_image.NormalizeImage
+          - _target_: src.modules.training.dataset_steps.images.image_augmentation.ImageAugmentation
+            degree: 50
+            p_vertical: 0.3
+            p_horizontal: 0.3
       scheduler:
         _target_: functools.partial
         _args_:
@@ -49,6 +55,7 @@ train_sys:
         num_workers: 24
         prefetch_factor: 4
         persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 
 pred_sys:

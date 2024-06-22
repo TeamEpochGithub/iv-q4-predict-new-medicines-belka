@@ -1,0 +1,60 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: GCNEdges
+      model:
+        _target_: src.modules.training.models.gcn_edge_features.GCNWithEdgeFeatures
+        n_classes: 3
+        num_node_features: 22
+        num_edge_features: 2
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 0.0004105
+      epochs: 10
+      batch_size: 1024
+      patience: 3
+      dataset:
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
+            use_atom_chem_features: true
+            use_atom_pharmacophore_features: true
+            use_bond_features: true
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 29
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        warmup_t: 5
+        warmup_lr_init: 1e-5
+      n_folds: 5
+      dataloader_args:
+        num_workers: 26
+        prefetch_factor: 4
+        persistent_workers: true
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []

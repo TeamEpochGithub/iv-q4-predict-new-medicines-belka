@@ -1,0 +1,46 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.models.lazy_xgb.LazyXGB
+      model_name: "LazyXGB"
+      # Training parameters
+      chunk_size: 25000
+      queue_size: -1
+      num_boost_round: 500
+      device: cpu
+      update: True
+      scale_pos_weight: 100
+      # Model parameters
+      eval_metric: mlogloss
+      booster: gbtree
+      eta: 0.075
+      max_depth: 6
+      objective: "binary:logistic"
+      max_bin: 400
+      tree_method: hist
+
+      steps:
+        # - _target_: src.modules.training.dataset_steps.fingerprints.Fingerprints
+        #   fingerprint:
+        #     _target_: skfp.fingerprints.ECFPFingerprint
+        #     fp_size: 1200
+        - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFP
+          bits: 64
+          radius: 2
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []

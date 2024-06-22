@@ -4,33 +4,32 @@ defaults:
 
 x_sys:
   steps:
-    - _target_: src.modules.transformation.ecfp.ECFP
-      convert_molecules: True
-      bits: 512
+    - _target_: src.modules.transformation.atom_graph.AtomGraph
+      convert_molecule: True
+      convert_building_blocks: False
 
 y_sys:
   steps: []
 
 train_sys:
   steps:
-    - _target_: src.modules.training.one_hot_protein.OneHotProtein
-    - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: Linear
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: GCN
       model:
-        _target_: src.modules.training.models.linear.Linear
-        in_channels: 515
-        out_channels: 1
+        _target_: src.modules.training.models.gcn.GCNModel
+        n_classes: 3
+        num_node_features: 4
       criterion:
-        _target_: torch.nn.BCELoss
+        _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.Adam
+            path: torch.optim.AdamW
         lr: 0.001
-      epochs: 20
+      epochs: 100
       batch_size: 128
-      patience: 10
+      patience: 3
       scheduler:
         _target_: functools.partial
         _args_:
@@ -42,11 +41,15 @@ train_sys:
         cycle_limit: 1
         warmup_t: 1
         warmup_lr_init: 1e-5
+      n_folds: 5
+      # dataloader_args:
+      #   num_workers: 8
+      #   prefetch_factor: 2
+      #   persistent_workers: false
 
 pred_sys:
   steps:
-    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
 
 label_sys:
-  steps:
-    - _target_: src.modules.transformation.example_transformation_block.ExampleTransformationBlock
+  steps: []

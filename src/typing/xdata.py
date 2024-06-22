@@ -133,7 +133,7 @@ class XData:
         :return: Data replaced with correct building_blocks
         """
         if not isinstance(idx, (int | np.integer)):
-            return self._getitems(idx)  # type: ignore[arg-type]
+            return self.__getitems__(idx)  # type: ignore[arg-type]
 
         result = []
         item = self.encoded_rows[idx]
@@ -238,7 +238,7 @@ class XData:
 
         return result
 
-    def _getitems(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
+    def __getitems__(self, indices: npt.NDArray[np.int_] | list[int] | slice) -> npt.NDArray[Any]:  # noqa: PLR0911 C901
         """Retrieve items for all indices based on the specified retrieval flags.
 
         :param indices: List of indices to retrieve
