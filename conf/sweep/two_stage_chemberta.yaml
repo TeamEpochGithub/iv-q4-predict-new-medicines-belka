@@ -15,15 +15,15 @@ parameters:
   # First Stage (Sampled Data)
   model.train_sys.steps.0.sample_size:
     values:
-      - 5_000_000
+      - 15_000_000
+      - 20_000_000
       - 10_000_000
-      - 7_500_000
 
   model.train_sys.steps.0.epochs:
     values:
       - 8
-      - 10
-      - 12
+      - 6
+      - 7
 
   model.train_sys.steps.0.optimizer.lr:
     distribution: log_uniform_values
