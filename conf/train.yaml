@@ -8,6 +8,7 @@ defaults:
 data_path: data/shrunken
 cache_path: data/cache
 
+
 # Scoring
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
