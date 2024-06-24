@@ -35,7 +35,7 @@ class MoleculeTokenizer(VerboseTrainingBlock):
         :param y: array containing the molecule labels
         :return: The tokenized sentences and labels
         """
-        self.log_to_terminal(f"start training the tokenizer on {self.training}.")
+        self.log_to_terminal(f"Start training the tokenizer on {self.training}.")
 
         # Check whether the molecule smiles are present
         if train_predict_obj.x_data.molecule_smiles is None:

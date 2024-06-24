@@ -10,14 +10,17 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
-      model_name: TwoHeadedCNN1D
-      loss1_weight: 2
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: TransformerEncoder
       model:
-        _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
+        _target_: src.modules.training.models.transformer.Net
         n_classes: 3
-        n_bits: 32
-        num_embeddings: 41
+        num_embeddings: 512
+        heads: 8
+        hidden_dim: 512
+        vocab_size: 50
+        max_len_pos_enc: 256
+        dropout: 0.05
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -34,8 +37,6 @@ train_sys:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
-            bits: 32
           - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
             max_enc_size_molecule: 146
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
@@ -57,7 +58,6 @@ train_sys:
         num_workers: 28
         prefetch_factor: 5
         persistent_workers: true
-    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:

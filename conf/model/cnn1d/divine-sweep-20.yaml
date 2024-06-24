@@ -11,13 +11,14 @@ y_sys:
 train_sys:
   _target_: src.modules.training.verbose_training_pipeline.VerboseTrainingPipeline
   steps:
-  - _target_: src.modules.training.graph_trainer.GraphTrainer
-    model_name: GCNEdges
+  - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
+    model_name: CNN1D_TOK_MOL
     model:
-      _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
+      _target_: src.modules.training.models.cnn1d.CNN1D
       n_classes: 3
-      num_node_features: 4
-      num_edge_features: 8
+      num_embeddings: 21929
+      hidden_dim: 256
+      filters: 128
     criterion:
       _target_: torch.nn.BCEWithLogitsLoss
     optimizer:
@@ -25,31 +26,34 @@ train_sys:
       _args_:
       - _target_: hydra.utils.get_class
         path: torch.optim.AdamW
-      lr: 0.001
-    epochs: 10
-    batch_size: 1024
-    patience: 3
+      lr: 1.7094812572635534e-05
+    epochs: 12
+    batch_size: 2096
+    patience: 2
     dataset:
-      _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+      _target_: src.modules.training.datasets.main_dataset.MainDataset
       retrieval:
       - SMILES_MOL
       steps:
-      - _target_: src.modules.training.dataset_steps.graphs.smile_to_graph.SmileToGraph
+      - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+        tokenizer_name: samples_5M_window_3
+        padding_size: 150
     scheduler:
       _target_: functools.partial
       _args_:
       - _target_: hydra.utils.get_class
         path: timm.scheduler.cosine_lr.CosineLRScheduler
-      t_initial: 29
+      t_initial: 4
       cycle_mul: 1
       cycle_decay: 1
       cycle_limit: 1
-      warmup_t: 5
-      warmup_lr_init: 1.0e-05
+      warmup_t: 2
+      warmup_lr_init: 0.0006321025811766581
     n_folds: 5
+    x_tensor_type: int
     dataloader_args:
-      num_workers: 24
-      prefetch_factor: 3
+      num_workers: 8
+      prefetch_factor: 5
       persistent_workers: false
 pred_sys:
   _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
