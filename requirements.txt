@@ -27,4 +27,5 @@ timm
 pytorch-nlp==0.5.0
 iterative-stratification
 scikit-fingerprints >= 1.4.0
+deepchem == 2.8.0
 # -e ./

@@ -10,32 +10,31 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
-      model_name: TwoHeadedCNN1D
-      loss1_weight: 2
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: CNN1D
       model:
-        _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
+        _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        n_bits: 32
         num_embeddings: 41
+        hidden_dim: 128
+        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 10
+      epochs: 20
       batch_size: 4096
       patience: 5
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
-            bits: 32
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+            p: 0.5
           - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
             max_enc_size_molecule: 146
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation

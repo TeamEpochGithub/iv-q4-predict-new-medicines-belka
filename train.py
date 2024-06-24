@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
-from src.setup.setup_data import GetXCache, GetYCache, setup_xy
+from src.setup.setup_data import GetXCache, GetYCache, create_pseudo_labels, setup_xy
 from src.setup.setup_pipeline import setup_pipeline
 from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
@@ -46,30 +46,6 @@ def run_train(cfg: DictConfig) -> None:
 
     with optional_lock():
         run_train_cfg(cfg)
-        """
-        #try:
-        #    run_train_cfg(cfg)
-        #except hydra.errors.InstantiationException as e:
-        #    logger.error("Training failed to instantiate.")
-        #    if wandb.run:
-        #        wandb.log(
-                    {
-                        "Validation Score": -0.1,
-                        "Test Score": -0.1,
-                        "Combined Score": -0.1,
-                    },
-                )
-            logger.error(e)
-        except ValueError as e:
-            logger.error(e)
-            if wandb.run:
-                wandb.log(
-                    {
-                        "Validation Score": -0.1,
-                        "Test Score": -0.1,
-                        "Combined Score": -0.1,
-                    },
-                )"""
 
 
 def run_train_cfg(cfg: DictConfig) -> None:
@@ -89,8 +65,9 @@ def run_train_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split)
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
     splitter_cache_path = cache_path / "splits.pkl"
+
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
     # Setup the data
@@ -99,6 +76,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
     train_indices: npt.NDArray[np.int64]
     validation_indices: npt.NDArray[np.int64] | None = None
     test_indices: npt.NDArray[np.int64] | None = None
+    data_cached: bool = True
 
     # Check if the data is cached and load if not
     if (
@@ -107,6 +85,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         or (cfg.splitter is not None and not splitter_cache_path.exists())
     ):
         X, y = setup_xy(cfg)
+        data_cached = False
 
     # Split the data into train and test if required
     if cfg.splitter is None:
@@ -125,6 +104,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
         else:
             logger.info("Splitting Data into train and validation sets.")
             train_indices, validation_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)[fold_idx]  # type: ignore[assignment, misc]
+
+    X, y, train_indices, test_indices = create_pseudo_labels(X=X, y=y, train_indices=train_indices, test_indices=test_indices, cfg=cfg, data_cached=data_cached)
 
     # Run the pipeline and score the results
     print_section_separator("Train model pipeline")

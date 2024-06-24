@@ -10,7 +10,7 @@ from epochalyst.pipeline.model.model import ModelPipeline
 from omegaconf import DictConfig
 
 
-def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_size: int, sample_split: float) -> Path:
+def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_size: int, sample_split: float, pseudo_label: str) -> Path:
     """Create cache path for processed data.
 
     :param splitter_cfg: Splitter configuration
@@ -23,8 +23,15 @@ def create_cache_path(root_cache_path: str, splitter_cfg: DictConfig, sample_siz
     splitter_cfg_hash = str(hashlib.sha256(str(splitter_cfg).encode("utf-8")).hexdigest())[:5]
 
     cache_path = Path(root_cache_path) / f"{sample_size_pretty}{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
-    cache_path.mkdir(parents=True, exist_ok=True)
 
+    if pseudo_label == "local":
+        cache_path = Path(str(cache_path) + "_pl")
+    if pseudo_label == "public":
+        cache_path = Path(str(cache_path) + "_pb")
+    if pseudo_label == "submission":
+        cache_path = Path(str(cache_path) + "_sb")
+
+    cache_path.mkdir(parents=True, exist_ok=True)
     return cache_path
 
 
@@ -102,11 +109,15 @@ def setup_train_args(
         "MainTrainer": main_trainer,
         "DecisionTrees": main_trainer,
         "GraphTrainer": main_trainer,
+        "XgboostPseudo": main_trainer,
         "PredictionStatistics": {
             "output_dir": output_dir,
         },
-        "ImageTrainer": main_trainer,
-        "LazyXGB": main_trainer,
+        "MultiXGB": main_trainer,
+        "SingleXGB": main_trainer,
+        "LazyMultiXGB": main_trainer,
+        "LazySingleXGB": main_trainer,
+        "MixedPrecisionTrainer": main_trainer,
         "TwoHeadedTrainer": main_trainer,
     }
 

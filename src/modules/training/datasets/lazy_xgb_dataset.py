@@ -29,7 +29,7 @@ class LazyXGBDataset:
             self.prefetch_thread: threading.Thread | None = None
             self._stop_prefetch = threading.Event()
 
-    def get_iterator(self, X: npt.NDArray[np.string_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> Generator[xgb.DMatrix, None, None]:
+    def get_iterator(self, X: npt.NDArray[np.str_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> Generator[xgb.DMatrix, None, None]:
         """Get an iterator that yields prefetched DMatrix objects.
 
         :param X: Input x data
@@ -43,9 +43,9 @@ class LazyXGBDataset:
 
     def _calculate_steps(
         self,
-        X: npt.NDArray[np.string_] | list[str],
+        X: npt.NDArray[np.str_] | list[str],
         y: npt.NDArray[np.int_] | list[int],
-    ) -> tuple[npt.NDArray[np.bytes_] | list[str], npt.NDArray[np.int_] | list[int]]:
+    ) -> tuple[npt.NDArray[np.str_] | list[str], npt.NDArray[np.int_] | list[int]]:
         """Calculate the data using training steps provided.
 
         :param X: Input x data
@@ -56,7 +56,7 @@ class LazyXGBDataset:
             X, y = step.train(X, y)
         return X, y
 
-    def _prefetch(self, X: npt.NDArray[np.string_], y: npt.NDArray[np.int_]) -> None:
+    def _prefetch(self, X: npt.NDArray[np.str_], y: npt.NDArray[np.int_]) -> None:
         """Prefetch data and store in a queue for asynchronous access.
 
         :param X: Input x data
@@ -72,7 +72,7 @@ class LazyXGBDataset:
             self.prefetch_queue.put(dmatrix)
         self.prefetch_queue.put(None)  # Signal end of data
 
-    def _start_prefetch_thread(self, X: npt.NDArray[np.string_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> None:
+    def _start_prefetch_thread(self, X: npt.NDArray[np.str_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> None:
         """Start a thread to prefetch data.
 
         :param X: Input x data
@@ -92,7 +92,7 @@ class LazyXGBDataset:
                 break
             yield dmatrix
 
-    def _normal_iterator(self, X: npt.NDArray[np.string_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> Generator[xgb.DMatrix, None, None]:
+    def _normal_iterator(self, X: npt.NDArray[np.str_] | list[str], y: npt.NDArray[np.int_] | list[int]) -> Generator[xgb.DMatrix, None, None]:
         """Yield DMatrix objects.
 
         :param X: Input data

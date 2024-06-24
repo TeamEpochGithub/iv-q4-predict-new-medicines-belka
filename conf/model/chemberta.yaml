@@ -10,54 +10,48 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
-      model_name: TwoHeadedCNN1D
-      loss1_weight: 2
+    - _target_: src.modules.training.image_trainer.ImageTrainer
+      model_name: chemberta
       model:
-        _target_: src.modules.training.models.multi_headed_cnn1d.TwoHeadedCNN1D
+        _target_: src.modules.training.models.chemberta.Chemberta
         n_classes: 3
-        n_bits: 32
-        num_embeddings: 41
+        model_name: "DeepChem/ChemBERTa-10M-MTR"
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
+        weight_decay: 0.001
       epochs: 10
-      batch_size: 4096
-      patience: 5
+      batch_size: 516
+      patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
-            bits: 32
-          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
-            max_enc_size_molecule: 146
-          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.25
+          - _target_: src.modules.training.dataset_steps.smiles.chemberta_tokenizer.ChembertaTokenizer
+            padding_size: 120
       scheduler:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 40
+        t_initial: 100
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
-        warmup_t: 4
-        warmup_lr_init: 2e-07
+        warmup_t: 1
+        warmup_lr_init: 1e-5
       n_folds: 5
-      x_tensor_type: int
       dataloader_args:
-        num_workers: 28
-        prefetch_factor: 5
-        persistent_workers: true
+        num_workers: 24
+        prefetch_factor: 4
+        persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
 
 pred_sys:
   steps:
