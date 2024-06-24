@@ -8,11 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 from torchnlp.encoders.text import StaticTokenizerEncoder  # type: ignore[import-not-found]
-import selfies as sf
-from transformers import AutoTokenizer  # type: ignore[import-not-found]
 
-
-tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-10M-MTR")
 
 @dataclass
 class TokenizeMolecule(TrainingBlock):
@@ -34,8 +30,8 @@ class TokenizeMolecule(TrainingBlock):
         """
         # Check whether the tokenizer was trained or not
         file_path = Path(f"tm/tokenizer_{self.tokenizer_name}")
-        # if not file_path.exists():
-        #     raise FileNotFoundError("The chosen tokenizer was not yet trained.")
+        if not file_path.exists():
+            raise FileNotFoundError("The chosen tokenizer was not yet trained.")
 
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])
@@ -64,9 +60,7 @@ class TokenizeMolecule(TrainingBlock):
         """
         # Extract n-grams from the sequence
         length = len(smile) - self.window_size + 1
-        sequence = [" ".join(smile[i: i + self.window_size]) for i in range(length)]
+        sequence = [" ".join(smile[i : i + self.window_size]) for i in range(length)]
 
         # Pad the sequence with special token
         return sequence + ["PAD"] * (self.padding_size - len(sequence))
-
-

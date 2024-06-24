@@ -3,7 +3,10 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.string_encoder.StringEncoder
+      representation: 'deep_smile'
+      padding_size: 150
 
 y_sys:
   steps: []
@@ -15,7 +18,7 @@ train_sys:
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 9000
+        num_embeddings: 2001
         hidden_dim: 128
         filters: 64
       criterion:
@@ -36,7 +39,7 @@ train_sys:
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
             tokenizer_name: "samples=10_M_window=4"
-            padding_size: 150
+            padding_size: 200
       scheduler:
         _target_: functools.partial
         _args_:

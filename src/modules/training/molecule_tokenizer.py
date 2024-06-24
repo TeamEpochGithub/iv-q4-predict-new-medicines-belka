@@ -6,12 +6,11 @@ from typing import Any
 
 from torchnlp.encoders.text import StaticTokenizerEncoder  # type: ignore[import-not-found]
 from tqdm import tqdm
-import numpy as np
-from transformers import AutoTokenizer  # type: ignore[import-not-found]
+
 from src.modules.objects import TrainObj, TrainPredictObj
 from src.modules.training.verbose_training_block import VerboseTrainingBlock
 
-tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-10M-MTR")
+
 @dataclass
 class MoleculeTokenizer(VerboseTrainingBlock):
     """Train a torch tokenizer on the blocks or molecule smiles."""
@@ -27,8 +26,7 @@ class MoleculeTokenizer(VerboseTrainingBlock):
         """
         # Extract n-grams from the sequence
         length = len(smile) - self.window_size + 1
-        return [" ".join(smile[i: i + self.window_size]) for i in range(length)]
-
+        return [" ".join(smile[i : i + self.window_size]) for i in range(length)]
 
     def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[TrainPredictObj, TrainObj]:
         """Train the torch tokenizer on the molecule smiles.
@@ -44,7 +42,7 @@ class MoleculeTokenizer(VerboseTrainingBlock):
             raise ValueError("There is no SMILE information for the molecules")
 
         # Extract the molecule smiles as a list for torch
-        tqdm_smiles = tqdm(list(train_predict_obj.x_data.molecule_ecfp), desc="Tokenizing molecules")
+        tqdm_smiles = tqdm(list(train_predict_obj.x_data.molecule_smiles), desc="Tokenizing molecules")
         encoder = StaticTokenizerEncoder(tqdm_smiles, tokenize=self.segment_molecule)
 
         # Print the vocabulary size of the tokenizer

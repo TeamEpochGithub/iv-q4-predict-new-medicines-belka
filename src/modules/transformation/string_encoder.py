@@ -1,20 +1,23 @@
 """Module to encode SMILES into different string representations."""
+from dataclasses import dataclass
+
+import deepsmiles  # type: ignore[import-not-found]
 import joblib
 import numpy as np
-import numpy.typing as npt
-import deepsmiles
+import selfies  # type: ignore[import-not-found]
 from tqdm import tqdm
-import selfies
-from dataclasses import dataclass
+
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
 
 converter = deepsmiles.Converter(rings=True, branches=True)
+
+
 @dataclass
 class StringEncoder(VerboseTransformationBlock):
     """Class that converts smiles into different representations."""
 
-    representation: str = 'selfie'
+    representation: str = "selfie"
     padding_size: int = 150
 
     def custom_transform(self, x: XData) -> XData:
@@ -35,22 +38,17 @@ class StringEncoder(VerboseTransformationBlock):
         def deep_encoder(smile: str) -> str:
             return converter.encode(smile)
 
-
         smiles = x.molecule_smiles
 
-        if self.representation == 'selfie':
-            smiles_enc = joblib.Parallel(n_jobs=-1)(
-                joblib.delayed(selfie_encoder)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
-            x.molecule_ecfp = np.stack(smiles_enc)
+        if self.representation == "selfie":
+            smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(selfie_encoder)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
+            x.molecule_smiles = np.stack(smiles_enc)
 
-        if self.representation == 'deep_smile':
-            smiles_enc = joblib.Parallel(n_jobs=-1)(
-                joblib.delayed(deep_encoder)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
-            x.molecule_ecfp = np.stack(smiles_enc)
+        if self.representation == "deep_smile":
+            smiles_enc = joblib.Parallel(n_jobs=-1)(joblib.delayed(deep_encoder)(smile) for smile in tqdm(smiles, desc="Encoding SMILES"))
+            x.molecule_smiles = np.stack(smiles_enc)
 
-        if self.representation == 'smile':
-            x.molecule_ecfp = smiles
+        if self.representation == "smile":
+            x.molecule_smiles = smiles
 
         return x
-
-
