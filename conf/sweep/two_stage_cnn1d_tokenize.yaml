@@ -7,7 +7,7 @@ entity: team-epoch-iv
 metric:
   goal: maximize
   name: Validation Score
-name: Two Stage Chemberta
+name: Two Stage CNN1D_TOK_MOL
 program: train.py
 project: detect-medicine
 parameters:
@@ -15,20 +15,21 @@ parameters:
   # First Stage (Sampled Data)
   model.train_sys.steps.0.sample_size:
     values:
-      - 15_000_000
-      - 20_000_000
+      - 5_000_000
       - 10_000_000
+      - 7_500_000
+      - 15_000_000
 
   model.train_sys.steps.0.epochs:
     values:
       - 8
-      - 6
-      - 7
+      - 10
+      - 12
 
   model.train_sys.steps.0.optimizer.lr:
     distribution: log_uniform_values
-    max: 9e-05
-    min: 2e-05
+    max: 0.01
+    min: 1e-04
 
   model.train_sys.steps.0.scheduler.t_initial:
     distribution: int_uniform
@@ -59,10 +60,10 @@ parameters:
   # Second Stage (All Data)
   model.train_sys.steps.1.optimizer.lr:
     distribution: log_uniform_values
-    max: 9e-05
-    min: 2e-05
+    max: 0.01
+    min: 1e-05
 
   model.train_sys.steps.1.scheduler.t_initial:
     distribution: int_uniform
     max: 80
-    min: 30
+    min: 10

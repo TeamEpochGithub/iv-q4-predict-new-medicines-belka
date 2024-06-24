@@ -29,9 +29,12 @@ class Chemberta(nn.Module):
         for param in self.roberta_1.parameters():
             param.requires_grad = False
 
+        # Freeze the parameters in the first two roberta
+        for param in self.roberta_2.parameters():
+            param.requires_grad = False
+
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.classifier = nn.Linear(self.config.hidden_size, self.config.num_labels)
-
 
     def forward(self, x: Tensor) -> Tensor:
         """Perform forward propagation of the model.
@@ -45,6 +48,5 @@ class Chemberta(nn.Module):
         x = self.roberta_3(x[0])
 
         x = self.dropout(x[0][:, 0])
-        x = self.classifier(x)
 
-        return x
+        return self.classifier(x)
