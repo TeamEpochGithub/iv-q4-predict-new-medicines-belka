@@ -29,7 +29,6 @@ from src.utils.set_torch_seed import set_torch_seed
 # Set logging
 warnings.filterwarnings("ignore", category=UserWarning)
 os.environ["HYDRA_FULL_ERROR"] = "1"  # Makes hydra give full error messages
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Set up the config store, necessary for type checking of config yaml
 cs = ConfigStore.instance()
