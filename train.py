@@ -240,7 +240,6 @@ def scoring(
         )
 
 
-
 if __name__ == "__main__":
     # Run the train function
     run_train()

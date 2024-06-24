@@ -40,9 +40,6 @@ class MolFormer(nn.Module):
         :return: the output data
         """
         x = self.model(x.long())
-        aa = 1
 
         x = self.dropout(x[0][:, 0])
-        x = self.classifier(x)
-
-        return x
+        return self.classifier(x)

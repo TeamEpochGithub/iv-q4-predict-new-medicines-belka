@@ -36,7 +36,6 @@ class Chemberta(nn.Module):
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.classifier = nn.Linear(self.config.hidden_size, self.config.num_labels)
 
-
     def forward(self, x: Tensor) -> Tensor:
         """Perform forward propagation of the model.
 
@@ -49,6 +48,5 @@ class Chemberta(nn.Module):
         x = self.roberta_3(x[0])
 
         x = self.dropout(x[0][:, 0])
-        x = self.classifier(x)
 
-        return x
+        return self.classifier(x)
