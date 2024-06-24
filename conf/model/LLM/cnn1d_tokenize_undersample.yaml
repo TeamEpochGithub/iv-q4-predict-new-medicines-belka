@@ -53,8 +53,8 @@ train_sys:
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 8
-        prefetch_factor: 5
+        num_workers: 16
+        prefetch_factor: 2
         persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
