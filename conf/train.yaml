@@ -27,5 +27,8 @@ splitter:
 
 # Data additions
 pseudo_label: 'none'
+submission_path: 'data/submissions/submission_443.csv'
+pseudo_binding_threshold: 0.5
+
 
 allow_multiple_instances: true
