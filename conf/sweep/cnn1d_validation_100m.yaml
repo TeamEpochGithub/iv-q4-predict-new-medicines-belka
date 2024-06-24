@@ -1,0 +1,52 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+metric:
+  goal: maximize
+  name: Validation Score
+name: 1DCNN Validation (Train/Val) 100M
+parameters:
+  model.train_sys.steps.0.batch_size:
+    values:
+      - 1024
+      - 2048
+      - 4096
+  model.train_sys.steps.0.dataset.steps.0.p:
+    distribution: uniform
+    max: 0.5
+    min: 0
+  model.train_sys.steps.0.dataset.steps.2.p:
+    distribution: uniform
+    max: 1
+    min: 0
+  model.train_sys.steps.0.model.filters:
+    values:
+      - 32
+      - 64
+  model.train_sys.steps.0.model.hidden_dim:
+    values:
+      - 32
+      - 64
+      - 128
+      - 256
+      - 512
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    max: 0.001
+    min: 1e-05
+  model.train_sys.steps.0.scheduler.t_initial:
+    distribution: int_uniform
+    max: 200
+    min: 50
+  model.train_sys.steps.0.scheduler.warmup_lr_init:
+    distribution: log_uniform_values
+    max: 1e-05
+    min: 1e-10
+  model.train_sys.steps.0.scheduler.warmup_t:
+    distribution: int_uniform
+    max: 5
+    min: 1
+program: train.py
+project: detect-medicine
