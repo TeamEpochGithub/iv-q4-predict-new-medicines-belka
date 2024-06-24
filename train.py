@@ -70,7 +70,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         cfg.splitter,
         cfg.sample_size,
         cfg.sample_split,
-        cfg=cfg
+        cfg=cfg,
     )
     splitter_cache_path = cache_path / "splits.pkl"
 

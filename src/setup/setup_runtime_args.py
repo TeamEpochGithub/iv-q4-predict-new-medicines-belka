@@ -2,12 +2,12 @@
 import hashlib
 from pathlib import Path
 from typing import Any
-from joblib import hash
 
 import numpy as np
 import numpy.typing as npt
 from epochalyst.pipeline.ensemble import EnsemblePipeline
 from epochalyst.pipeline.model.model import ModelPipeline
+from joblib import hash
 from omegaconf import DictConfig
 
 
@@ -32,7 +32,9 @@ def create_cache_path(
     cache_path = Path(root_cache_path) / f"{sample_size_pretty}{sample_split_pretty}{'_' + splitter_cfg_hash if splitter_cfg_hash else ''}"
 
     if cfg.pseudo_label != "local":
-        cache_path = Path(str(cache_path) + "_ps" + hash(str(cfg.pseudo_confidence_threshold) + cfg.pseudo_label + str(cfg.pseudo_binding_ratio) + str(cfg.sEH_binding_dataset))[:5])
+        cache_path = Path(
+            str(cache_path) + "_ps" + hash(str(cfg.pseudo_confidence_threshold) + cfg.pseudo_label + str(cfg.pseudo_binding_ratio) + str(cfg.seh_binding_dataset))[:5],
+        )
 
     cache_path.mkdir(parents=True, exist_ok=True)
     return cache_path
