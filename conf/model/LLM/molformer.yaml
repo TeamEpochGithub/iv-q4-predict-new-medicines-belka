@@ -3,9 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoder.smile_atom_encoder.SmileAtomEncoder
-      convert_molecules: true
+  steps: []
 
 y_sys:
   steps: []
@@ -13,27 +11,29 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D
+      model_name: chemberta
       model:
-        _target_: src.modules.training.models.cnn1d.CNN1D
+        _target_: src.modules.training.models.molformer.MolFormer
         n_classes: 3
+        model_name: 'ibm/MoLFormer-XL-both-10pct'
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.AdamW
+            path: torch.optim.Adam
         lr: 0.001
-      epochs: 100
-      batch_size: 4096
-      patience: 11
+      epochs: 10
+      batch_size: 513
+      patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["ECFP_MOL"]
+        retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.25
+          - _target_: src.modules.training.dataset_steps.smiles.chemberta_tokenizer.ChembertaTokenizer
+            padding_size: 140
+            model_name: 'ibm/MoLFormer-XL-both-10pct'
       scheduler:
         _target_: functools.partial
         _args_:
@@ -46,11 +46,11 @@ train_sys:
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      x_tensor_type: int
-      dataloader_args:
-        num_workers: 24
-        prefetch_factor: 4
-        persistent_workers: false
+#      dataloader_args:
+#        num_workers: 16
+#        prefetch_factor: 2
+#        persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 
 pred_sys:

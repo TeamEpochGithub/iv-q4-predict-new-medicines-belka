@@ -14,7 +14,7 @@ from torchnlp.encoders.text import StaticTokenizerEncoder  # type: ignore[import
 class TokenizeMolecule(TrainingBlock):
     """Module to convert the molecule smiles into a sequence of tokens."""
 
-    tokenizer_name: str = "samples=10M_window=6"
+    tokenizer_name: str = "samples_10M_window_6"
     padding_size: int = 150
 
     def train(

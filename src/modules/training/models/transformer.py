@@ -58,7 +58,7 @@ class Net(nn.Module):
         """
         super().__init__()
 
-        self.pe = PositionalEncoding(num_embeddings, max_len=max_len_pos_enc)
+        self.pe = PositionalEncoding(hidden_dim, max_len=max_len_pos_enc)
         self.embedding = nn.Embedding(vocab_size, num_embeddings, padding_idx=0)
         self.conv_embedding = nn.Sequential(
             Conv1dBnRelu(num_embeddings, hidden_dim, kernel_size=3, stride=1, padding=1, is_bn=True),
@@ -69,7 +69,7 @@ class Net(nn.Module):
         self.pool = nn.AdaptiveMaxPool1d(1)
 
         self.bind = nn.Sequential(
-            nn.Linear(num_embeddings, n_classes),
+            nn.Linear(hidden_dim, n_classes),
         )
 
     def forward(self, x: Tensor) -> Tensor:
