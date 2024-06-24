@@ -64,4 +64,5 @@ repos:
           - iterative-stratification
           - dask
           - torch-geometric
+          - transformers
         args: [ --disallow-any-generics, --disallow-untyped-defs, --disable-error-code=import-untyped]

@@ -1,36 +1,33 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: tokenize_mol
-  - model: cnn1d/tokenize_mol_test
+  - model: gbdms/multi_output_xgb
   - wandb: train
-
 
 # Paths
 data_path: data/shrunken
 cache_path: data/cache
-
 
 # Scoring
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
 
-
 # Sampling
-sample_size: 10_000_000
+sample_size: 25_000_000
 sample_split: 0.015
-
 
 # Splitting
 splitter:
+  # _target_: src.splitter.stratified_splitter.StratifiedSplitter
+  # n_splits: 5
+  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+  n_splits: 5
+  test_size: 0.2
 
-#  _target_: src.splitter.stratified_splitter.StratifiedSplitter
-#  n_splits: 5
-
-   _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
-   n_splits: 5
-   test_size: 0.2
-
+# Data additions
+pseudo_label: 'submission'
+submission_path: 'data/submissions/submission_443.csv'
+pseudo_binding_threshold: 0.5
 
 allow_multiple_instances: true

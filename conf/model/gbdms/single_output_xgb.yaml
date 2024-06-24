@@ -11,11 +11,9 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.models.lazy_xgb.LazyXGB
-      model_name: "LazyXGB"
+    - _target_: src.modules.training.trainers.xgb.SingleXGB
+      model_name: "SingleXGB"
       # Training parameters
-      chunk_size: 5000000
-      queue_size: -1
       num_boost_round: 500
       device: cpu
       update: False

@@ -16,7 +16,7 @@ class GCNWithEdgeFeatures(nn.Module):
     :param n_classes:  Number of classes to predict
     """
 
-    def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32, out_features: int = 512, dropout: float = 0.1) -> None:
+    def __init__(self, num_node_features: int, num_edge_features: int, n_classes: int, hidden_dim: int = 32, out_features: int = 256, dropout: float = 0.1) -> None:
         """Initialize the GCN model.
 
         :param num_node_features: Number of features per node
