@@ -1,5 +1,6 @@
 """Module to convert the molecule smiles into a sequence of tokens."""
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import joblib
@@ -27,6 +28,11 @@ class TokenizeMolecule(TrainingBlock):
         :param x: array containing the smile strings
         :param y: array containing the protein labels
         """
+        # Check whether the tokenizer was trained or not
+        file_path = Path(f"tm/tokenizer_{self.tokenizer_name}.pkl")
+        if not file_path.exists():
+            raise FileNotFoundError(f"The chosen tokenizer was not yet trained, path: {file_path}.")
+
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])
         vocab = joblib.load(f"tm/tokenizer_{self.tokenizer_name}.pkl")
