@@ -3,55 +3,50 @@ command:
   - ${program}
   - ${args_no_hyphens}
 method: bayes
-entity: team-epoch-iv
 metric:
   goal: maximize
   name: Validation Score
-name: CNN1D TOKENIZE MOL
+name: 1DCNN Validation (Train/Val) 100M
 parameters:
-  model.train_sys.steps.0.dataset.steps.0.tokenizer_name:
-    values:
-      - "samples_100M_window_3"
-      - "samples_100M_window_4"
-      - "samples_100M_window_5"
-
-  model.train_sys.steps.0.model.hidden_dim:
-    values:
-      - 64
-      - 128
-      - 256
-  model.train_sys.steps.0.model.filters:
-    values:
-      - 64
-      - 72
-  model.train_sys.steps.0.model.num_embeddings:
-    distribution: int_uniform
-    max: 22000
-    min: 9000
   model.train_sys.steps.0.batch_size:
     values:
-      - 512
-      - 256
-      - 128
-  model.train_sys.steps.0.optimizer._args_.0.path:
+      - 1024
+      - 2048
+      - 4096
+  model.train_sys.steps.0.dataset.steps.0.p:
+    distribution: uniform
+    max: 0.5
+    min: 0
+  model.train_sys.steps.0.dataset.steps.2.p:
+    distribution: uniform
+    max: 1
+    min: 0
+  model.train_sys.steps.0.model.filters:
     values:
-      - torch.optim.Adam
-      - torch.optim.AdamW
+      - 32
+      - 64
+  model.train_sys.steps.0.model.hidden_dim:
+    values:
+      - 32
+      - 64
+      - 128
+      - 256
+      - 512
   model.train_sys.steps.0.optimizer.lr:
     distribution: log_uniform_values
     max: 0.001
-    min: 5e-06
+    min: 1e-05
   model.train_sys.steps.0.scheduler.t_initial:
     distribution: int_uniform
-    max: 150
+    max: 200
     min: 50
   model.train_sys.steps.0.scheduler.warmup_lr_init:
     distribution: log_uniform_values
     max: 1e-05
-    min: 1e-09
+    min: 1e-10
   model.train_sys.steps.0.scheduler.warmup_t:
     distribution: int_uniform
     max: 5
-    min: 3
+    min: 1
 program: train.py
 project: detect-medicine
