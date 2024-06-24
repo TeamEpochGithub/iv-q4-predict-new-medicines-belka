@@ -1,0 +1,54 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+entity: team-epoch-iv
+metric:
+  goal: maximize
+  name: Validation Score
+name: TRANSFORMER TOK MOL
+parameters:
+  model.train_sys.steps.0.model.num_embeddings:
+    values:
+      - 128
+      - 256
+      - 320
+      - 512
+  model.train_sys.steps.0.model.hidden_dim:
+    values:
+      - 64
+      - 128
+      - 256
+  model.train_sys.steps.0.model.heads:
+    values:
+      - 4
+      - 8
+  model.train_sys.steps.0.batch_size:
+    values:
+      - 64
+      - 128
+      - 256
+      - 512
+  model.train_sys.steps.0.optimizer._args_.0.path:
+    values:
+      - torch.optim.Adam
+      - torch.optim.AdamW
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    max: 1e-04
+    min: 1e-06
+  model.train_sys.steps.0.scheduler.t_initial:
+    distribution: int_uniform
+    max: 100
+    min: 10
+  model.train_sys.steps.0.scheduler.warmup_lr_init:
+    distribution: log_uniform_values
+    max: 1e-05
+    min: 1e-09
+  model.train_sys.steps.0.scheduler.warmup_t:
+    distribution: int_uniform
+    max: 5
+    min: 1
+program: train.py
+project: detect-medicine
