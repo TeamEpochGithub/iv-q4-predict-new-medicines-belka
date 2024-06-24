@@ -1,0 +1,38 @@
+_target_: epochalyst.pipeline.model.model.ModelPipeline
+_convert_: partial
+x_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Preprocessing pipeline
+  steps: []
+y_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Label processing pipeline
+  steps: []
+train_sys:
+  _target_: src.modules.training.verbose_training_pipeline.VerboseTrainingPipeline
+  steps:
+  - _target_: src.modules.training.trainers.xgb.XGB
+    model_name: MultiXGB
+    num_boost_round: 1000
+    device: cpu
+    update: false
+    scale_pos_weight: 1
+    eval_metric: mape
+    booster: gbtree
+    eta: 0.1460891174029625
+    max_depth: 9
+    objective: binary:logistic
+    max_bin: 736
+    tree_method: hist
+    steps:
+    - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFP
+      bits: 4096
+      radius: 2
+  - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+pred_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Postprocessing pipeline
+  steps: []
+label_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  steps: []
