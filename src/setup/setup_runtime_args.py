@@ -113,8 +113,11 @@ def setup_train_args(
         "PredictionStatistics": {
             "output_dir": output_dir,
         },
-        "ImageTrainer": main_trainer,
-        "LazyXGB": main_trainer,
+        "MultiXGB": main_trainer,
+        "SingleXGB": main_trainer,
+        "LazyMultiXGB": main_trainer,
+        "LazySingleXGB": main_trainer,
+        "MixedPrecisionTrainer": main_trainer,
         "TwoHeadedTrainer": main_trainer,
     }
 

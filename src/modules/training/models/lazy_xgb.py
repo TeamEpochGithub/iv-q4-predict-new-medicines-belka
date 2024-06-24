@@ -5,7 +5,6 @@ from typing import Any
 
 import joblib
 import numpy as np
-import numpy.typing as npt
 import xgboost as xgb
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 
@@ -46,7 +45,7 @@ class LazyXGB(VerboseTrainingBlock):
     update: bool = False
     scale_pos_weight: int = 1
 
-    def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int8]]:
+    def custom_train(self, train_predict_obj: TrainPredictObj, train_obj: TrainObj, **train_args: dict[str, Any]) -> tuple[TrainPredictObj, TrainObj]:
         """Train a xgboost model in batches.
 
         :param x: Input data
@@ -118,19 +117,18 @@ class LazyXGB(VerboseTrainingBlock):
 
         # Get the predictions
         validation_iterator = lazy_xgb_dataset.get_iterator(X_validation, y_validation)
-        predictions = [self.model.predict(validation_data) for validation_data in validation_iterator]
+        predictions = np.array([self.model.predict(validation_data) for validation_data in validation_iterator])
 
         # Stop prefetch
         lazy_xgb_dataset.stop_prefetching()
 
         # Return the predictions and labels
         train_predict_obj.y_predictions = np.concatenate(predictions)
-        train_predict_obj.model = self.model
         train_obj.y_labels_modified = y_validation
 
         return train_predict_obj, train_obj
 
-    def custom_predict(self, train_predict_obj: TrainPredictObj) -> npt.NDArray[np.float64]:
+    def custom_predict(self, train_predict_obj: TrainPredictObj) -> TrainPredictObj:
         """Predict using an XGBoost classifier.
 
         :param x: XData

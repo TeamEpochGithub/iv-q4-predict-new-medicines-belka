@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gbdms/xgb_optimization
+  - model: gbdms/multi_output_xgb
   - wandb: train
 
 # Paths

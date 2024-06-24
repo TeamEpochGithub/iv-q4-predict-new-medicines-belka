@@ -2,7 +2,8 @@ defaults:
   - base_submit
   - hydra/logging
   # - model: cnn1d_tokenize
-  - model: cnn1d_tokenize_mol
+  # - model: cnn1d/divine-sweep-20
+  - model: gbdms/icy-sweep-73
 
 submission_start_id: 295246830
 data_path: data/shrunken
