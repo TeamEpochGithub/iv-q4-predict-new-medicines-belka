@@ -17,7 +17,7 @@ parameters:
       - "samples_100M_window_5"
       - "samples_100M_window_4"
       - "samples_100M_window_3"
-  model.train_sys.steps.0.model.epochs:
+  model.train_sys.steps.0.epochs:
     values:
       - 10
       - 12
