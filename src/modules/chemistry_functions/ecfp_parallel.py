@@ -11,15 +11,15 @@ NUM_FUTURES = 100
 MIN_CHUNK_SIZE = 1000
 
 
-def convert_smile_batch(
-    smiles: npt.NDArray[np.bytes_],
+def convert_smiles_array_single_process(
+    smiles_array: npt.NDArray[np.str_],
     radius: int,
     bits: int,
     *,
     use_features: bool = False,
     progressbar_desc: str | None = None,
 ) -> npt.NDArray[np.uint8]:
-    """Worker function to process a batch of SMILES strings.
+    """Worker function to process a batch of SMILES strings into a packed array.
 
     :param smiles: A list of SMILES strings.
     :param radius: The radius of the ECFP.
@@ -28,8 +28,8 @@ def convert_smile_batch(
     :param progressbar_desc: Description for the progress bar.
     :return: A numpy array of fingerprints.
     """
-    result = np.empty((len(smiles), bits // 8), dtype=np.uint8)
-    iterator = tqdm(enumerate(smiles), desc=progressbar_desc) if progressbar_desc is not None else enumerate(smiles)
+    result = np.empty((len(smiles_array), bits // 8), dtype=np.uint8)
+    iterator = tqdm(enumerate(smiles_array), desc=progressbar_desc) if progressbar_desc is not None else enumerate(smiles_array)
     for idx, smile in iterator:
         mol = Chem.MolFromSmiles(smile)
         fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features)
@@ -37,7 +37,33 @@ def convert_smile_batch(
     return result
 
 
-def convert_smile_array_parallel(smiles_array: npt.NDArray[np.bytes_], radius: int, bits: int, *, use_features: bool, desc: str) -> npt.NDArray[np.uint8]:
+def convert_smiles_array_not_packed(
+    smiles_array: npt.NDArray[np.str_],
+    radius: int,
+    bits: int,
+    *,
+    use_features: bool = False,
+    progressbar_desc: str | None = None,
+) -> npt.NDArray[np.uint8]:
+    """Worker function to process a batch of SMILES strings into ECFP fingerprints without packing.
+
+    :param smiles: A list of SMILES strings.
+    :param radius: The radius of the ECFP.
+    :param bits: The number of bits in the ECFP.
+    :param use_features: Whether to use features in the ECFP.
+    :param progressbar_desc: Description for the progress bar.
+    :return: A numpy array of fingerprints.
+    """
+    result = []
+    iterator = tqdm(enumerate(smiles_array), desc=progressbar_desc) if progressbar_desc is not None else enumerate(smiles_array)
+    for _, smile in iterator:
+        mol = Chem.MolFromSmiles(smile)
+        fingerprint = AllChem.GetMorganFingerprintAsBitVect(mol, radius=radius, nBits=bits, useFeatures=use_features)
+        result.append(np.array(fingerprint))
+    return np.array(result)
+
+
+def convert_smile_array_parallel(smiles_array: npt.NDArray[np.str_], radius: int, bits: int, *, use_features: bool, desc: str) -> npt.NDArray[np.uint8]:
     """Convert a list of SMILES strings into their ECFP fingerprints using multiprocessing.
 
     :param smile_array: A list of SMILES strings.
@@ -50,7 +76,7 @@ def convert_smile_array_parallel(smiles_array: npt.NDArray[np.bytes_], radius: i
 
     result = np.empty((len(smiles_array), bits // 8), dtype=np.uint8)
     with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(convert_smile_batch, smiles=chunk, radius=radius, bits=bits, use_features=use_features) for chunk in chunks]
+        futures = [executor.submit(convert_smiles_array_single_process, smiles_array=chunk, radius=radius, bits=bits, use_features=use_features) for chunk in chunks]
 
         last_idx = 0
         for future in tqdm(futures, total=len(futures), desc=desc):

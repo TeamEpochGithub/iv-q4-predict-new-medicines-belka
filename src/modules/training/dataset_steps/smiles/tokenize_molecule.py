@@ -29,9 +29,9 @@ class TokenizeMolecule(TrainingBlock):
         :param y: array containing the protein labels
         """
         # Check whether the tokenizer was trained or not
-        file_path = Path(f"tm/tokenizer_{self.tokenizer_name}")
+        file_path = Path(f"tm/tokenizer_{self.tokenizer_name}.pkl")
         if not file_path.exists():
-            raise FileNotFoundError("The chosen tokenizer was not yet trained.")
+            raise FileNotFoundError(f"The chosen tokenizer was not yet trained, path: {file_path}.")
 
         # Extract the window size and the vocab from the name
         self.window_size = int(self.tokenizer_name[-1])
