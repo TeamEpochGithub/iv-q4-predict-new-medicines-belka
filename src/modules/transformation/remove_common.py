@@ -1,9 +1,12 @@
 """Module to encode SMILES into different string representations."""
 from dataclasses import dataclass
+
 import numpy as np
-from rdkit import Chem
+from rdkit import Chem  # type: ignore[import-not-found]
+
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
 from src.typing.xdata import XData
+
 
 @dataclass
 class RemoveCommon(VerboseTransformationBlock):
@@ -13,11 +16,14 @@ class RemoveCommon(VerboseTransformationBlock):
         """Remove the common substructure in the first block.
 
         :param x: XData containing the first building block
-        :return x: XData containing the new building blocks"""
-
+        :return x: XData containing the new building blocks
+        """
         # Compute the molecules of the common substructures
-        common1 = Chem.MolFromSmiles('O=COCC1c2ccccc2-c2ccccc21')
-        common2 = Chem.MolFromSmiles('CC(C)(C)OC(=O)')
+        common1 = Chem.MolFromSmiles("O=COCC1c2ccccc2-c2ccccc21")
+        common2 = Chem.MolFromSmiles("CC(C)(C)OC(=O)")
+
+        if x.bb1_smiles is None:
+            raise ValueError("There is no SMILE information for the molecules")
 
         count_common = 0
         new_smiles = []
@@ -41,5 +47,3 @@ class RemoveCommon(VerboseTransformationBlock):
 
         x.bb1_smiles = np.array(new_smiles)
         return x
-
-
