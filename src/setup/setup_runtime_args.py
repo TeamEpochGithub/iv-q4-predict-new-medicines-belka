@@ -36,9 +36,6 @@ def create_cache_path(
             str(cache_path) + "_ps" + hash(str(cfg.pseudo_confidence_threshold) + cfg.pseudo_label + str(cfg.pseudo_binding_ratio) + str(cfg.seh_binding_dataset))[:5],
         )
 
-    if cfg.model_sampling:
-        cache_path = Path(str(cache_path) + "_ms")
-
     cache_path.mkdir(parents=True, exist_ok=True)
     return cache_path
 

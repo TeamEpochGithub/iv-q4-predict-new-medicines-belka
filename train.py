@@ -89,7 +89,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
         not model_pipeline.get_x_cache_exists(cache_args_x)
         or not model_pipeline.get_y_cache_exists(cache_args_y)
         or (cfg.splitter is not None and not splitter_cache_path.exists())
-        or cfg.model_sampling
         or cfg.pseudo_label == "submission"
     ):
         X, y = setup_xy(cfg)
