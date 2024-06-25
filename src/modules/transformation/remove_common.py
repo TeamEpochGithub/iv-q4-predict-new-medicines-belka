@@ -34,7 +34,7 @@ class RemoveCommon(VerboseTransformationBlock):
                 new_smiles.append(Chem.MolToSmiles(modified))
                 count_common += 1
 
-            elif molecule.HasSubstructMatch(common2):
+            if molecule.HasSubstructMatch(common2):
                 modified = Chem.rdmolops.DeleteSubstructs(molecule, common2, onlyFrags=False)
                 new_smiles.append(Chem.MolToSmiles(modified))
                 count_common += 1
