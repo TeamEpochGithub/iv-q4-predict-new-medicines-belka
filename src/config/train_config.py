@@ -39,3 +39,4 @@ class TrainConfig:
     model_sampling: bool = False
     pseudo_binding_ratio: float = 0.05
     pseudo_confidence_threshold: float = 0.6
+    seh_binding_dataset: bool = False

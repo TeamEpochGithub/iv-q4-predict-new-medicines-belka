@@ -324,46 +324,45 @@ def create_pseudo_labels(
     :param X: XData containing the molecule smiles
     :param y: array containing the protein labels
     """
-    if cfg.pseudo_label != "none":
-        test_size = KAGGLE_DATA_SIZE
+    if data_cached:
+        # Check whether the indices are not empty
         if cfg.pseudo_label == "local":
-            # Check whether the indices are not empty
             if test_indices is None:
                 raise ValueError("The test indices are empty.")
-
             test_size = test_indices.shape[0]
+        return X, y, train_indices, test_indices
 
-        if not data_cached:
-            # Check whether the indices are not empty
-            if X is None or y is None or X.molecule_smiles is None:
-                raise ValueError("The features or the labels are empty.")
+    if X is None or y is None or X.molecule_smiles is None or y.shape[0] == 0 or X.molecule_smiles.shape[0] == 0:
+        raise ValueError("The features or the labels are empty.")
 
-            if cfg.pseudo_label in ("kaggle", "submission"):
-                # Load the kaggle test samples
-                shrunken_test = pd.read_csv("data/shrunken/test.csv")
-                smiles = np.array(shrunken_test["molecule_smiles"])
-            else:
-                # Copy test data and append it to the end of X
-                smiles = X.molecule_smiles[test_indices]
+    test_size = 0
 
-            # Modify the train indices and labels and -1 for xgboost_pseudo
-            if cfg.pseudo_label == "submission":
-                if cfg.submission_path is None:
-                    raise ValueError("Submission path needs to be specified if you want to pseudo label with submission data")
-                submission_path = Path(cfg.submission_path)
-                smiles, labels = setup_submission_pseudo_label_data(submission_path, shrunken_test, cfg.pseudo_binding_ratio, cfg.pseudo_confidence_threshold)
-                test_size = labels.shape[0]
-            else:
-                labels = np.zeros((test_size, 3), dtype=np.int_)
-            y = np.concatenate((y, labels), dtype=np.int_)
+    if cfg.seh_binding_dataset:
+        # Load in sEH binding dataset data
+        seh_binding_dataset = pd.read_csv("data/shrunken/seh_binding.csv")
+        smiles = seh_binding_dataset["molecule_smiles"].to_numpy().astype(np.str_)
+        labels = seh_binding_dataset[["binds_BRD4", "binds_HSA", "binds_sEH"]].to_numpy(dtype=np.int_)
+        X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+        y = np.concatenate((y, labels), dtype=np.int_)
+        test_size += labels.shape[0]
 
-            # Include the test samples into the XData
-            X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+    if cfg.pseudo_label == "submission":
+        if cfg.submission_path is None:
+            raise ValueError("Submission path needs to be specified if you want to pseudo label with submission data")
+        submission_path = Path(cfg.submission_path)
+        smiles, labels = setup_submission_pseudo_label_data(submission_path, pd.read_csv("data/shrunken/test.csv"), cfg.pseudo_binding_ratio, cfg.pseudo_confidence_threshold)
+        test_size += labels.shape[0]
+        X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+        y = np.concatenate((y, labels), dtype=np.int_)
+    elif cfg.pseudo_label == "local":
+        if test_indices is None or X.molecule_smiles is None:
+            raise ValueError("The test indices are empty, need test_indices if using local pseudo labels.")
+        smiles = X.molecule_smiles[test_indices]
+        X.molecule_smiles = np.concatenate((X.molecule_smiles, smiles))
+        y = np.concatenate((y, np.zeros((smiles.shape[0], 3), dtype=np.int_)), dtype=np.int_)
+        test_size += smiles.shape[0]
 
-        # Include the test samples into the training set
-        if wandb.run:
-            wandb.log({"Pseudo Label Size": test_size})
-        indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
-        train_indices = np.concatenate((train_indices, indices), dtype=np.int_)
+    new_indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
+    train_indices = np.concatenate((train_indices, new_indices)).astype(np.int_)
 
     return X, y, train_indices, test_indices
