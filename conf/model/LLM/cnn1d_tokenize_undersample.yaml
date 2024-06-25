@@ -52,10 +52,10 @@ train_sys:
         warmup_lr_init: 1e-5
       n_folds: 5
       x_tensor_type: int
-      dataloader_args:
-        num_workers: 8
-        prefetch_factor: 2
-        persistent_workers: false
+#      dataloader_args:
+#        num_workers: 8
+#        prefetch_factor: 2
+#        persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
