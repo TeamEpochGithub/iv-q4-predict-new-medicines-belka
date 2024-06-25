@@ -83,9 +83,22 @@ def run_train_cfg(cfg: DictConfig) -> None:
         not model_pipeline.get_x_cache_exists(cache_args_x)
         or not model_pipeline.get_y_cache_exists(cache_args_y)
         or (cfg.splitter is not None and not splitter_cache_path.exists())
+        or cfg.model_sampling
     ):
         X, y = setup_xy(cfg)
         data_cached = False
+
+    if cfg.model_sampling and not data_cached:
+        predictions = model_pipeline.predict(X)
+        # Find indices where all 3 protein predictions are between 0.3 and 0.5
+        mask = (predictions <= 0.3) | (predictions >= 0.5)
+        indices = np.where(mask.all(axis=1))[0]
+
+        # Filter those out of X and y
+        X.molecule_smiles = X.molecule_smiles[indices]
+        X.encoded_rows = X.encoded_rows[indices]
+        y = y[indices]
+        model_pipeline._set_hash(str(cfg.model_sampling))
 
     # Split the data into train and test if required
     if cfg.splitter is None:
