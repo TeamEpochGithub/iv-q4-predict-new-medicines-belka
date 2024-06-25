@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 1_000_000
+sample_size: 10_000_000
 sample_split: 0.015
 
 # Splitting
@@ -30,7 +30,7 @@ pseudo_label: 'submission'
 submission_path: 'data/submissions/submission_443.csv'
 pseudo_binding_ratio: 0.005 # sweep
 pseudo_confidence_threshold: 0.895 # sweep
-model_sampling: false
+model_sampling: true
 seh_binding_dataset: false
 
 allow_multiple_instances: true
