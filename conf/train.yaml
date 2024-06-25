@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gbdms/multi_output_xgb
+  - model: cnn1d/seh_dataset_test
   - wandb: train
 
 # Paths
@@ -28,6 +28,8 @@ splitter:
 # Data additions
 pseudo_label: 'submission'
 submission_path: 'data/submissions/submission_446.csv'
-pseudo_binding_threshold: 0.5
+pseudo_binding_ratio: 0.005 # sweep
+pseudo_confidence_threshold: 0.895 # sweep
+seh_binding_dataset: true
 
 allow_multiple_instances: true

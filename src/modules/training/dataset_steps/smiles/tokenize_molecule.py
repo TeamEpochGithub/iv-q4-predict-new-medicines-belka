@@ -38,12 +38,14 @@ class TokenizeMolecule(TrainingBlock):
         vocab = joblib.load(f"tm/tokenizer_{self.tokenizer_name}.pkl")
 
         # Initialize the tokenizer with the existing vocab
-        encoder = StaticTokenizerEncoder("AAAA", tokenize=self.segment_molecule)
+        encoder = StaticTokenizerEncoder(["C#CCOc1ccc(CN)cc1.Cl"], tokenize=self.segment_molecule)
         encoder.token_to_index = {token: index for index, token in enumerate(vocab)}
         encoder.index_to_token = vocab.copy()
 
         # Apply the tokenizer on the molecule smiles
-        return np.array([encoder.encode(smile) for smile in x]), y
+        first = np.array([encoder.encode(smile) for smile in x])
+
+        return first, y
 
     @property
     def is_augmentation(self) -> bool:
