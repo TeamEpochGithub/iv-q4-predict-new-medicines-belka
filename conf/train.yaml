@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: gbdms/multi_output_xgb
+  - model: LLM/cnn1d_tokenize_bb_oversample
   - wandb: train
 
 # Paths
@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 25_000_000
+sample_size: 1_000_000
 sample_split: 0.015
 
 # Splitting

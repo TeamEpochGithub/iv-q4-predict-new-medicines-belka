@@ -1,0 +1,67 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: CNN1D_BB_TOK_OVER
+      model:
+        _target_: src.modules.training.models.cnn1d.CNN1D
+        n_classes: 3
+        num_embeddings: 9000
+        hidden_dim: 256
+        filters: 64
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+        # _target_: src.modules.loss.focal_loss.FocalLoss
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.Adam
+        lr: 0.001
+      epochs: 14
+      batch_size: 512
+      patience: 5
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_BB"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.smiles.block_oversampling.BlockOversampling
+            p_swap: 0.3
+          - _target_: src.modules.training.dataset_steps.smiles.concatenate_smiles.ConcatenateSmiles
+          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+            tokenizer_name: "samples_100M_window_5"
+            padding_size: 150
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 40
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        warmup_t: 1
+        warmup_lr_init: 1e-5
+      n_folds: 5
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 5
+        persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []
