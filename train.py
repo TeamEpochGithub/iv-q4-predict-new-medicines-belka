@@ -95,23 +95,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
         X, y = setup_xy(cfg)
         data_cached = False
 
-    mask_indices: npt.NDArray[np.int_] = np.array([])
-    if cfg.model_sampling and not data_cached:
-        predictions = model_pipeline.predict(X)  # Loads model into the memory so pipeline needs to be reloaded afterwards
-        # Find indices where all 3 protein predictions are between two values
-        lower_bound = 0.0001
-        upper_bound = 0.95
-        mask = (predictions <= lower_bound) | (predictions >= upper_bound)
-        mask_indices = np.where(mask.all(axis=1))[0]
-
-        # Filter those out of X and y
-        # X.molecule_smiles = X.molecule_smiles[indices]
-        # X.encoded_rows = X.encoded_rows[indices]
-        # y = y[indices]
-        logger.info(f"Filtered out {len(mask_indices)} samples with all 3 protein predictions between {lower_bound} and {upper_bound}")
-        model_pipeline = setup_pipeline(cfg)
-        model_pipeline._set_hash(str(cfg.model_sampling))
-
     # Split the data into train and test if required
     if cfg.splitter is None:
         logger.info("Training on all data (full).")
@@ -131,9 +114,6 @@ def run_train_cfg(cfg: DictConfig) -> None:
             train_indices, validation_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)[fold_idx]  # type: ignore[assignment, misc]
 
     X, y, train_indices, test_indices = create_pseudo_labels(X=X, y=y, train_indices=train_indices, test_indices=test_indices, cfg=cfg, data_cached=data_cached)
-
-    # If mask_indices is in train_indices remove it
-    train_indices = np.setdiff1d(train_indices, mask_indices)
 
     # Run the pipeline and score the results
     print_section_separator("Train model pipeline")
