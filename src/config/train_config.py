@@ -36,5 +36,6 @@ class TrainConfig:
     # Data additions
     pseudo_label: str = "none"
     submission_path: str | None = None
-    pseudo_binding_threshold: float = 0.5
     model_sampling: bool = False
+    pseudo_binding_ratio: float = 0.05
+    pseudo_confidence_threshold: float = 0.6
