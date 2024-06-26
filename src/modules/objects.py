@@ -14,7 +14,7 @@ class TrainPredictObj:
     """Object passed during training and prediction."""
 
     x_data: XData
-    y_predictions: npt.NDArray[np.float64] | None = None
+    y_predictions: npt.NDArray[np.float_] | None = None
     model: nn.Module | None = None
 
 
@@ -23,4 +23,4 @@ class TrainObj:
     """Object passed only during training."""
 
     y_labels_original: npt.NDArray[np.int8]
-    y_labels_modified: npt.NDArray[np.int8] | None = None
+    y_labels_modified: npt.NDArray[np.int_] | npt.NDArray[np.float_] | None = None
