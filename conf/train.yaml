@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/seh_dataset_test
+  - model: multi_output/cnn1d_similiarity
   - wandb: train
 
 # Paths

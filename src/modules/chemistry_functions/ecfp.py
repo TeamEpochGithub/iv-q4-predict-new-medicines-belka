@@ -22,7 +22,7 @@ class EcfpReturnType(Enum):
 
 
 def convert_smiles_array(
-    smiles_array: npt.NDArray[np.string_],
+    smiles_array: npt.NDArray[np.bytes_],
     radius: int,
     bits: int,
     *,
@@ -68,7 +68,7 @@ def convert_smiles_array(
     return result
 
 
-def convert_smile_array_parallel(smiles_array: npt.NDArray[np.string_], radius: int, bits: int, *, use_features: bool, desc: str) -> npt.NDArray[np.uint8]:
+def convert_smile_array_parallel(smiles_array: npt.NDArray[np.bytes_], radius: int, bits: int, *, use_features: bool, desc: str) -> npt.NDArray[np.uint8]:
     """Convert a list of SMILES strings into their ECFP fingerprints using multiprocessing.
 
     :param smile_array: A list of SMILES strings.
