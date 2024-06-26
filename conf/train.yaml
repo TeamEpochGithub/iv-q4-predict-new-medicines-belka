@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: LLM/cnn1d_tokenize_bb_oversample
+  - model: cnn1d/seh_dataset_test
   - wandb: train
 
 # Paths
@@ -14,7 +14,7 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 1_000_000
+sample_size: 10_000_000
 sample_split: 0.015
 
 # Splitting
@@ -26,8 +26,10 @@ splitter:
   test_size: 0.2
 
 # Data additions
-#pseudo_label: 'submission'
-#submission_path: 'data/submissions/submission_443.csv'
-#pseudo_binding_threshold: 0.5
+pseudo_label: 'submission'
+submission_path: 'data/submissions/submission_443.csv'
+pseudo_binding_ratio: 0.005 # sweep
+pseudo_confidence_threshold: 0.895 # sweep
+seh_binding_dataset: false
 
 allow_multiple_instances: true
