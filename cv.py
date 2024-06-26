@@ -93,6 +93,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     if cfg.splitter is None:
         raise ValueError("Splitter is required for cross validation.")
     splitter: Splitter = instantiate(cfg.splitter)
+    train_validation_indices: npt.NDArray[np.int64] | None = None
     if splitter.includes_test:
         logger.info("Splitting data into train, validation and test sets.")
         splits, train_validation_indices, test_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)  # type: ignore[assignment]
@@ -159,10 +160,10 @@ def scoring(
         avg_val_score = np.average(np.array(validation_scores))
         avg_test_score = np.average(np.array(test_scores))
         avg_combined_score = np.average(np.array(combined_scores))
-        if test_indices is not None:
-            oof_score = instantiate(cfg.scorer)(y[train_validation_indices], oof_predictions[train_validation_indices])
-        else:
+        if test_indices is None:
             oof_score = instantiate(cfg.scorer)(y, oof_predictions)
+        else:
+            oof_score = instantiate(cfg.scorer)(y[train_validation_indices], oof_predictions[train_validation_indices])
 
     # Report Scores
     print_section_separator("CV - Results")

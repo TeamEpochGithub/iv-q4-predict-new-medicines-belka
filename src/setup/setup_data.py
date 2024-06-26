@@ -51,7 +51,7 @@ def read_train_data(directory: Path) -> pd.DataFrame:
     :param path: Usually raw path is a parameter
     :return: Training data
     """
-    train_data = pl.read_parquet(directory / "train_balanced.parquet")
+    train_data = pl.read_parquet(directory / "train.parquet")
     return train_data.to_pandas(use_pyarrow_extension_array=True)
 
 
