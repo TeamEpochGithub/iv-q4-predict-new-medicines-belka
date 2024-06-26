@@ -1,0 +1,67 @@
+_target_: epochalyst.pipeline.model.model.ModelPipeline
+_convert_: partial
+x_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Preprocessing pipeline
+  steps:
+  - _target_: src.modules.transformation.segment_molecule.SegmentMolecule
+    window_size: 6
+    padding_size: 60
+y_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Label processing pipeline
+  steps: []
+train_sys:
+  _target_: src.modules.training.verbose_training_pipeline.VerboseTrainingPipeline
+  steps:
+  - _target_: src.modules.training.tokenizer_atom.TokenizerAtom
+  - _target_: src.modules.training.main_trainer.MainTrainer
+    model_name: cnn1d
+    model:
+      _target_: src.modules.training.models.cnn1d.CNN1D
+      n_classes: 3
+      num_embeddings: 8390
+      hidden_dim: 32
+      filters: 64
+    criterion:
+      _target_: torch.nn.BCEWithLogitsLoss
+    optimizer:
+      _target_: functools.partial
+      _args_:
+      - _target_: hydra.utils.get_class
+        path: torch.optim.AdamW
+      lr: 0.00014843397314824442
+    epochs: 10
+    batch_size: 2096
+    patience: 2
+    dataset:
+      _target_: src.modules.training.datasets.main_dataset.MainDataset
+      retrieval:
+      - ECFP_BB
+      steps: []
+    scheduler:
+      _target_: functools.partial
+      _args_:
+      - _target_: hydra.utils.get_class
+        path: timm.scheduler.cosine_lr.CosineLRScheduler
+      t_initial: 81
+      cycle_mul: 1
+      cycle_decay: 1
+      cycle_limit: 1
+      warmup_t: 4
+      warmup_lr_init: 4.725922060329865e-09
+    n_folds: 5
+    x_tensor_type: int
+    dataloader_args:
+      num_workers: 8
+      prefetch_factor: 2
+      persistent_workers: false
+  - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+pred_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  title: Postprocessing pipeline
+  steps:
+  - _target_: src.modules.transformation.sigmoid.Sigmoid
+label_sys:
+  _target_: src.modules.transformation.verbose_transformation_pipeline.VerboseTransformationPipeline
+  steps: []
