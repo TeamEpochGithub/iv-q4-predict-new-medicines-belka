@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/divine-sweep-20
+  - model: LLM/cnn1d_tokenize_bb_oversample
   - wandb: train
 
 # Paths
@@ -15,7 +15,7 @@ scorer:
 
 # Sampling
 sample_size: 1_000_000
-sample_split: -1
+sample_split: 0.015
 
 # Splitting
 splitter:
@@ -26,9 +26,8 @@ splitter:
   test_size: 0.2
 
 # Data additions
-pseudo_label: 'submission'
-submission_path: 'data/submissions/submission_443.csv'
-pseudo_binding_ratio: 0.005 # sweep
-pseudo_confidence_threshold: 0.895 # sweep
+#pseudo_label: 'submission'
+#submission_path: 'data/submissions/submission_443.csv'
+#pseudo_binding_threshold: 0.5
 
 allow_multiple_instances: true
