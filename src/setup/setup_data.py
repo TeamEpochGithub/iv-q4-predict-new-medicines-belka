@@ -45,13 +45,13 @@ def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float)
     )  # type: ignore[call-arg]
 
 
-def read_train_data(directory: Path) -> pd.DataFrame:
+def read_train_data(directory: Path, file_name: str) -> pd.DataFrame:
     """Read the training data.
 
     :param path: Usually raw path is a parameter
     :return: Training data
     """
-    train_data = pl.read_parquet(directory / "train.parquet")
+    train_data = pl.read_parquet(directory / file_name)
     return train_data.to_pandas(use_pyarrow_extension_array=True)
 
 
@@ -105,7 +105,7 @@ def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
     """
     # Read the data if required and split it in X, y
     logger.info("Reading data")
-    train_data = read_train_data(Path(cfg.data_path))
+    train_data = read_train_data(Path(cfg.data_path), cfg.train_file_name)
 
     # Sample the data
     if cfg.sample_size is not None and cfg.sample_size > 0:

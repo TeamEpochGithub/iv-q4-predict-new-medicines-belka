@@ -1,11 +1,12 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: cnn1d/seh_dataset_test
+  - model: gbdms/multi_output_xgb
   - wandb: train
 
 # Paths
 data_path: data/shrunken
+train_file_name: train_75_76_lower.parquet
 cache_path: data/cache
 
 # Scoring
@@ -14,22 +15,22 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 30_000_000
-sample_split: -1 
+sample_size: 1_000_000
+sample_split: 0.015
 
 # Splitting
 splitter:
-  _target_: src.splitter.stratified_splitter.StratifiedSplitter
-  n_splits: 5
-  # _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+  # _target_: src.splitter.stratified_splitter.StratifiedSplitter
   # n_splits: 5
-  # test_size: 0.2
+  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+  n_splits: 5
+  test_size: 0.2
 
 # Data additions
 pseudo_label: 'submission'
-submission_path: 'data/submissions/submission_446.csv'
-pseudo_binding_ratio: 0.005 # sweep
-pseudo_confidence_threshold: 0.895 # sweep
+submission_path: 'data/submissions/submission_457.csv'
+pseudo_binding_ratio: 0.02 # sweep
+pseudo_confidence_threshold: 0.9 # sweep
 seh_binding_dataset: true
 
 allow_multiple_instances: true

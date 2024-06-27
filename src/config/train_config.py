@@ -25,6 +25,7 @@ class TrainConfig:
     model: Any
     ensemble: Any
     data_path: str
+    train_file_name: str
     cache_path: str
     scorer: Any
     wandb: WandBConfig

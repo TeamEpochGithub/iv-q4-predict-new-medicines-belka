@@ -3,7 +3,7 @@ defaults:
   - hydra/logging
   # - model: cnn1d_tokenize
   # - model: cnn1d/divine-sweep-20
-  - model: cnn1d/morning-sweep-5
+  - model: gbdms/multi_output_xgb
 
 submission_start_id: 295246830
 data_path: data/shrunken

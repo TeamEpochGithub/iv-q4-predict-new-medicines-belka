@@ -1,0 +1,58 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+entity: team-epoch-iv
+method: bayes
+metric:
+  goal: maximize
+  name: Validation Score
+name: Multi Output XGB 75/76 dataset
+parameters:
+  model.train_sys.steps.0.eta:
+    distribution: uniform
+    max: 0.2
+    min: 0.1
+  model.train_sys.steps.0.eval_metric:
+    values:
+      - mape
+      - aucpr
+  model.train_sys.steps.0.max_bin:
+    distribution: int_uniform
+    max: 800
+    min: 10
+  model.train_sys.steps.0.max_depth:
+    distribution: int_uniform
+    max: 10
+    min: 6
+  model.train_sys.steps.0.num_boost_round:
+    distribution: int_uniform
+    max: 1000
+    min: 250
+  model.train_sys.steps.0.objective:
+    values:
+      - binary:logistic
+      - reg:logistic
+  model.train_sys.steps.0.scale_pos_weight:
+    distribution: int_uniform
+    max: 25
+    min: 1
+  model.train_sys.steps.0.steps.0.bits:
+    values:
+      - 1024
+      - 2048
+      - 4096
+  model.train_sys.steps.0.steps.0.radius:
+    distribution: int_uniform
+    max: 4
+    min: 2
+  pseudo_binding_ratio:
+    max: 0.5
+    min: 0.001
+    distribution: log_uniform_values
+  pseudo_confidence_threshold:
+    max: 0.9
+    min: 0.1
+    distribution: uniform
+program: train.py
+project: detect-medicine
