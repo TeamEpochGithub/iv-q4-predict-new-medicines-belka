@@ -68,7 +68,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, cfg=cfg)
     splitter_cache_path = cache_path / "splits.pkl"
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
