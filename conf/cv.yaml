@@ -5,6 +5,7 @@ defaults:
   - wandb: train
 
 # Paths
+train_file_name: train.parquet
 data_path: data/shrunken
 cache_path: data/cache
 
@@ -26,9 +27,11 @@ splitter:
   # test_size: 0.2
 
 # Data additions
-# pseudo_label: 'submission'
-# submission_path: 'data/submissions/submission_443.csv'
-# pseudo_binding_threshold: 0.5
+pseudo_label: 'none'
+submission_path: 'data/submissions/submission_457.csv'
+pseudo_binding_ratio: 0.005 # sweep
+pseudo_confidence_threshold: 0.895 # sweep
+seh_binding_dataset: false
 
 allow_multiple_instances: true
 save_folds: true

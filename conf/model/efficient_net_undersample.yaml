@@ -10,53 +10,51 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
-      model_name: CNN1D_MOL_TOK
+    - _target_: src.modules.training.main_trainer.MainTrainer
+      model_name: TIMM
       model:
-        _target_: src.modules.training.models.cnn1d.CNN1D
+        _target_: src.modules.training.models.efficient_net.EfficientNet
         n_classes: 3
-        num_embeddings: 9000
-        hidden_dim: 256
-        filters: 90
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
-        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 14
-      batch_size: 512
-      patience: 11
+      epochs: 10
+      batch_size: 256
+      patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.random_undersampler.RandomUndersampler
-            majority_sampling: 0.2
-          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples_100M_window_5"
-            padding_size: 150
+          - _target_: src.modules.training.dataset_steps.images.smiles_to_image.SmilesToImage
+            img_size: 100
+          - _target_: src.modules.training.dataset_steps.images.normalize_image.NormalizeImage
+          - _target_: src.modules.training.dataset_steps.images.image_augmentation.ImageAugmentation
+            degree: 50
+            p_vertical: 0.3
+            p_horizontal: 0.3
       scheduler:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 40
+        t_initial: 100
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
         warmup_t: 1
         warmup_lr_init: 1e-5
       n_folds: 5
-      x_tensor_type: int
       dataloader_args:
-        num_workers: 8
+        num_workers: 16
         prefetch_factor: 2
         persistent_workers: false
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
 
 pred_sys:
   steps:
