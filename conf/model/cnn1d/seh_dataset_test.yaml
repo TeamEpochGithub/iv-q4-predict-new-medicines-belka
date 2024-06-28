@@ -3,9 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoder.smile_atom_encoder.SmileAtomEncoder
-      convert_molecules: true
+  steps: []
 
 y_sys:
   steps: []
@@ -13,33 +11,38 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D
+      model_name: CNN1D_TOK_MOL
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
+        num_embeddings: 23000
+        hidden_dim: 128
+        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
+        # _target_: src.modules.loss.focal_loss.FocalLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.AdamW
+            path: torch.optim.Adam
         lr: 0.001
-      epochs: 100
-      batch_size: 4096
-      patience: 11
+      epochs: 10
+      batch_size: 3000
+      patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["ECFP_MOL"]
+        retrieval: ["SMILES_MOL"]
         steps:
-          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
-            p: 0.25
+          - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+            tokenizer_name: "samples_5M_window_7"
+            padding_size: 150
       scheduler:
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 100
+        t_initial: 40
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
@@ -48,10 +51,10 @@ train_sys:
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 24
-        prefetch_factor: 4
+        num_workers: 8
+        prefetch_factor: 5
         persistent_workers: false
-
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:

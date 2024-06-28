@@ -3,9 +3,7 @@ defaults:
   - _self_
 
 x_sys:
-  steps:
-    - _target_: src.modules.transformation.encoder.smile_atom_encoder.SmileAtomEncoder
-      convert_molecules: true
+  steps: []
 
 y_sys:
   steps: []
@@ -17,21 +15,28 @@ train_sys:
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
+        num_embeddings: 41
+        hidden_dim: 128
+        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
       optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
         _target_: functools.partial
         _args_:
           - _target_: hydra.utils.get_class
-            path: torch.optim.AdamW
+            path: torch.optim.Adam
         lr: 0.001
-      epochs: 100
+      epochs: 20
       batch_size: 4096
-      patience: 11
+      patience: 5
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["ECFP_MOL"]
+        retrieval: ["SMILES_MOL"]
         steps:
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_randomizer.SmilesRandomizer
+            p: 0.5
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+            max_enc_size_molecule: 146
           - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
             p: 0.25
       scheduler:
@@ -39,19 +44,19 @@ train_sys:
         _args_:
           - _target_: hydra.utils.get_class
             path: timm.scheduler.cosine_lr.CosineLRScheduler
-        t_initial: 100
+        t_initial: 40
         cycle_mul: 1
         cycle_decay: 1
         cycle_limit: 1
-        warmup_t: 1
-        warmup_lr_init: 1e-5
+        warmup_t: 4
+        warmup_lr_init: 2e-07
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 24
-        prefetch_factor: 4
-        persistent_workers: false
-
+        num_workers: 28
+        prefetch_factor: 5
+        persistent_workers: true
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:

@@ -37,7 +37,6 @@ train_sys:
         - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFP
           bits: 2048
           radius: 3
-    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps: []

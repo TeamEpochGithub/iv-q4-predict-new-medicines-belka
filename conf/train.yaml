@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: graphs/tgnn_two_stage_augs
+  - model: multi_output/cnn1d_similiarity
   - wandb: train
 
 # Paths
@@ -14,8 +14,8 @@ scorer:
   name: MAP
 
 # Sampling
-sample_size: 100_000_000
-sample_split: -1
+sample_size: 10_000_000
+sample_split: 0.015
 
 # Splitting
 splitter:
@@ -25,10 +25,11 @@ splitter:
    n_splits: 5
    test_size: 0.2
 
-## Data additions
-#pseudo_label: 'submission'
-#submission_path: 'data/submissions/submission_443.csv'
-#pseudo_binding_ratio: 0.005 # sweep
-#pseudo_confidence_threshold: 0.895 # swe
+# Data additions
+pseudo_label: 'submission'
+submission_path: 'data/submissions/submission_443.csv'
+pseudo_binding_ratio: 0.005 # sweep
+pseudo_confidence_threshold: 0.895 # sweep
+seh_binding_dataset: false
 
 allow_multiple_instances: true

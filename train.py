@@ -17,7 +17,7 @@ from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
 from src.setup.setup_data import GetXCache, GetYCache, create_pseudo_labels, setup_xy
-from src.setup.setup_pipeline import setup_pipeline
+from src.setup.setup_pipeline import check_model_trained, setup_pipeline
 from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
 from src.splitter.base import Splitter
@@ -64,14 +64,16 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg)
 
+    # Check if model is already trained
+    check_model_trained(model_pipeline)
+
     # Setup cache arguments
     cache_path = create_cache_path(
         cfg.cache_path,
         cfg.splitter,
         cfg.sample_size,
         cfg.sample_split,
-        pseudo_label=cfg.pseudo_label,
-        pseudo_confidence_threshold=cfg.pseudo_confidence_threshold,
+        cfg=cfg,
     )
     splitter_cache_path = cache_path / "splits.pkl"
 
