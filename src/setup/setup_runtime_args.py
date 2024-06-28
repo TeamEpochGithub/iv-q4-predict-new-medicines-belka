@@ -124,6 +124,7 @@ def setup_train_args(
         "LazySingleXGB": main_trainer,
         "MixedPrecisionTrainer": main_trainer,
         "TwoHeadedTrainer": main_trainer,
+        "TripleHeadedTrainer": main_trainer,
     }
 
     if save_model_preds:
