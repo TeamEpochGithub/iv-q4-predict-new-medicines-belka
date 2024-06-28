@@ -12,7 +12,7 @@ import numpy.typing as npt
 import torch
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
 from rdkit import Chem  # type: ignore[import-not-found]
-from rdkit.Chem import AllChem, RDConfig  # type: ignore[import-not-found]
+from rdkit.Chem import AllChem, RDConfig, rdMolDescriptors  # type: ignore[import-not-found]
 from rdkit.Chem.rdchem import Mol  # type: ignore[import-not-found]
 from rdkit.Chem.rdMolChemicalFeatures import MolChemicalFeatureFactory  # type: ignore[import-not-found]
 from torch_geometric.data import Data
@@ -73,6 +73,12 @@ class SmilesToGraph(TrainingBlock):
                 lambda x: x.GetHybridization(),
                 lambda x: x.GetIsotope(),
                 lambda x: ATOMIC_NUM_DICT[x.GetAtomicNum()],
+                lambda x: x.GetFormalCharge(),
+                lambda x: x.GetNumRadicalElectrons(),
+                lambda x: x.GetIsAromatic(),
+                lambda x: x.GetChiralTag(),
+                lambda x: (1 if rdMolDescriptors.CalcNumLipinskiHBA(x.GetOwningMol()) > 0 else 0),
+                lambda x: (1 if rdMolDescriptors.CalcNumLipinskiHBD(x.GetOwningMol()) > 0 else 0),
             ]
             self._num_atom_chem_features = len(self._atom_chem_features)
             self._num_atom_features += len(self._atom_chem_features)

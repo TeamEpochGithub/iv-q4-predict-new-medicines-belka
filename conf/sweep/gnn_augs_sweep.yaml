@@ -6,19 +6,11 @@ method: bayes
 project: detect-medicine
 entity: team-epoch-iv
 program: train.py
-name: Transformer GNN 100k Sweep
+name: Transformer GNN 10M Sweep
 metric:
   goal: maximize
   name: Validation Score
 parameters:
-  model.train_sys.steps.0.dataset.steps.1.p_node_drop:
-    max: 0.6
-    min: 0.1
-
-  model.train_sys.steps.0.dataset.steps.1.p_edge_drop:
-    max: 0.6
-    min: 0.1
-
   model.train_sys.steps.0.dataset.steps.1.p_node_mask:
     max: 0.7
     min: 0.1
