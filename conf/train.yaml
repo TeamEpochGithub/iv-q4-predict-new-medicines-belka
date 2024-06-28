@@ -13,7 +13,6 @@ cache_path: data/cache
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
-filter_protein: HSA
 
 # Sampling
 sample_size: 100_000_000
