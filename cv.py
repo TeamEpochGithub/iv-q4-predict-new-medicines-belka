@@ -9,6 +9,7 @@ import coloredlogs
 import hydra
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 import randomname
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
@@ -128,6 +129,8 @@ def run_cv_cfg(cfg: DictConfig) -> None:
         combined_scores.append((test_score + validation_score) / 2)
         oof_predictions[validation_indices] = predictions
 
+    # Save the oof predictions
+    pd.DataFrame(oof_predictions).to_csv(output_dir / "oof_predictions.csv", index=False)
     scoring(cfg, model_pipeline, cache_args_y, y, validation_scores, test_scores, combined_scores, test_indices, train_validation_indices, oof_predictions)
 
     wandb.finish()

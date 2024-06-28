@@ -32,6 +32,7 @@ class CVConfig:
     sample_split: float = 0.5
     allow_multiple_instances: bool = False
 
+    # Data additions
     pseudo_label: str = "none"
     submission_path: str | None = None
     pseudo_binding_ratio: float = 0.05
