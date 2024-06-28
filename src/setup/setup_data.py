@@ -45,13 +45,13 @@ def sample_data(train_data: pd.DataFrame, sample_size: int, sample_split: float)
     )  # type: ignore[call-arg]
 
 
-def read_train_data(directory: Path) -> pd.DataFrame:
+def read_train_data(directory: Path, file_name: str) -> pd.DataFrame:
     """Read the training data.
 
     :param path: Usually raw path is a parameter
     :return: Training data
     """
-    train_data = pl.read_parquet(directory / "train.parquet")
+    train_data = pl.read_parquet(directory / file_name)
     return train_data.to_pandas(use_pyarrow_extension_array=True)
 
 
@@ -105,7 +105,7 @@ def setup_xy(cfg: DictConfig) -> tuple[XData, npt.NDArray[np.int8]]:
     """
     # Read the data if required and split it in X, y
     logger.info("Reading data")
-    train_data = read_train_data(Path(cfg.data_path))
+    train_data = read_train_data(Path(cfg.data_path), cfg.train_file_name)
 
     # Sample the data
     if cfg.sample_size is not None and cfg.sample_size > 0:
@@ -336,6 +336,7 @@ def create_pseudo_labels(
         raise ValueError("The features or the labels are empty.")
 
     test_size = 0
+    original_size = X.molecule_smiles.shape[0]
 
     if cfg.seh_binding_dataset:
         # Load in sEH binding dataset data
@@ -362,7 +363,7 @@ def create_pseudo_labels(
         y = np.concatenate((y, np.zeros((smiles.shape[0], 3), dtype=np.int_)), dtype=np.int_)
         test_size += smiles.shape[0]
 
-    new_indices = np.array([min(cfg.sample_size, FULL_DATA_SIZE) + idx for idx in range(test_size)], dtype=np.int_)
+    new_indices = np.array([original_size + idx for idx in range(test_size)], dtype=np.int_)
     train_indices = np.concatenate((train_indices, new_indices)).astype(np.int_)
 
     return X, y, train_indices, test_indices

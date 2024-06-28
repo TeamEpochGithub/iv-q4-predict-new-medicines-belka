@@ -17,7 +17,7 @@ train_sys:
         n_classes: 3
         num_embeddings: 9000
         hidden_dim: 256
-        filters: 64
+        filters: 72
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -51,9 +51,10 @@ train_sys:
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 8
-        prefetch_factor: 5
+        num_workers: 16
+        prefetch_factor: 2
         persistent_workers: false
+
     - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
