@@ -1,7 +1,8 @@
 """Module containing chemberta class copied from a  public notebook."""
 from torch import Tensor, nn
 from transformers import AutoConfig, AutoModel
-
+import torch
+from torch.quantization import float_qparams_weight_only_qconfig
 
 class Chemberta(nn.Module):
     """Pre-trained Hugging Face model for molecule tokenizers."""
@@ -32,6 +33,7 @@ class Chemberta(nn.Module):
 
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.classifier = nn.Linear(self.config.hidden_size, self.config.num_labels)
+
 
     def forward(self, x: Tensor) -> Tensor:
         """Perform forward propagation of the model.

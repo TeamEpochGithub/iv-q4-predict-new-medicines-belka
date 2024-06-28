@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: LLM/chemberta_augmented
+  - model: LLM/transformer_undersample_bb
   - wandb: train
 
 # Paths

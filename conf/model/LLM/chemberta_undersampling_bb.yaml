@@ -11,7 +11,7 @@ y_sys:
 
 train_sys:
   steps:
-    - _target_: src.modules.training.main_trainer.MainTrainer
+    - _target_: src.modules.training.mixed_precision_trainer.MixedPrecisionTrainer
       model_name: chemberta
       model:
         _target_: src.modules.training.models.chemberta.Chemberta
