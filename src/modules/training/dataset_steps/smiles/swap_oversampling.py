@@ -1,6 +1,5 @@
 """Perform oversampling by swapping the building blocks."""
 
-import random
 from dataclasses import dataclass
 from typing import Any
 
@@ -41,7 +40,6 @@ class SwapOversampling(TrainingBlock):
         x[swap_mask] = [rng.permutation(mol) for mol in x[swap_mask]]
 
         return x, y
-
 
     @property
     def is_augmentation(self) -> bool:
