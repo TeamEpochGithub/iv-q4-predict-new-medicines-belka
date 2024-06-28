@@ -1,7 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  - model: LLM/transformer_undersample_bb
+  - model: LLM/cnn1d_tokenize_undersample
   - wandb: train
 
 # Paths

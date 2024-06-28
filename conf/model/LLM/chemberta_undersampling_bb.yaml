@@ -26,7 +26,7 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 10
+      epochs: 13
       batch_size: 513
       patience: 8
       dataset:
@@ -34,7 +34,7 @@ train_sys:
         retrieval: ["SMILES_BB"]
         steps:
           - _target_: src.modules.training.dataset_steps.random_undersampler.RandomUndersampler
-            majority_sampling: 0.2
+            majority_sampling: 0.20
           - _target_: src.modules.training.dataset_steps.smiles.concatenate_smiles.ConcatenateSmiles
           - _target_: src.modules.training.dataset_steps.smiles.chemberta_tokenizer.ChembertaTokenizer
             padding_size: 120
