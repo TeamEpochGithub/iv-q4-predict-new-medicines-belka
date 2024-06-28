@@ -18,7 +18,7 @@ scorer:
 
 # Sampling
 sample_size: 100_000_000
-sample_split: -1 
+sample_split: -1
 
 # Splitting
 splitter:

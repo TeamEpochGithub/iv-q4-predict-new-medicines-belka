@@ -253,7 +253,6 @@ class MainTrainer(TorchTrainer, Logger):
         )
         return train_loader, validation_loader
 
-
     def create_datasets(
         self,
         X: XData,

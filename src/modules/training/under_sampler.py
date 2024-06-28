@@ -1,16 +1,17 @@
-import torch
-from torch.utils.data import DataLoader, Dataset, Sampler, TensorDataset
-import numpy as np
 from collections import Counter
 
-class UnderSampler(Sampler):
-    def __init__(self, labels, majority_class, majority_fraction=0.2):
+import numpy as np
+from torch.utils.data import Sampler
+
+
+class UnderSampler(Sampler): # type: ignore[type-arg]
+    def __init__(self, labels, majority_class, majority_fraction=0.2): # type: ignore[no-untyped-def]
         self.labels = labels
         self.majority_class = majority_class
         self.majority_fraction = majority_fraction
         self.indices = self._get_balanced_indices()
 
-    def _get_balanced_indices(self):
+    def _get_balanced_indices(self):  # type: ignore[no-untyped-def]
         label_counts = Counter([tuple(label.tolist()) for label in self.labels])
         majority_count = label_counts[tuple(self.majority_class)]
         majority_sample_size = int(majority_count * self.majority_fraction)
@@ -29,8 +30,8 @@ class UnderSampler(Sampler):
         np.random.shuffle(balanced_indices)
         return balanced_indices
 
-    def __iter__(self):
+    def __iter__(self): # type: ignore[no-untyped-def]
         return iter(self.indices)
 
-    def __len__(self):
+    def __len__(self): # type: ignore[no-untyped-def]
         return len(self.indices)

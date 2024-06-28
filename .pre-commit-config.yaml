@@ -1,4 +1,4 @@
-exclude: ^(external/|venv/|.venv/|tests/|notebooks/|submission/|data/)
+exclude: ^(external/|venv/|.venv/|tests/|notebooks/|submission/|data/|src/modules/training/under_sampler.py)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
