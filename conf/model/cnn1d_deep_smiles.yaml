@@ -3,7 +3,10 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.string_encoder.StringEncoder
+      representation: 'deep_smile'
+      padding_size: 150
 
 y_sys:
   steps: []
@@ -11,13 +14,13 @@ y_sys:
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D_MOL_TOK
+      model_name: cnn1d
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
         n_classes: 3
-        num_embeddings: 9000
-        hidden_dim: 256
-        filters: 72
+        num_embeddings: 2001
+        hidden_dim: 128
+        filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
         # _target_: src.modules.loss.focal_loss.FocalLoss
@@ -27,16 +30,16 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 14
-      batch_size: 512
-      patience: 5
+      epochs: 10
+      batch_size: 500
+      patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
         steps:
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples_100M_window_5"
-            padding_size: 150
+            tokenizer_name: "samples=10_M_window=4"
+            padding_size: 200
       scheduler:
         _target_: functools.partial
         _args_:
@@ -51,11 +54,9 @@ train_sys:
       n_folds: 5
       x_tensor_type: int
       dataloader_args:
-        num_workers: 16
-        prefetch_factor: 2
+        num_workers: 8
+        prefetch_factor: 5
         persistent_workers: false
-
-    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:

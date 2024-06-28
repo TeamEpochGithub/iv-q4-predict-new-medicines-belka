@@ -3,7 +3,10 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.string_encoder.StringEncoder
+      representation: 'deep_smile'
+      padding_size: 150
 
 y_sys:
   steps: []

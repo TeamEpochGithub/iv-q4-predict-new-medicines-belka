@@ -1,0 +1,113 @@
+command:
+  - python3
+  - ${program}
+  - ${args_no_hyphens}
+method: bayes
+project: detect-medicine
+entity: team-epoch-iv
+program: train.py
+name: 1DCNN Similiarity | 2-Stage | 10M BB
+metric:
+  name: Validation Score
+  goal: maximize
+parameters:
+
+  # TorchTrainer Hyperparameters | Stage 1
+  model.train_sys.steps.0.epochs:
+    min: 5
+    max: 15
+
+  model.train_sys.steps.0.optimizer.lr:
+    distribution: log_uniform_values
+    min: 1e-5
+    max: 1e-3
+
+  model.train_sys.steps.0.scheduler.t_initial:
+    min: 5
+    max: 10
+
+  model.train_sys.steps.0.scheduler.cycle_limit:
+    values:
+      - 1
+      - 2
+
+  # TorchTrainer Hyperparameters | Stage 2
+  model.train_sys.steps.1.batch_size:
+    values:
+      - 1024
+      - 2048
+      - 4096
+
+  model.train_sys.steps.1.optimizer.lr:
+    distribution: log_uniform_values
+    min: 1e-5
+    max: 1e-3
+
+  model.train_sys.steps.1.scheduler.t_initial:
+    min: 5
+    max: 100
+
+  model.train_sys.steps.1.scheduler.warmup_t:
+    values:
+      - 0
+      - 1
+
+  # Model Specific Hyperparameters
+  # model.train_sys.steps.1.model.embedding_dim:
+  #   values:
+  #     - 128
+  #     - 256
+  #     - 512
+  #     - 1024
+
+  model.train_sys.steps.1.model.conv_enable_pooling:
+    values:
+      - true
+      - false
+
+  model.train_sys.steps.1.model.n_conv_layers:
+    min: 1
+    max: 4
+
+  model.train_sys.steps.1.model.n_conv_filters:
+    values:
+      - 24
+      - 32
+      - 40
+      - 48
+      - 56
+      - 64
+      - 72
+
+  model.train_sys.steps.1.model.n_common_layers:
+    min: 1
+    max: 4
+
+  model.train_sys.steps.1.model.n_common_size:
+    values:
+      - 512
+      - 1024
+      - 2048
+      - 4096
+
+  model.train_sys.steps.1.model.n_prediction_layers:
+    min: 1
+    max: 4
+
+  model.train_sys.steps.1.model.n_prediction_size:
+    values:
+      - 256
+      - 512
+      - 1024
+      - 2048
+
+  model.train_sys.steps.1.similarity_loss_weight:
+    min: 0.0
+    max: 0.5
+
+  # # Dataset Specific Hyperparameters
+  # model.train_sys.steps.1.dataset.steps.0.bits:
+  #   values:
+  #     - 256
+  #     - 512
+  #     - 1024
