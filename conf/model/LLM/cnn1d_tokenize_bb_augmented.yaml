@@ -3,21 +3,21 @@ defaults:
   - _self_
 
 x_sys:
-  steps: []
+  steps:
+    - _target_: src.modules.transformation.remove_common.RemoveCommon
 
 y_sys:
-  steps:
-  - _target_: src.modules.transformation.filter_labels.FilterLabels
-    protein: HSA
+  steps: []
+
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
-      model_name: CNN1D_TOK_MOL
+      model_name: CNN1D_BB_TOK_OVER
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
-        n_classes: 1
-        num_embeddings: 23000
-        hidden_dim: 128
+        n_classes: 3
+        num_embeddings: 9000
+        hidden_dim: 256
         filters: 64
       criterion:
         _target_: torch.nn.BCEWithLogitsLoss
@@ -28,15 +28,20 @@ train_sys:
           - _target_: hydra.utils.get_class
             path: torch.optim.Adam
         lr: 0.001
-      epochs: 10
-      batch_size: 3000
-      patience: 2
+      epochs: 13
+      batch_size: 513
+      patience: 8
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
-        retrieval: ["SMILES_MOL"]
+        retrieval: ["SMILES_BB"]
         steps:
+          - _target_: src.modules.training.dataset_steps.random_undersampler.RandomUndersampler
+            majority_sampling: 0.2
+          - _target_: src.modules.training.dataset_steps.smiles.swap_oversampling.SwapOversampling
+            p_swap: 0.98
+          - _target_: src.modules.training.dataset_steps.smiles.concatenate_smiles.ConcatenateSmiles
           - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
-            tokenizer_name: "samples_5M_window_7"
+            tokenizer_name: "samples_100M_window_5"
             padding_size: 150
       scheduler:
         _target_: functools.partial
@@ -55,6 +60,7 @@ train_sys:
         num_workers: 8
         prefetch_factor: 5
         persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:

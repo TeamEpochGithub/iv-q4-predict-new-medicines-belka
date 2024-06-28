@@ -6,12 +6,14 @@ defaults:
 
 # Paths
 data_path: data/shrunken
+train_file_name: train.parquet
 cache_path: data/cache
 
 # Scoring
 scorer:
   _target_: src.scoring.mean_average_precision_scorer.MeanAveragePrecisionScorer
   name: MAP
+filter_protein: HSA
 
 # Sampling
 sample_size: 100_000_000
@@ -26,10 +28,10 @@ splitter:
 #  test_size: 0.2
 
 # Data additions
-pseudo_label: 'submission'
-submission_path: 'data/submissions/submission_443.csv'
-pseudo_binding_ratio: 0.005 # sweep
-pseudo_confidence_threshold: 0.895 # sweep
+pseudo_label: 'none'
+submission_path: 'data/submissions/submission_457.csv'
+pseudo_binding_ratio: 0.02 # sweep
+pseudo_confidence_threshold: 0.9 # sweep
 seh_binding_dataset: false
 
 allow_multiple_instances: true

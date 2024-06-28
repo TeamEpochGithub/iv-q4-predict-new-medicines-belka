@@ -187,6 +187,15 @@ def scoring(
     # Instantiate the scorer
     scorer = instantiate(cfg.scorer)
 
+    # Filter if needed
+    protein_map = {
+        "BRD4": 0,
+        "HSA": 1,
+        "sEH": 2,
+    }
+    if cfg.filter_protein != "none" and len(y.shape) > 1:
+        y = y[:, protein_map[cfg.filter_protein]]
+
     # Score the validation set
     if validation_indices is not None and validation_predictions is not None:
         logger.info("Scoring on validation set")
@@ -198,45 +207,47 @@ def scoring(
         test_score = scorer(y[test_indices], test_predictions)
         combined_score = 0.5 * validation_score + 0.5 * test_score
 
-        # BRD4 accuracy
-        score_brd4 = scorer(y[test_indices][:, 0], test_predictions[:, 0])
-        logger.info(f"brd4 test accuracy: {score_brd4}")
-        # wandb.log()
+        # If y does not have 1 dimension, then we need to score each column separately
+        if cfg.filter_protein == "none":
+            # BRD4 accuracy
+            score_brd4 = scorer(y[test_indices][:, 0], test_predictions[:, 0])
+            logger.info(f"brd4 test accuracy: {score_brd4}")
+            # wandb.log()
 
-        # HSA accuracy
-        score_hsa = scorer(y[test_indices][:, 1], test_predictions[:, 1])
-        logger.info(f"hsa test accuracy: {score_hsa}")
+            # HSA accuracy
+            score_hsa = scorer(y[test_indices][:, 1], test_predictions[:, 1])
+            logger.info(f"hsa test accuracy: {score_hsa}")
 
-        # sEH accuracy
-        score_seh = scorer(y[test_indices][:, 2], test_predictions[:, 2])
-        logger.info(f"seh test accuracy: {score_seh}")
+            # sEH accuracy
+            score_seh = scorer(y[test_indices][:, 2], test_predictions[:, 2])
+            logger.info(f"seh test accuracy: {score_seh}")
 
-        if wandb.run:
-            wandb.log(
-                {
-                    "BRD4 Test Score": score_brd4,
-                    "HSA Test Score": score_hsa,
-                    "sEH Test Score": score_seh,
-                },
-            )
+            if wandb.run:
+                wandb.log(
+                    {
+                        "BRD4 Test Score": score_brd4,
+                        "HSA Test Score": score_hsa,
+                        "sEH Test Score": score_seh,
+                    },
+                )
 
-        if output_dir is not None:
-            logger.info(f"Saving histogram of probabilities to {output_dir}")
-            visualization_path = output_dir / "visualizations"
-            visualization_path.mkdir(exist_ok=True, parents=True)
+            if output_dir is not None:
+                logger.info(f"Saving histogram of probabilities to {output_dir}")
+                visualization_path = output_dir / "visualizations"
+                visualization_path.mkdir(exist_ok=True, parents=True)
 
-            # In the histogram apply a sigmoid to the probabilities
-            # Log scale the y axis
-            plt.figure()
-            plt.hist(1 / (1 + np.exp(-test_predictions[:, 0])), bins=50, alpha=0.5, label="BRD4")
-            plt.hist(1 / (1 + np.exp(-test_predictions[:, 1])), bins=50, alpha=0.5, label="HSA")
-            plt.hist(1 / (1 + np.exp(-test_predictions[:, 2])), bins=50, alpha=0.5, label="sEH")
-            plt.yscale("log")
-            plt.legend(loc="upper right")
-            plt.title("Histogram of probabilities")
-            plt.xlabel("Probability")
-            plt.ylabel("Frequency")
-            plt.savefig(visualization_path / "histogram_test.png")
+                # In the histogram apply a sigmoid to the probabilities
+                # Log scale the y axis
+                plt.figure()
+                plt.hist(1 / (1 + np.exp(-test_predictions[:, 0])), bins=50, alpha=0.5, label="BRD4")
+                plt.hist(1 / (1 + np.exp(-test_predictions[:, 1])), bins=50, alpha=0.5, label="HSA")
+                plt.hist(1 / (1 + np.exp(-test_predictions[:, 2])), bins=50, alpha=0.5, label="sEH")
+                plt.yscale("log")
+                plt.legend(loc="upper right")
+                plt.title("Histogram of probabilities")
+                plt.xlabel("Probability")
+                plt.ylabel("Frequency")
+                plt.savefig(visualization_path / "histogram_test.png")
 
     # Report the scores
     logger.info(f"Validation Score: {validation_score:.6f}")

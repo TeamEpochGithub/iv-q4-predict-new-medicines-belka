@@ -1,0 +1,123 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+
+    # First Stage: Pretraining
+    - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
+      model_name: CNN1DFingerprint
+      # sample_size: 100_000
+
+      model:
+        _target_: src.modules.training.models.cnn1d_fingerprint.CNN1DFingerprint
+        n_classes: 3
+        n_bits: 32
+        n_embeddings: 41
+        # n_embeddings: 9000
+        embedding_dim: 256
+        n_backbone_conv_layers: 3
+        n_backbone_conv_filters: 64
+        n_backbone_fc_layers: 1
+        n_backbone_fc_size: 1024
+        n_head_prediction_layers: 3
+        n_head_prediction_size: 512
+
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      fingerprint_loss_weight: 0.05
+      fingerprint_criterion:
+        _target_: torch.nn.MSELoss
+
+      epochs: 25
+      batch_size: 1024
+      patience: 5
+
+      optimizer:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 7e-04
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 20
+        lr_min: 3e-06
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        # warmup_t: 4
+        # warmup_lr_init: 2e-07
+
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPLabel
+            bits: ${model.train_sys.steps.0.model.n_bits}
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+            max_enc_size_molecule: 146
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.25
+          # - _target_: src.modules.training.dataset_steps.smiles.tokenize_molecule.TokenizeMolecule
+          #   tokenizer_name: "samples_100M_window_5"
+          #   padding_size: 150
+
+      n_folds: 5
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 16
+        prefetch_factor: 5
+        persistent_workers: true
+        pin_memory: true
+
+    # - _target_: src.modules.training.trainers.two_headed_trainer.TwoHeadedTrainer
+    #   model_name: CNN1DFingerprint
+    #   model: ${model.train_sys.steps.0.model}
+
+    #   criterion:
+    #     _target_: torch.nn.BCEWithLogitsLoss
+    #   fingerprint_loss_weight: ${model.train_sys.steps.0.fingerprint_loss_weight}
+    #   fingerprint_criterion: ${model.train_sys.steps.0.fingerprint_criterion}
+    #   optimizer:
+    #     _target_: functools.partial
+    #     _args_: ${model.train_sys.steps.0.optimizer._args_}
+    #     lr: 7e-04
+    #   epochs: 20
+    #   batch_size: 1024
+    #   patience: 5
+    #   dataset: ${model.train_sys.steps.0.dataset}
+    #   scheduler:
+    #     _target_: functools.partial
+    #     _args_:
+    #       - _target_: hydra.utils.get_class
+    #         path: timm.scheduler.cosine_lr.CosineLRScheduler
+    #     t_initial: 20
+    #     lr_min: 3e-06
+    #     # cycle_mul: 1
+    #     # cycle_decay: 1
+    #     # cycle_limit: 1
+    #     warmup_t: 4
+    #     warmup_lr_init: 2e-07
+    #   n_folds: ${model.train_sys.steps.0.n_folds}
+    #   x_tensor_type: ${model.train_sys.steps.0.x_tensor_type}
+    #   dataloader_args: ${model.train_sys.steps.0.dataloader_args}
+
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []
