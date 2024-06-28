@@ -1,0 +1,81 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.trainers.triple_headed_trainer.TripleHeadedTrainer
+      model_name: SimilarityTripleHeadedCNN1D
+      use_mixed_precision: false
+      use_data_parallel: true
+      compile_model: false
+      model:
+        _target_: src.modules.training.models.cnn1d_similarity.CNN1DSimilarity
+        n_classes: 3
+        n_embeddings: 41
+        embedding_dim: 256
+        n_conv_layers: 3
+        n_conv_filters: 32
+        n_common_layers: 3
+        n_common_size: 1024
+        n_prediction_layers: 3
+        n_prediction_size: 512
+
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      similarity_loss_weight: 0.25
+      similarity_criterion:
+        _target_: torch.nn.MSELoss
+      optimizer:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 7e-04
+      epochs: 15
+      batch_size: 1024
+      patience: 5
+      dataset:
+        _target_: src.modules.training.datasets.main_dataset.MainDataset
+        retrieval: ["SMILES_MOL"]
+        steps:
+          - _target_: src.modules.training.dataset_steps.embeddings.ecfp.ECFPPairwiseSimiliarity
+            bits: 512
+          - _target_: src.modules.training.dataset_steps.smiles.smiles_atom_encoder.SmilesAtomEncoder
+            max_enc_size_molecule: 146
+          - _target_: src.modules.training.dataset_steps.encodings.atom_augmentation.AtomAugmentation
+            p: 0.25
+          - _target_: src.modules.training.dataset_steps.pairwise_x.PairwiseX
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 20
+        lr_min: 3e-06
+        # cycle_mul: 1
+        # cycle_decay: 1
+        # cycle_limit: 1
+        warmup_t: 4
+        warmup_lr_init: 2e-07
+      n_folds: 5
+      x_tensor_type: int
+      dataloader_args:
+        num_workers: 8
+        prefetch_factor: 5
+        persistent_workers: true
+        pin_memory: true
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []

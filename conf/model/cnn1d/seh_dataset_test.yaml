@@ -6,16 +6,15 @@ x_sys:
   steps: []
 
 y_sys:
-  steps:
-  - _target_: src.modules.transformation.filter_labels.FilterLabels
-    protein: HSA
+  steps: []
+
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D_TOK_MOL
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
-        n_classes: 1
+        n_classes: 3
         num_embeddings: 23000
         hidden_dim: 128
         filters: 64
@@ -30,7 +29,7 @@ train_sys:
         lr: 0.001
       epochs: 10
       batch_size: 3000
-      patience: 2
+      patience: 10
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset
         retrieval: ["SMILES_MOL"]
@@ -55,6 +54,7 @@ train_sys:
         num_workers: 8
         prefetch_factor: 5
         persistent_workers: false
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
 
 pred_sys:
   steps:
