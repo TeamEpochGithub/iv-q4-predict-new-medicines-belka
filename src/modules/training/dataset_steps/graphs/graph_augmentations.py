@@ -75,8 +75,8 @@ class GraphAugmentationBlock(TrainingBlock):
         :param y: The binding data
         :return: List of augmented molecule graphs and labels
         """
-        augmented_graphs = [self.augment_graph(data) for data in x]
-        masked_graphs = [self.apply_mask(data) for data in augmented_graphs]
+        # augmented_graphs = [self.augment_graph(data) for data in x]
+        masked_graphs = [self.apply_mask(data) for data in x]
         return masked_graphs, y
 
     @property

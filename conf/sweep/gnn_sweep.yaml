@@ -5,12 +5,26 @@ command:
 method: bayes
 project: detect-medicine
 program: train.py
-name: Transformer GNN Sweep (1M)
+name: TGNN Mask Augmentation Sweep (10M)
 entity: team-epoch-iv
 metric:
   name: Validation Score
   goal: maximize
 parameters:
+
+  model.train_sys.steps.0.dataset.steps.1.p_node_mask:
+    max: 0.7
+    min: 0.1
+
+  model.train_sys.steps.0.dataset.steps.1.p_edge_mask:
+    max: 0.7
+    min: 0.1
+
+  model.train_sys.steps.0.optimizer._args_.0.path:
+    values:
+      - torch.optim.Adam
+      - torch.optim.AdamW
+
 
   model.train_sys.steps.0.epochs:
     values:

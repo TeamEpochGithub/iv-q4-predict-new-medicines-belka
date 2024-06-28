@@ -1,0 +1,118 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps: []
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    # First stage (Sampled Data)
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: TGNNPretrain
+      model:
+        _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
+        n_classes: 3
+        num_node_features: 10
+        num_edge_features: 2
+        hidden_dim: 128
+        out_features: 256
+        dropout: 0.1
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 0.001
+      epochs: 10
+      batch_size: 1024
+      patience: 5
+      sample_size: 50_000
+      dataset:
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
+            use_atom_chem_features: true
+            use_atom_pharmacophore_features: false
+            use_bond_features: true
+            use_atom_deep_chem_features: false
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 29
+        cycle_mul: 1
+        cycle_decay: 1
+        cycle_limit: 1
+        # warmup_t: 5
+        # warmup_lr_init: 1e-5
+      n_folds: 5
+      dataloader_args:
+        num_workers: 12
+        prefetch_factor: 3
+        persistent_workers: false
+
+    # Second stage (All Data)
+    - _target_: src.modules.training.graph_trainer.GraphTrainer
+      model_name: TGNNFineTune
+      model:
+        _target_: src.modules.training.models.gnn_transformer_conv.GNNTransformerModel
+        n_classes: 3
+        num_node_features: 10
+        num_edge_features: 2
+        hidden_dim: 128
+        out_features: 256
+        dropout: 0.1
+      criterion:
+        _target_: torch.nn.BCEWithLogitsLoss
+      optimizer: # Partially instantiate optimizer, so model parameters can be linked at runtime
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: torch.optim.AdamW
+        lr: 0.001
+      epochs: 10
+      batch_size: 1024
+      patience: 3
+      dataset:
+        _target_: src.modules.training.datasets.graph_dataset.GraphDataset
+        retrieval: [ "SMILES_MOL" ]
+        steps:
+          - _target_: src.modules.training.dataset_steps.graphs.smiles_to_graph.SmilesToGraph
+            use_atom_chem_features: true
+            use_atom_pharmacophore_features: false
+            use_bond_features: true
+            use_atom_deep_chem_features: false
+      scheduler:
+        _target_: functools.partial
+        _args_:
+          - _target_: hydra.utils.get_class
+            path: timm.scheduler.cosine_lr.CosineLRScheduler
+        t_initial: 29
+        # cycle_mul: 1
+        # cycle_decay: 1
+        # cycle_limit: 1
+        # warmup_t: 5
+        # warmup_lr_init: 1e-5
+      n_folds: 5
+      dataloader_args:
+        num_workers: 12
+        prefetch_factor: 3
+        persistent_workers: false
+
+    # Prediction Statistics
+    - _target_: src.modules.training.analysis.prediction_statistics.PredictionStatistics
+
+pred_sys:
+  steps:
+    - _target_: src.modules.transformation.sigmoid.Sigmoid
+
+label_sys:
+  steps: []

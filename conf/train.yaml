@@ -1,9 +1,7 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: cnn1d/morning-sweep-5_seh
-  # - model: gbdms/multi_output_xgb
-  - model: cnn1d/tokenize_mol_test
+  - model: LLM/cnn1d_tokenize_undersample
   - wandb: train
 
 # Paths
@@ -22,11 +20,11 @@ sample_split: -1
 
 # Splitting
 splitter:
-  _target_: src.splitter.stratified_splitter.StratifiedSplitter
-  n_splits: 5
-  # _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
-  # n_splits: 5
-  # test_size: 0.2
+   _target_: src.splitter.stratified_splitter.StratifiedSplitter
+   n_splits: 5
+#  _target_: src.splitter.bb_stratified_splitter.BBStratifiedSplitter
+#  n_splits: 5
+#  test_size: 0.2
 
 # Data additions
 pseudo_label: 'none'
