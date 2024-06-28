@@ -32,7 +32,6 @@ class EfficientNet(nn.Module):
         self.avg_pool = self.model.avgpool
         self.fc = nn.Linear(in_features=2048, out_features=n_classes, bias=True)
 
-
         # Freeze the weights of the first essential layers
         for param in self.conv1.parameters():
             param.requires_grad = False
@@ -52,7 +51,6 @@ class EfficientNet(nn.Module):
 
         for param in self.layer3.parameters():
             param.requires_grad = False
-
 
     def forward(self, x: Tensor) -> Tensor:
         """Perform forward propagation of the model.
