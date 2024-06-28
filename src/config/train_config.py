@@ -27,7 +27,10 @@ class TrainConfig:
     data_path: str
     train_file_name: str
     cache_path: str
+
+    # Scoring
     scorer: Any
+
     wandb: WandBConfig
     splitter: Any
     sample_size: int = 10000
@@ -40,3 +43,5 @@ class TrainConfig:
     pseudo_binding_ratio: float = 0.05
     pseudo_confidence_threshold: float = 0.6
     seh_binding_dataset: bool = False
+
+    filter_protein: str = "none"
