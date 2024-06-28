@@ -21,6 +21,7 @@ from tqdm import tqdm
 from src.modules.logging.logger import Logger
 from src.modules.objects import TrainObj, TrainPredictObj
 from src.modules.training.datasets.main_dataset import MainDataset
+from src.modules.training.under_sampler import UnderSampler
 from src.typing.xdata import XData
 
 
@@ -30,6 +31,7 @@ class MainTrainer(TorchTrainer, Logger):
 
     dataset: MainDataset | None = None  # type: ignore[type-arg]
     sample_size: int | None = None
+    sample_majority: float = 0.2
 
     use_mixed_precision: bool = False
     use_data_parallel: bool = True
@@ -139,7 +141,7 @@ class MainTrainer(TorchTrainer, Logger):
         )
 
         # Create dataloaders
-        train_loader, validation_loader = self.create_dataloaders(train_dataset, validation_dataset)
+        train_loader, validation_loader = self.create_dataloaders(train_dataset, validation_dataset, train_labels=y[train_indices])
 
         # Check if a trained model exists
         if self._model_exists():
@@ -213,6 +215,44 @@ class MainTrainer(TorchTrainer, Logger):
             train_indices,
             validation_indices,
         )
+
+    def create_dataloaders(
+        self,
+        train_dataset: Dataset[tuple[Tensor, ...]],
+        validation_dataset: Dataset[tuple[Tensor, ...]],
+        train_labels: npt.NDArray[np.int8] | None = None,
+    ) -> tuple[DataLoader[tuple[Tensor, ...]], DataLoader[tuple[Tensor, ...]]]:
+        """Create the dataloaders for training and validation.
+
+        :param train_dataset: The training dataset.
+        :param validation_dataset: The validation dataset.
+        :return: The training and validation dataloaders.
+        """
+        majority_class = [0, 0, 0]
+
+        # Create sampler
+        self.log_to_terminal(f"Sampling majority class with fraction {self.sample_majority}")
+        sampler = None
+        if train_labels is not None:
+            sampler = UnderSampler(train_labels, majority_class, majority_fraction=self.sample_majority)
+
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            collate_fn=(self.collate_fn if hasattr(train_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            sampler=sampler,
+            **self.dataloader_args,
+        )
+        validation_loader = DataLoader(
+            validation_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            collate_fn=(self.collate_fn if hasattr(validation_dataset, "__getitems__") else None),  # type: ignore[arg-type]
+            **self.dataloader_args,
+        )
+        return train_loader, validation_loader
+
 
     def create_datasets(
         self,

@@ -6,16 +6,15 @@ x_sys:
   steps: []
 
 y_sys:
-  steps:
-  - _target_: src.modules.transformation.filter_labels.FilterLabels
-    protein: HSA
+  steps: []
 train_sys:
   steps:
     - _target_: src.modules.training.main_trainer.MainTrainer
       model_name: CNN1D_TOK_MOL
+      sample_majority: 0.2
       model:
         _target_: src.modules.training.models.cnn1d.CNN1D
-        n_classes: 1
+        n_classes: 3
         num_embeddings: 23000
         hidden_dim: 128
         filters: 64
