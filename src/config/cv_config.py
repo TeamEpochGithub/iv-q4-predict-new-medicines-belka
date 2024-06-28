@@ -25,6 +25,8 @@ class CVConfig:
     ensemble: Any
     data_path: str
     cache_path: str
+    train_file_name: str
+
     scorer: Any
     wandb: WandBConfig
     splitter: Any
