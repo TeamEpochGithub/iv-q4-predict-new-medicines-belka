@@ -6,10 +6,9 @@ import numpy as np
 import numpy.typing as npt
 import torch
 from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_device
-from torch import Tensor
+from torch import Tensor, nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from torch import nn
 
 from src.modules.training.main_trainer import MainTrainer
 
@@ -48,10 +47,7 @@ class TwoHeadedTrainer(MainTrainer):
 
             # Forward pass
             y_pred = self.model(X_batch)
-            loss = (
-                self.criterion(y_pred[0], protein_labels) * (1 - self.fingerprint_loss_weight)
-                + self.criterion(y_pred[1], ecfp_labels) * self.fingerprint_loss_weight
-            )
+            loss = self.criterion(y_pred[0], protein_labels) * (1 - self.fingerprint_loss_weight) + self.criterion(y_pred[1], ecfp_labels) * self.fingerprint_loss_weight
 
             # Backward pass
             self.initialized_optimizer.zero_grad()

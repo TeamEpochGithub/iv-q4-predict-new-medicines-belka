@@ -1,6 +1,7 @@
 """Module containing CNN1D class copied and translated from tensorflow public notebook."""
 from torch import Tensor, nn
 
+
 class _ConvBlock(nn.Module):
     enable_pooling: bool
 
@@ -33,6 +34,7 @@ class _FCBlock(nn.Module):
         x = self.activation(x)
         return self.dropout(x)
 
+
 class CNN1DFingerprint(nn.Module):
     """CNN1D model which predicts bindings and the pharmacophore fingerprint (two heads).
 
@@ -50,7 +52,7 @@ class CNN1DFingerprint(nn.Module):
 
     _embedding: nn.Module
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         # Fixed Parameters
         n_classes: int,

@@ -1,5 +1,4 @@
 """Module containing CNN1D class copied and translated from tensorflow public notebook."""
-import torch
 from torch import Tensor, nn
 
 
@@ -111,19 +110,17 @@ class CNN1DFlex(nn.Module):
         :return: Output data
         """
         if self.use_embedding_layer:
-            x0 = self.embedding(x).transpose(2, 1)
+            x = self.embedding(x).transpose(2, 1)
 
-        x0 = self.conv(x0).squeeze()
+        return self.conv(x).squeeze()
 
-        x = torch.cat([x0, x1], dim=1)
-        x = self.common_backbone(x)
+        # x = torch.cat([x0, x1], dim=1)
+        # x = self.common_backbone(x)
 
-        # IDEA: Pass the output of mol backbones to the prediction heads concatenated
-        # with the output of the common backbone
-        # x0 = self.prediction_head(torch.cat([x, x0], dim=1))
-        # x1 = self.prediction_head(torch.cat([x, x1], dim=1))
-        x0 = self.fc(x[:, : self.n_prediction_size])
-        x1 = self.fc(x[:, self.n_prediction_size :])
-        x2 = self.similiarity_head(x).squeeze()
-
-        return x0, x1, x2
+        # # IDEA: Pass the output of mol backbones to the prediction heads concatenated
+        # # with the output of the common backbone
+        # # x0 = self.prediction_head(torch.cat([x, x0], dim=1))
+        # # x1 = self.prediction_head(torch.cat([x, x1], dim=1))
+        # x0 = self.fc(x[:, : self.n_prediction_size])
+        # x1 = self.fc(x[:, self.n_prediction_size :])
+        # x2 = self.similiarity_head(x).squeeze()
