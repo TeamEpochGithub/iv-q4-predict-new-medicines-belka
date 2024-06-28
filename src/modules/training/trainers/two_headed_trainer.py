@@ -1,6 +1,6 @@
 """Module for example training block."""
 import gc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import numpy.typing as npt
@@ -9,6 +9,7 @@ from epochalyst.pipeline.model.training.utils.tensor_functions import batch_to_d
 from torch import Tensor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from torch import nn
 
 from src.modules.training.main_trainer import MainTrainer
 
@@ -17,7 +18,8 @@ from src.modules.training.main_trainer import MainTrainer
 class TwoHeadedTrainer(MainTrainer):
     """Two headed training block."""
 
-    loss1_weight: float = 1.0
+    fingerprint_criterion: nn.Module = field(default=nn.BCEWithLogitsLoss(), init=True, repr=False, compare=False)
+    fingerprint_loss_weight: float = 0.5
 
     def _train_one_epoch(
         self,
@@ -46,7 +48,10 @@ class TwoHeadedTrainer(MainTrainer):
 
             # Forward pass
             y_pred = self.model(X_batch)
-            loss = self.criterion(y_pred[0], protein_labels) + self.criterion(y_pred[1], ecfp_labels) * (1 / self.loss1_weight)
+            loss = (
+                self.criterion(y_pred[0], protein_labels) * (1 - self.fingerprint_loss_weight)
+                + self.criterion(y_pred[1], ecfp_labels) * self.fingerprint_loss_weight
+            )
 
             # Backward pass
             self.initialized_optimizer.zero_grad()
@@ -56,10 +61,6 @@ class TwoHeadedTrainer(MainTrainer):
             # Print tqdm
             losses.append(loss.item())
             pbar.set_postfix(loss=sum(losses) / len(losses))
-
-        # Step the scheduler
-        if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch + 1)
 
         # Remove the cuda cache
         torch.cuda.empty_cache()
