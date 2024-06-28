@@ -28,7 +28,7 @@ train_sys:
             path: torch.optim.Adam
         lr: 0.001
       epochs: 10
-      batch_size: 2048 
+      batch_size: 2048
       patience: 2
       dataset:
         _target_: src.modules.training.datasets.main_dataset.MainDataset

@@ -17,7 +17,7 @@ from omegaconf import DictConfig
 
 from src.config.train_config import TrainConfig
 from src.setup.setup_data import GetXCache, GetYCache, create_pseudo_labels, setup_xy
-from src.setup.setup_pipeline import setup_pipeline
+from src.setup.setup_pipeline import check_model_trained, setup_pipeline
 from src.setup.setup_runtime_args import create_cache_path, setup_cache_args, setup_train_args
 from src.setup.setup_wandb import setup_wandb
 from src.splitter.base import Splitter
@@ -64,8 +64,17 @@ def run_train_cfg(cfg: DictConfig) -> None:
     print_section_separator("Setup pipeline")
     model_pipeline = setup_pipeline(cfg)
 
+    # Check if model is already trained
+    check_model_trained(model_pipeline)
+
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
+    cache_path = create_cache_path(
+        cfg.cache_path,
+        cfg.splitter,
+        cfg.sample_size,
+        cfg.sample_split,
+        cfg=cfg,
+    )
     splitter_cache_path = cache_path / "splits.pkl"
 
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
@@ -83,6 +92,7 @@ def run_train_cfg(cfg: DictConfig) -> None:
         not model_pipeline.get_x_cache_exists(cache_args_x)
         or not model_pipeline.get_y_cache_exists(cache_args_y)
         or (cfg.splitter is not None and not splitter_cache_path.exists())
+        or cfg.pseudo_label == "submission"
     ):
         X, y = setup_xy(cfg)
         data_cached = False
@@ -122,6 +132,8 @@ def run_train_cfg(cfg: DictConfig) -> None:
     )
 
     # Train Model and make predictions on the validation set
+    # If you need to sweep over parameters that don't change the model hash uncomment line below with cfg parameters
+    # model_pipeline._set_hash(str(cfg.pseudo_confidence_threshold) if cfg.pseudo_label == "submission" else None)
     validation_predictions, _ = model_pipeline.train(X, y, **train_args)
 
     # Make predictions on the test set if it exists

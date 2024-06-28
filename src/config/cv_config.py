@@ -33,7 +33,9 @@ class CVConfig:
     allow_multiple_instances: bool = False
 
     pseudo_label: str = "none"
-    submission_path: str = ""
-    pseudo_binding_threshold: float = 0.5
+    submission_path: str | None = None
+    pseudo_binding_ratio: float = 0.05
+    pseudo_confidence_threshold: float = 0.6
+    seh_binding_dataset: bool = False
 
     save_folds: bool = True

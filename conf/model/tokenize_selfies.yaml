@@ -1,0 +1,25 @@
+defaults:
+  - pipeline/default@_here_
+  - _self_
+
+x_sys:
+  steps:
+    - _target_: src.modules.transformation.string_encoder.StringEncoder
+      representation: 'deep_smile'
+      padding_size: 150
+
+y_sys:
+  steps: []
+
+train_sys:
+  steps:
+    - _target_: src.modules.training.molecule_tokenizer.MoleculeTokenizer
+      training: "10_M"
+      window_size: 4
+
+
+pred_sys:
+  steps: []
+
+label_sys:
+  steps: []

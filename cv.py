@@ -12,6 +12,8 @@ import numpy.typing as npt
 import randomname
 import wandb
 from epochalyst.logging.section_separator import print_section_separator
+from epochalyst.pipeline.ensemble import EnsemblePipeline
+from epochalyst.pipeline.model.model import ModelPipeline
 from hydra.core.config_store import ConfigStore
 from hydra.utils import instantiate
 from omegaconf import DictConfig
@@ -66,7 +68,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     model_pipeline = setup_pipeline(cfg)
 
     # Setup cache arguments
-    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, pseudo_label=cfg.pseudo_label)
+    cache_path = create_cache_path(cfg.cache_path, cfg.splitter, cfg.sample_size, cfg.sample_split, cfg=cfg)
     splitter_cache_path = cache_path / "splits.pkl"
     cache_args_x, cache_args_y, cache_args_train = setup_cache_args(cache_path)
 
@@ -90,6 +92,7 @@ def run_cv_cfg(cfg: DictConfig) -> None:
     if cfg.splitter is None:
         raise ValueError("Splitter is required for cross validation.")
     splitter: Splitter = instantiate(cfg.splitter)
+    train_validation_indices: npt.NDArray[np.int64] | None = None
     if splitter.includes_test:
         logger.info("Splitting data into train, validation and test sets.")
         splits, train_validation_indices, test_indices = splitter.split(X=X, y=y, cache_path=splitter_cache_path)  # type: ignore[assignment]
@@ -125,6 +128,30 @@ def run_cv_cfg(cfg: DictConfig) -> None:
         combined_scores.append((test_score + validation_score) / 2)
         oof_predictions[validation_indices] = predictions
 
+    scoring(cfg, model_pipeline, cache_args_y, y, validation_scores, test_scores, combined_scores, test_indices, train_validation_indices, oof_predictions)
+
+    wandb.finish()
+
+
+def scoring(
+    cfg: DictConfig,
+    model_pipeline: ModelPipeline | EnsemblePipeline,
+    cache_args_y: dict[str, Any],
+    y: npt.NDArray[np.int_],
+    validation_scores: list[float],
+    test_scores: list[float],
+    combined_scores: list[float],
+    test_indices: npt.NDArray[np.int64] | None,
+    train_validation_indices: npt.NDArray[np.int64] | None | tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]],
+    oof_predictions: npt.NDArray[np.float64],
+) -> None:
+    """Calculate final scores.
+
+    :param cfg: Configuration
+    :param model_pipeline: The model pipeline
+    :param cache_args_y: Cache arguments for y.
+    :param y: Y values
+    """
     # Average Scores
     with GetYCache(model_pipeline, cache_args_y, y) as y:
         avg_val_score = np.average(np.array(validation_scores))
@@ -150,7 +177,6 @@ def run_cv_cfg(cfg: DictConfig) -> None:
                 "OOF Score": oof_score,
             },
         )
-    wandb.finish()
 
 
 def run_fold(
