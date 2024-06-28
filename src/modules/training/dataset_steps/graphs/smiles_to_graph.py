@@ -78,7 +78,7 @@ class SmilesToGraph(TrainingBlock):
                 lambda x: x.GetIsAromatic(),
                 lambda x: x.GetChiralTag(),
                 lambda x: (1 if rdMolDescriptors.CalcNumLipinskiHBA(x.GetOwningMol()) > 0 else 0),
-                lambda x: (1 if rdMolDescriptors.CalcNumLipinskiHBD(x.GetOwningMol()) > 0 else 0)
+                lambda x: (1 if rdMolDescriptors.CalcNumLipinskiHBD(x.GetOwningMol()) > 0 else 0),
             ]
             self._num_atom_chem_features = len(self._atom_chem_features)
             self._num_atom_features += len(self._atom_chem_features)
