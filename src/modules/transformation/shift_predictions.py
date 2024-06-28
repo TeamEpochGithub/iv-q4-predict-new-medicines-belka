@@ -1,8 +1,11 @@
 """Module that shifts the predictions as transformation block."""
+from dataclasses import dataclass
+
 import numpy as np
 import numpy.typing as npt
-from dataclasses import dataclass
+
 from src.modules.transformation.verbose_transformation_block import VerboseTransformationBlock
+
 
 @dataclass
 class ShiftPredictions(VerboseTransformationBlock):

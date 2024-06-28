@@ -2,18 +2,19 @@
 
 from dataclasses import dataclass
 from typing import Any
+
 import joblib
 import numpy as np
 import numpy.typing as npt
 from epochalyst._core._caching._cacher import CacheArgs
 from epochalyst.pipeline.model.training.training_block import TrainingBlock
-from numpy.random import default_rng
 
-path ='data/shrunken/train_dicts/BBs_dict_reverse_1.p'
+path = "data/shrunken/train_dicts/BBs_dict_reverse_1.p"
 BBs_dict_reverse_1 = joblib.load(path)
 
 smile_75 = BBs_dict_reverse_1[75]
 smile_76 = BBs_dict_reverse_1[76]
+
 
 @dataclass
 class ProteinUndersampler(TrainingBlock):
@@ -40,4 +41,3 @@ class ProteinUndersampler(TrainingBlock):
     def is_augmentation(self) -> bool:
         """Check if augmentation is enabled."""
         return True
-
