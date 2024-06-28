@@ -6,7 +6,7 @@ method: bayes
 project: detect-medicine
 entity: team-epoch-iv
 program: train.py
-name: 1DCNN Similiarity | 2-Stage | 10M BB
+name: 1DCNN Similarity | 2-Stage | 10M BB
 metric:
   name: Validation Score
   goal: maximize

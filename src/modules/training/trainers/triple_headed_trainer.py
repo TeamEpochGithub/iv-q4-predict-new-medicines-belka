@@ -18,7 +18,7 @@ from src.modules.training.main_trainer import MainTrainer
 class TripleHeadedTrainer(MainTrainer):
     """Tripple headed training block."""
 
-    similarity_criterion: nn.Module = field(default=nn.MSELoss(), init=True, repr=False, compare=False)
+    similarity_criterion: nn.Module = field(default=nn.BCEWithLogitsLoss(), init=True, repr=False, compare=False)
     similarity_loss_weight: float = 0.25
 
     def _train_one_epoch(
@@ -63,10 +63,6 @@ class TripleHeadedTrainer(MainTrainer):
             # Print tqdm
             losses.append(loss.item())
             pbar.set_postfix(loss=sum(losses) / len(losses))
-
-        # Step the scheduler
-        if self.initialized_scheduler is not None:
-            self.initialized_scheduler.step(epoch=epoch + 1)
 
         # Remove the cuda cache
         torch.cuda.empty_cache()
