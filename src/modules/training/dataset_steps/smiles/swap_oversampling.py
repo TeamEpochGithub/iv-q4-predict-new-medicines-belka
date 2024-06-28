@@ -1,6 +1,5 @@
 """Perform oversampling by swapping the building blocks."""
 
-import random
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,10 +33,11 @@ class SwapOversampling(TrainingBlock):
         # Generate random probabilities for each molecule
         random_probs = rng.random(len(y))
 
-        # Swap the building blocks for the chosen molecules
-        for idx in range(y.shape[0]):
-            if random_probs[idx] < self.p_swap:
-                random.shuffle(x[idx])
+        # Create a mask for molecules to swap
+        swap_mask = random_probs < self.p_swap
+
+        # Apply shuffling only to the molecules in the swap_mask
+        x[swap_mask] = [rng.permutation(mol) for mol in x[swap_mask]]
 
         return x, y
 

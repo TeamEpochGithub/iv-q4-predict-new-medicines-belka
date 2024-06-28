@@ -1,8 +1,6 @@
 defaults:
   - base_train
   - hydra/logging
-  # - model: cnn1d/morning-sweep-5_seh
-  # - model: gbdms/multi_output_xgb
   - model: cnn1d/tokenize_mol_test
   - wandb: train
 
